@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教學進度與排程系統 V6.2 (動態收納版)</title>
+    
+    <!-- 1. 載入 Tailwind CSS (樣式引擎) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. 載入 React 核心 -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 3. 載入 Babel (讓瀏覽器看不懂的 JSX 變成看得懂的 JS) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 4. 載入 Lucide Icons (圖示庫) -->
+    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+
+    <style>
+        /* 修復部分瀏覽器捲軸樣式 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #F9F9F9;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- 初始化環境與工具 ---
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Icon 處理器 (將 Lucide 全域物件轉為 React 元件) ---
+        const LucideIcon = ({ name, size = 24, className, strokeWidth = 2.5 }) => {
+            const iconData = window.lucide?.icons?.[name];
+            if (!iconData) return null;
+            
+            if (Array.isArray(iconData)) {
+                const [tag, defaultAttrs, children] = iconData;
+                return (
+                    <svg
+                        {...defaultAttrs}
+                        width={size}
+                        height={size}
+                        className={className}
+                        strokeWidth={strokeWidth}
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        {children && children.map(([childTag, childAttrs], index) => (
+                            React.createElement(childTag, { ...childAttrs, key: index })
+                        ))}
+                    </svg>
+                );
+            }
+            return null;
+        };
+
+        // 批次建立 Icon 元件
+        const iconNames = [
+            'Save', 'FileSpreadsheet', 'Upload', 'Trash2', 'Plus', 'Settings', 'X', 
+            'AlertCircle', 'CheckSquare', 'BookOpen', 'Calendar', 'Clock', 'ChevronRight', 
+            'Sparkles', 'Loader2', 'Lightbulb', 'PenTool', 'BrainCircuit', 'Menu', 
+            'Filter', 'Download', 'UploadCloud', 'RefreshCw', 'HardDrive', 'ChevronDown', 'FolderOpen'
+        ];
+        
+        const Icons = iconNames.reduce((acc, name) => {
+            acc[name] = (props) => <LucideIcon name={name} {...props} />;
+            return acc;
+        }, {});
+
+        // 解構出所有 Icon 以供後續程式碼直接使用
+        const { 
+            Save, FileSpreadsheet, Upload, Trash2, Plus, Settings, X, AlertCircle, 
+            CheckSquare, BookOpen, Calendar, Clock, ChevronRight, Menu, Filter, 
+            Download, UploadCloud, RefreshCw, HardDrive, PenTool, ChevronDown, FolderOpen
+        } = Icons;
+
+        // --- 以下為 V6.2 核心程式碼 (ClassTrackerV6 Lite + Grouping) ---
+
+        const DEFAULT_YEARS = ['113-1', '113-2', '114-1', '114-2'];
+        const DEFAULT_CURRENT_YEAR = '113-2';
+
+        const INITIAL_HOLIDAYS = [
+            '2025-01-27', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31',
+            '2025-02-28', '2025-04-03', '2025-04-04', '2025-05-30',
+            '2025-10-06', '2025-10-10', '2026-01-01', '2026-01-02'
+        ];
+
+        const GOV_API_URL = "https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/2025.json"; 
+
+        const formatDate = (date) => date.toISOString().split('T')[0];
+
+        const getDatesInRange = (startDateStr, endDateStr) => {
+            if (!startDateStr || !endDateStr) return [];
+            const dates = [];
+            const current = new Date(startDateStr);
+            const end = new Date(endDateStr);
+            while (current <= end) {
+                dates.push(formatDate(current));
+                current.setDate(current.getDate() + 1);
+            }
+            return dates;
+        };
+
+        const getDayBefore = (dateStr) => {
+            if (!dateStr) return null;
+            const d = new Date(dateStr);
+            d.setDate(d.getDate() - 1);
+            return formatDate(d);
+        };
+
+        const calculateSessions = (startDateStr, endDateStr, classDays, holidayList) => {
+            if (!startDateStr || !endDateStr || !classDays || classDays.length === 0) return 0;
+            
+            let count = 0;
+            const start = new Date(startDateStr);
+            const end = new Date(endDateStr); 
+            
+            if (start > end) return 0;
+            
+            let current = new Date(start);
+            while (current <= end) {
+                const dateStr = formatDate(current);
+                const dayOfWeek = current.getDay();
+                if (classDays.includes(dayOfWeek) && !holidayList.includes(dateStr)) {
+                count++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return count;
+        };
+
+        const MujiCard = ({ children, className = "" }) => (
+            <div className={`bg-white border border-gray-300 rounded-sm p-4 sm:p-5 shadow-sm ${className}`}>
+                {children}
+            </div>
+        );
+
+        const MujiButton = ({ onClick, icon: Icon, label, variant = 'primary', className = "", type="button", disabled=false }) => {
+            const baseStyle = "flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-2 text-sm tracking-wide transition-all rounded-sm border disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap font-bold shadow-sm";
+            const styles = {
+                primary: "bg-[#7F0019] text-white border-[#7F0019] hover:bg-[#660014]", 
+                secondary: "bg-white text-gray-800 border-gray-400 hover:bg-gray-100",
+                text: "bg-transparent text-gray-600 border-transparent hover:text-gray-900",
+                success: "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700",
+                warning: "bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
+            };
+            return (
+                <button onClick={onClick} type={type} disabled={disabled} className={`${baseStyle} ${styles[variant]} ${className}`}>
+                    {Icon && <Icon size={18} strokeWidth={2.5} />}
+                    <span>{label}</span>
+                </button>
+            );
+        };
+
+        const Badge = ({ label, value, color = "gray" }) => {
+            const colors = {
+                gray: "bg-gray-100 text-gray-700 border border-gray-200",
+                red: "bg-red-50 text-[#7F0019] border border-red-200",
+            };
+            return (
+                <div className={`flex flex-col items-center justify-center px-2 py-2 rounded-sm ${colors[color]} flex-1 min-w-[60px] shadow-sm`}>
+                    <span className="text-[11px] font-bold opacity-80 uppercase tracking-wider whitespace-nowrap">{label}</span>
+                    <span className="text-xl font-black leading-none mt-1">{value}</span>
+                </div>
+            );
+        };
+
+        function ClassTrackerV6() {
+            const [academicYears, setAcademicYears] = useState(DEFAULT_YEARS);
+            const [currentYear, setCurrentYear] = useState(DEFAULT_CURRENT_YEAR);
+
+            const [records, setRecords] = useState([]);
+            const [classes, setClasses] = useState([]); 
+            
+            const [exams, setExams] = useState({ 
+                exam1: { start: '', end: '' }, 
+                exam2: { start: '', end: '' }, 
+                exam3: { start: '', end: '' } 
+            });
+            
+            const [holidays, setHolidays] = useState(INITIAL_HOLIDAYS);
+            const [showSettings, setShowSettings] = useState(false);
+            const [activeTab, setActiveTab] = useState('class');
+            const [filter, setFilter] = useState('');
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+            
+            // 紀錄每個班級群組的展開狀態 { "302": true, "305": false }
+            const [expandedClasses, setExpandedClasses] = useState({});
+
+            const [form, setForm] = useState({
+                className: '',
+                subject: '',
+                date: new Date().toISOString().split('T')[0],
+                progress: '',
+                homework: '',
+                quiz: false,
+                note: ''
+            });
+
+            const [isSyncing, setIsSyncing] = useState(false);
+
+            const [tempNewClass, setTempNewClass] = useState('');
+            const [tempClassDays, setTempClassDays] = useState([]);
+            const [newYearInput, setNewYearInput] = useState('');
+
+            useEffect(() => {
+                const load = (key, defaultVal = null) => {
+                    const data = localStorage.getItem(key);
+                    try { return data ? JSON.parse(data) : defaultVal; } catch (e) { console.error(e); return defaultVal; }
+                };
+                setAcademicYears(load('muji_v5_years', DEFAULT_YEARS));
+                setCurrentYear(localStorage.getItem('muji_v5_current_year') || DEFAULT_CURRENT_YEAR);
+
+                let loadedRecords = load('muji_v3_records', []);
+                if (loadedRecords.length > 0 && !loadedRecords[0].year) {
+                    loadedRecords = loadedRecords.map(r => ({ ...r, year: DEFAULT_CURRENT_YEAR }));
+                }
+                setRecords(loadedRecords);
+
+                let loadedClasses = load('muji_v3_classes', []);
+                if (loadedClasses.length > 0 && !loadedClasses[0].year) {
+                    loadedClasses = loadedClasses.map(c => ({ ...c, year: DEFAULT_CURRENT_YEAR }));
+                }
+                setClasses(loadedClasses);
+
+                const loadedExams = load('muji_v3_exams', { exam1: '', exam2: '', exam3: '' });
+                const migratedExams = { ...loadedExams };
+                ['exam1', 'exam2', 'exam3'].forEach(key => {
+                    if (typeof migratedExams[key] === 'string') {
+                        migratedExams[key] = { start: migratedExams[key], end: migratedExams[key] };
+                    }
+                });
+                setExams(migratedExams);
+                setHolidays(load('muji_v3_holidays', INITIAL_HOLIDAYS));
+            }, []);
+
+            useEffect(() => { localStorage.setItem('muji_v3_records', JSON.stringify(records)); }, [records]);
+            useEffect(() => { localStorage.setItem('muji_v3_classes', JSON.stringify(classes)); }, [classes]);
+            useEffect(() => { localStorage.setItem('muji_v3_exams', JSON.stringify(exams)); }, [exams]);
+            useEffect(() => { localStorage.setItem('muji_v3_holidays', JSON.stringify(holidays)); }, [holidays]);
+            useEffect(() => { localStorage.setItem('muji_v5_years', JSON.stringify(academicYears)); }, [academicYears]);
+            useEffect(() => { localStorage.setItem('muji_v5_current_year', currentYear); }, [currentYear]);
+
+            const currentYearClasses = useMemo(() => classes.filter(c => c.year === currentYear), [classes, currentYear]);
+            const currentYearRecords = useMemo(() => records.filter(r => r.year === currentYear), [records, currentYear]);
+
+            // 分組邏輯：將目前的紀錄依班級分組
+            const recordsByClass = useMemo(() => {
+                const grouped = {};
+                // 先過濾搜尋
+                const filtered = currentYearRecords.filter(r => r.className?.includes(filter) || r.progress?.includes(filter));
+                
+                filtered.forEach(r => {
+                    if (!grouped[r.className]) grouped[r.className] = [];
+                    grouped[r.className].push(r);
+                });
+                return grouped;
+            }, [currentYearRecords, filter]);
+
+            const remainingSessionMap = useMemo(() => {
+                const map = {};
+                const today = new Date().toISOString().split('T')[0];
+                currentYearClasses.forEach(cls => {
+                    let targetExam = null;
+                    if (exams.exam1.start && today < exams.exam1.start) targetExam = exams.exam1;
+                    else if (exams.exam2.start && today < exams.exam2.start) targetExam = exams.exam2;
+                    else if (exams.exam3.start && today < exams.exam3.start) targetExam = exams.exam3;
+
+                    if (targetExam) {
+                        const count = calculateSessions(today, getDayBefore(targetExam.start), cls.days, holidays);
+                        map[cls.name] = count;
+                    }
+                });
+                return map;
+            }, [currentYearClasses, exams, holidays]);
+
+            const currentClassStats = useMemo(() => {
+                if (!form.className) return null;
+                const targetClass = currentYearClasses.find(c => c.name === form.className);
+                if (!targetClass || !targetClass.days || targetClass.days.length === 0) return null;
+                
+                const today = new Date().toISOString().split('T')[0];
+                const exam1Dates = getDatesInRange(exams.exam1.start, exams.exam1.end);
+                const exam2Dates = getDatesInRange(exams.exam2.start, exams.exam2.end);
+                
+                const blockList1 = [...holidays];
+                const blockList2 = [...holidays, ...exam1Dates];
+                const blockList3 = [...holidays, ...exam1Dates, ...exam2Dates];
+
+                return {
+                    exam1: calculateSessions(today, getDayBefore(exams.exam1.start), targetClass.days, blockList1),
+                    exam2: calculateSessions(today, getDayBefore(exams.exam2.start), targetClass.days, blockList2),
+                    exam3: calculateSessions(today, getDayBefore(exams.exam3.start), targetClass.days, blockList3)
+                };
+            }, [form.className, currentYearClasses, exams, holidays]);
+
+            const weekDays = [{ id: 1, label: '一' }, { id: 2, label: '二' }, { id: 3, label: '三' }, { id: 4, label: '四' }, { id: 5, label: '五' }, { id: 6, label: '六' }];
+
+            const handleInputChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!form.className || !form.subject || !form.progress) return;
+                const newRecord = { id: Date.now(), ...form, year: currentYear, timestamp: new Date().toISOString() };
+                setRecords([newRecord, ...records]);
+                setForm(prev => ({ ...prev, progress: '', homework: '', quiz: false, note: '' }));
+                // 提交後自動展開該班級的歷史紀錄
+                setExpandedClasses(prev => ({ ...prev, [form.className]: true }));
+            };
+
+            const handleAddClass = () => {
+                if (!tempNewClass.trim()) return;
+                if (classes.some(c => c.name === tempNewClass && c.year === currentYear)) {
+                    alert(`此班級已存在於 ${currentYear} 學年度`);
+                    return;
+                }
+                setClasses([...classes, { name: tempNewClass, days: tempClassDays, year: currentYear }]);
+                setTempNewClass('');
+                setTempClassDays([]);
+            };
+
+            const handleAddYear = () => {
+                if(newYearInput && !academicYears.includes(newYearInput)) {
+                    setAcademicYears([...academicYears, newYearInput].sort());
+                    setNewYearInput('');
+                }
+            };
+
+            const toggleDay = (day) => {
+                setTempClassDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort());
+            };
+
+            const handleExamChange = (examKey, field, value) => {
+                setExams(prev => ({
+                    ...prev,
+                    [examKey]: { ...prev[examKey], [field]: value }
+                }));
+            };
+
+            const toggleClassGroup = (className) => {
+                setExpandedClasses(prev => ({
+                    ...prev,
+                    [className]: !prev[className]
+                }));
+            };
+
+            const fetchHolidayFromOpenData = async () => {
+                setIsSyncing(true);
+                try {
+                    const response = await fetch(GOV_API_URL);
+                    if(!response.ok) throw new Error("Network response was not ok");
+                    
+                    const data = await response.json();
+                    const onlineHolidays = data
+                        .filter(d => d.isHoliday === true)
+                        .map(d => {
+                            const dateStr = d.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+                            return dateStr;
+                        });
+
+                    if(onlineHolidays.length > 0) {
+                        const merged = [...new Set([...holidays, ...onlineHolidays])].sort();
+                        setHolidays(merged);
+                        alert(`更新成功！已同步 ${onlineHolidays.length} 筆假日資料。`);
+                    } else {
+                        alert("未偵測到假日資料，請確認來源。");
+                    }
+                } catch (e) {
+                    console.error("Sync Error:", e);
+                    alert("連線失敗：無法取得線上資料。\n原因可能是網路限制或來源暫時無法存取。\n建議：您仍可手動輸入假日。");
+                } finally {
+                    setIsSyncing(false);
+                }
+            };
+
+            const handleBackup = () => {
+                const backupData = {
+                    version: "6.2",
+                    timestamp: new Date().toISOString(),
+                    academicYears,
+                    currentYear,
+                    records,
+                    classes,
+                    exams,
+                    holidays
+                };
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `ClassTracker_FullBackup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const handleRestore = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (confirm(`確定要還原備份資料嗎？\n備份時間: ${data.timestamp}\n注意：這將覆蓋目前的現有資料！`)) {
+                            if(data.academicYears) setAcademicYears(data.academicYears);
+                            if(data.currentYear) setCurrentYear(data.currentYear);
+                            if(data.records) setRecords(data.records);
+                            if(data.classes) setClasses(data.classes);
+                            if(data.exams) setExams(data.exams);
+                            if(data.holidays) setHolidays(data.holidays);
+                            alert("系統還原成功！");
+                        }
+                    } catch (err) {
+                        alert("檔案格式錯誤，無法還原。");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            };
+
+            const exportToCSV = () => {
+                const dataToExport = currentYearRecords.filter(r => r.className?.includes(filter) || r.progress?.includes(filter));
+                const csvContent = [
+                    ['學年度', '班級', '科目', '日期', '進度', '作業', '小考', '備註'].join(','),
+                    ...dataToExport.map(r => [`"${r.year}"`, `"${r.className}"`, `"${r.subject}"`, `"${r.date}"`, `"${r.progress}"`, `"${r.homework}"`, r.quiz?'是':'否', `"${r.note}"`].join(','))
+                ].join('\n');
+                const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `課堂紀錄_${currentYear}_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+            };
+
+            return (
+                <div className="min-h-screen bg-[#F9F9F9] text-[#222] font-sans selection:bg-[#7F0019] selection:text-white">
+                
+                {/* Header */}
+                <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-md">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    <div className="flex justify-between items-center h-16">
+                        <div className="flex items-center gap-3">
+                        <div className="bg-[#7F0019] text-white p-2 rounded-sm shadow-sm"><BookOpen size={22} strokeWidth={2.5} /></div>
+                        <div className="flex flex-col">
+                            <h1 className="text-xl font-black tracking-widest text-gray-900 leading-none">教學日誌</h1>
+                            <span className="text-[11px] font-bold text-gray-500 tracking-wider">V6.2 GROUPED</span>
+                        </div>
+                        </div>
+                        <div className="hidden md:flex items-center gap-3">
+                        <div className="flex items-center bg-gray-100 rounded-sm px-3 py-1.5 border border-gray-300">
+                            <span className="text-xs text-gray-600 font-black mr-2 uppercase">學年度</span>
+                            <select value={currentYear} onChange={(e) => setCurrentYear(e.target.value)} className="bg-transparent text-sm font-bold text-[#7F0019] outline-none cursor-pointer">
+                                {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                        </div>
+                        <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                        <MujiButton onClick={() => setShowSettings(true)} icon={Settings} label="全域設定" variant="secondary" />
+                        <MujiButton onClick={exportToCSV} icon={FileSpreadsheet} label="匯出資料" variant="secondary" />
+                        </div>
+                        <div className="md:hidden">
+                        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-gray-800 font-bold">
+                            {mobileMenuOpen ? <X size={28} strokeWidth={2.5}/> : <Menu size={28} strokeWidth={2.5}/>}
+                        </button>
+                        </div>
+                    </div>
+                    </div>
+                    {mobileMenuOpen && (
+                    <div className="md:hidden bg-white border-t border-gray-100 px-4 py-3 space-y-3 shadow-lg animate-in slide-in-from-top-2">
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-sm border border-gray-200">
+                            <span className="text-sm text-gray-700 font-black">當前學年度</span>
+                            <select value={currentYear} onChange={(e) => { setCurrentYear(e.target.value); setMobileMenuOpen(false); }} className="bg-transparent text-lg font-black text-[#7F0019] outline-none">
+                                {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                        </div>
+                        <MujiButton onClick={() => { setShowSettings(true); setMobileMenuOpen(false); }} icon={Settings} label="設定與排課" variant="secondary" className="w-full text-base py-3" />
+                        <MujiButton onClick={() => { exportToCSV(); setMobileMenuOpen(false); }} icon={FileSpreadsheet} label="匯出 Excel" variant="secondary" className="w-full text-base py-3" />
+                    </div>
+                    )}
+                </header>
+
+                {/* Main Grid */}
+                <main className="max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    {/* Left Column (Input) */}
+                    <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
+                    <MujiCard className="border-t-4 border-t-[#7F0019]">
+                        <h2 className="text-xl font-black text-gray-800 mb-5 flex items-center gap-2">
+                        <Plus size={22} strokeWidth={3} /> 新增進度 <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">{currentYear}</span>
+                        </h2>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <div>
+                            <label className="block text-xs font-black text-gray-500 uppercase mb-1.5 tracking-wide">班級 ({currentYear})</label>
+                            <div className="relative">
+                            <select name="className" value={form.className} onChange={handleInputChange} required className="w-full bg-[#F5F5F5] p-3.5 rounded-sm appearance-none outline-none focus:ring-2 focus:ring-[#7F0019] text-gray-900 font-bold text-base border-b-2 border-transparent focus:border-[#7F0019] transition-all">
+                                <option value="" disabled>選擇班級...</option>
+                                {currentYearClasses.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                            </select>
+                            <ChevronRight className="absolute right-3 top-4 text-gray-500 rotate-90 pointer-events-none" size={18} strokeWidth={3}/>
+                            </div>
+                            {currentYearClasses.length === 0 && <p className="text-xs text-red-600 font-bold mt-2 flex items-center gap-1"><AlertCircle size={14} strokeWidth={2.5}/> 此學年度尚無班級，請至「全域設定」新增。</p>}
+                        </div>
+
+                        {currentClassStats && (
+                            <div className="bg-gray-50 border border-gray-300 rounded-sm p-4 animate-in fade-in slide-in-from-top-2 shadow-inner">
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="text-xs text-gray-600 font-black flex items-center gap-1.5 uppercase tracking-wide">
+                                <Clock size={14} strokeWidth={2.5}/> 距段考剩餘堂數
+                                </span>
+                                <button type="button" onClick={()=>setShowSettings(true)} className="text-xs font-bold text-blue-700 underline hover:text-blue-900">修改日期</button>
+                            </div>
+                            <div className="flex justify-between gap-3 overflow-x-auto pb-1">
+                                <Badge label="一段" value={currentClassStats.exam1} color={currentClassStats.exam1 > 0 && currentClassStats.exam1 < 5 ? "red" : "gray"} />
+                                <Badge label="二段" value={currentClassStats.exam2} color="gray" />
+                                <Badge label="期末" value={currentClassStats.exam3} color="gray" />
+                            </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                            <label className="block text-xs font-black text-gray-500 uppercase mb-1.5 tracking-wide">科目</label>
+                            <input type="text" name="subject" value={form.subject} onChange={handleInputChange} required className="w-full bg-[#F5F5F5] p-3.5 rounded-sm outline-none focus:ring-2 focus:ring-gray-400 font-bold text-gray-900" />
+                            </div>
+                            <div>
+                            <label className="block text-xs font-black text-gray-500 uppercase mb-1.5 tracking-wide">日期</label>
+                            <input type="date" name="date" value={form.date} onChange={handleInputChange} required className="w-full bg-[#F5F5F5] p-3.5 rounded-sm outline-none focus:ring-2 focus:ring-gray-400 font-bold text-gray-900" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                            <label className="block text-xs font-black text-gray-500 uppercase tracking-wide">當日進度</label>
+                            </div>
+                            <textarea name="progress" value={form.progress} onChange={handleInputChange} required placeholder="輸入章節、頁數..." rows={3} className="w-full bg-[#F5F5F5] p-3.5 rounded-sm outline-none focus:ring-2 focus:ring-gray-400 resize-none font-bold text-gray-900 text-base" />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black text-gray-500 uppercase mb-1.5 tracking-wide">作業 / 備註</label>
+                            <input type="text" name="homework" value={form.homework} onChange={handleInputChange} placeholder="無作業" className="w-full bg-[#F5F5F5] p-3.5 rounded-sm outline-none focus:ring-2 focus:ring-gray-400 font-bold text-gray-900" />
+                            <input type="hidden" name="note" value={form.note} />
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2">
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                                <div className={`w-6 h-6 border-2 rounded-sm flex items-center justify-center transition-colors ${form.quiz ? 'bg-[#7F0019] border-[#7F0019]' : 'bg-white border-gray-400 group-hover:border-gray-600'}`}>
+                                {form.quiz && <CheckSquare size={16} className="text-white" strokeWidth={3} />}
+                                </div>
+                                <input type="checkbox" name="quiz" checked={form.quiz} onChange={handleInputChange} className="hidden" />
+                                <span className="text-base font-bold text-gray-700 group-hover:text-black">下次小考</span>
+                            </label>
+                            <MujiButton type="submit" label="儲存紀錄" icon={Save} className="w-32 py-3 text-base shadow-md" />
+                        </div>
+                        </form>
+                    </MujiCard>
+                    </div>
+
+                    {/* Right Column (History - Grouped) */}
+                    <div className="lg:col-span-7 space-y-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-gray-200 pb-3 gap-3">
+                            <h2 className="text-xl font-black text-gray-800 flex items-center gap-3">歷史紀錄 <span className="text-xs font-bold text-white bg-gray-500 px-3 py-1 rounded-full">{currentYear}</span></h2>
+                            <div className="flex items-center gap-2 bg-white border-2 border-gray-200 rounded-sm px-3 py-1.5 focus-within:border-[#7F0019] transition-colors">
+                                <Filter size={16} className="text-gray-400" strokeWidth={2.5}/>
+                                <input type="text" placeholder="搜尋..." value={filter} onChange={e=>setFilter(e.target.value)} className="bg-transparent text-sm font-bold w-full sm:w-48 outline-none placeholder-gray-400 text-gray-900" />
+                            </div>
+                        </div>
+
+                        {/* Grouped Records Container */}
+                        <div className="space-y-6">
+                            {Object.keys(recordsByClass).length === 0 && (
+                                <div className="text-center py-16 bg-white border-2 border-dashed border-gray-200 rounded-sm">
+                                    <p className="text-gray-400 font-bold text-sm">此學年度 ({currentYear}) 尚無紀錄</p>
+                                </div>
+                            )}
+
+                            {Object.keys(recordsByClass).sort().map(className => {
+                                const classRecords = recordsByClass[className];
+                                // Default expanded is TRUE unless explicitly set to false
+                                const isOpen = expandedClasses[className] !== false;
+
+                                return (
+                                    <div key={className} className="border border-gray-300 rounded-sm overflow-hidden shadow-sm bg-white transition-all">
+                                        {/* Group Header */}
+                                        <div 
+                                            onClick={() => toggleClassGroup(className)}
+                                            className="flex flex-wrap justify-between items-center p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-200 select-none group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`text-gray-400 group-hover:text-gray-600 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}>
+                                                    <ChevronRight size={22} strokeWidth={3} />
+                                                </div>
+                                                <h3 className="text-xl font-black text-gray-800 tracking-tight">{className}</h3>
+                                                <span className="text-xs font-bold bg-white border border-gray-300 text-gray-500 px-2 py-0.5 rounded-full">
+                                                    {classRecords.length}
+                                                </span>
+                                            </div>
+                                            
+                                            {/* Remaining Badge in Header */}
+                                            {remainingSessionMap[className] !== undefined && (
+                                                <span className="text-base bg-[#7F0019] text-white px-3 py-1 rounded-sm font-black tracking-wide shadow-sm flex items-center gap-1.5 mt-2 sm:mt-0">
+                                                    <Clock size={14} strokeWidth={3} className="opacity-80"/>
+                                                    剩 {remainingSessionMap[className]} 堂
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Group Body (Records List) */}
+                                        {isOpen && (
+                                            <div className="p-0 bg-white">
+                                                {classRecords.map((r, idx) => (
+                                                    <div 
+                                                        key={r.id} 
+                                                        className={`p-5 flex flex-col sm:flex-row gap-4 hover:bg-[#FAFAFA] transition-colors ${idx !== classRecords.length - 1 ? 'border-b border-gray-100' : ''}`}
+                                                    >
+                                                        {/* Date Column (Simplified) */}
+                                                        <div className="sm:w-32 flex-shrink-0 flex sm:flex-col items-center sm:items-start justify-start sm:justify-center sm:border-r sm:border-gray-100 sm:pr-4">
+                                                            <span className="text-gray-800 font-black text-lg font-mono tracking-tighter">{r.date}</span>
+                                                            <span className="text-xs font-bold text-gray-400 mt-1 bg-gray-100 px-1.5 rounded">{r.subject}</span>
+                                                        </div>
+
+                                                        {/* Content Column */}
+                                                        <div className="flex-grow">
+                                                            <div className="flex justify-between items-start">
+                                                                <h4 className="text-gray-900 font-bold text-lg mb-2 leading-snug">{r.progress}</h4>
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if(confirm('確定刪除此紀錄？')) setRecords(records.filter(x=>x.id!==r.id));
+                                                                    }} 
+                                                                    className="text-gray-300 hover:text-red-600 p-1.5 transition-colors"
+                                                                    title="刪除紀錄"
+                                                                >
+                                                                    <Trash2 size={18} strokeWidth={2.5}/>
+                                                                </button>
+                                                            </div>
+                                                            
+                                                            <div className="flex flex-wrap gap-2.5">
+                                                                {r.homework && (
+                                                                    <span className="text-xs font-bold bg-indigo-50 text-indigo-700 px-2 py-1 rounded flex items-center gap-1.5 border border-indigo-100">
+                                                                        <PenTool size={12} strokeWidth={2.5}/> {r.homework}
+                                                                    </span>
+                                                                )}
+                                                                {r.quiz && (
+                                                                    <span className="text-xs font-bold bg-red-50 text-red-700 px-2 py-1 rounded flex items-center gap-1.5 border border-red-200 shadow-sm">
+                                                                        <AlertCircle size={12} strokeWidth={2.5}/> 下次小考
+                                                                    </span>
+                                                                )}
+                                                                {r.note && (
+                                                                    <span className="text-xs font-bold text-gray-400 italic flex items-center gap-1.5 max-w-full truncate border border-transparent px-1">
+                                                                        註: {r.note}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </main>
+
+                {/* Global Settings Modal */}
+                {showSettings && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4">
+                    <div className="bg-white w-full h-full sm:h-auto sm:max-h-[85vh] sm:max-w-xl sm:rounded-sm shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center p-5 border-b border-gray-200 bg-white sticky top-0">
+                        <h3 className="font-black text-gray-800 flex items-center gap-2.5 text-xl"><Settings size={24} strokeWidth={2.5} /> 全域設定</h3>
+                        <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-gray-900"><X size={28} strokeWidth={2.5}/></button>
+                        </div>
+                        
+                        {/* Tabs */}
+                        <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar">
+                        {['class', 'exam', 'year', 'holiday', 'system'].map(tab => (
+                            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-4 px-4 text-sm font-black whitespace-nowrap transition-colors border-b-4 ${activeTab === tab ? 'text-[#7F0019] border-[#7F0019] bg-red-50/20' : 'text-gray-500 border-transparent hover:bg-gray-50 hover:text-gray-700'}`}>
+                            {tab === 'class' ? '班級排課' : tab === 'exam' ? '段考日期' : tab === 'year' ? '學年管理' : tab === 'holiday' ? '排除假日' : '系統維護'}
+                            </button>
+                        ))}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-5 sm:p-8 bg-[#F9F9F9]">
+                        
+                        {/* Tab: Class */}
+                        {activeTab === 'class' && (
+                            <div className="space-y-8">
+                            <div className="bg-white p-6 border border-gray-200 rounded-sm shadow-sm">
+                                <label className="block text-xs font-black text-gray-500 mb-2.5 uppercase tracking-wide">新增班級 (至 {currentYear})</label>
+                                <div className="flex gap-3 mb-5">
+                                <input type="text" value={tempNewClass} onChange={e => setTempNewClass(e.target.value)} placeholder="例: 302" className="flex-1 border-2 border-gray-300 p-3 text-sm rounded-sm focus:border-[#7F0019] outline-none font-bold text-gray-900" />
+                                <MujiButton onClick={handleAddClass} icon={Plus} label="新增" />
+                                </div>
+                                <label className="block text-xs font-black text-gray-500 mb-2.5 uppercase tracking-wide">每週排課日</label>
+                                <div className="flex gap-2 justify-between">
+                                {weekDays.map(d => (
+                                    <button key={d.id} onClick={() => toggleDay(d.id)} className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full text-xs font-black transition-all flex items-center justify-center border-2 ${tempClassDays.includes(d.id) ? 'bg-[#7F0019] text-white border-[#7F0019] shadow-md transform scale-110' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400 hover:text-gray-600'}`}>
+                                    {d.label}
+                                    </button>
+                                ))}
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <p className="text-xs font-bold text-gray-400 mb-2 text-right">顯示 {currentYear} 年度班級</p>
+                                {currentYearClasses.map(c => (
+                                <div key={c.name} className="flex justify-between items-center bg-white p-4 border border-gray-200 rounded-sm shadow-sm">
+                                    <div><span className="font-black text-lg text-gray-800">{c.name}</span><div className="flex gap-1.5 mt-1.5">{c.days && c.days.map(d => <span key={d} className="text-[11px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">{weekDays.find(w=>w.id===d)?.label}</span>)}</div></div>
+                                    <button onClick={() => setClasses(classes.filter(x => !(x.name === c.name && x.year === c.year)))} className="text-gray-300 hover:text-red-600 p-2"><Trash2 size={20} strokeWidth={2.5}/></button>
+                                </div>
+                                ))}
+                            </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Year */}
+                        {activeTab === 'year' && (
+                            <div className="space-y-5">
+                                <div className="bg-orange-50 p-4 rounded-sm border border-orange-200 text-sm font-bold text-orange-900 mb-4 shadow-sm">
+                                    ⚠️ 建立新學年度後，您可以在上方選單切換，舊的班級資料會保留在原本的學年度中。
+                                </div>
+                                <div className="bg-white p-6 border border-gray-200 rounded-sm shadow-sm">
+                                    <label className="block text-xs font-black text-gray-500 mb-2.5 uppercase tracking-wide">新增學年度</label>
+                                    <div className="flex gap-3"><input type="text" value={newYearInput} onChange={e => setNewYearInput(e.target.value)} placeholder="例: 114-2" className="flex-1 border-2 border-gray-300 p-3 text-sm rounded-sm focus:border-[#7F0019] outline-none font-bold text-gray-900" /><MujiButton onClick={handleAddYear} label="新增" /></div>
+                                </div>
+                                <div className="space-y-3">
+                                    {academicYears.map(y => (
+                                        <div key={y} className="flex justify-between items-center bg-white p-4 border border-gray-200 rounded-sm shadow-sm">
+                                            <span className={`text-base font-black ${y === currentYear ? 'text-[#7F0019]' : 'text-gray-700'}`}>{y} {y === currentYear && '(當前)'}</span>
+                                            {y !== currentYear && <button onClick={() => {if(confirm(`刪除 ${y} 將隱藏該年度所有資料，確定？`)) setAcademicYears(academicYears.filter(ay => ay !== y))}} className="text-gray-300 hover:text-red-600 p-2"><Trash2 size={20} strokeWidth={2.5}/></button>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab: Exam */}
+                        {activeTab === 'exam' && (
+                            <div className="space-y-5">
+                            <div className="bg-blue-50 p-4 rounded-sm border border-blue-200 text-sm font-bold text-blue-900 mb-2 shadow-sm">
+                                ℹ️ 系統將自動計算至「開始日期」的前一天。且計算後續段考時，會自動排除前次段考的日期範圍。
+                            </div>
+                            {['exam1', 'exam2', 'exam3'].map((ex, idx) => (
+                                <div key={ex} className="bg-white p-5 border border-gray-200 rounded-sm shadow-sm">
+                                <label className="block text-xs font-black text-gray-500 uppercase mb-3 tracking-wide">{idx === 0 ? '第一次段考' : idx === 1 ? '第二次段考' : '期末考'}</label>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex-1">
+                                        <span className="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Start</span>
+                                        <input type="date" value={exams[ex].start} onChange={e => handleExamChange(ex, 'start', e.target.value)} className="w-full bg-[#F5F5F5] p-2.5 rounded-sm outline-none focus:bg-white focus:ring-2 focus:ring-gray-300 transition-all font-bold text-gray-900" />
+                                    </div>
+                                    <span className="text-gray-300 mt-5 font-bold">➜</span>
+                                    <div className="flex-1">
+                                        <span className="text-[10px] font-bold text-gray-400 mb-1 block uppercase">End</span>
+                                        <input type="date" value={exams[ex].end} onChange={e => handleExamChange(ex, 'end', e.target.value)} className="w-full bg-[#F5F5F5] p-2.5 rounded-sm outline-none focus:bg-white focus:ring-2 focus:ring-gray-300 transition-all font-bold text-gray-900" />
+                                    </div>
+                                </div>
+                                </div>
+                            ))}
+                            </div>
+                        )}
+
+                        {/* Tab: Holiday (Online Sync) */}
+                        {activeTab === 'holiday' && (
+                            <div className="space-y-5">
+                            <div className="bg-white p-6 border border-gray-200 rounded-sm shadow-sm space-y-4">
+                                <h4 className="font-black text-gray-800 flex items-center gap-2"><UploadCloud size={20}/> 自動同步</h4>
+                                <p className="text-xs text-gray-500 font-bold leading-relaxed">
+                                    點擊下方按鈕，系統將嘗試連線至開放資料集（GitHub/Gov）取得 2025 年行事曆。
+                                    <br/><span className="text-red-500">* 需連網</span>
+                                </p>
+                                <MujiButton 
+                                    onClick={fetchHolidayFromOpenData} 
+                                    icon={isSyncing ? Loader2 : RefreshCw} 
+                                    label={isSyncing ? "更新中..." : "連線行政院資料集更新"} 
+                                    variant="primary"
+                                    className="w-full py-3"
+                                    disabled={isSyncing}
+                                />
+                            </div>
+
+                            <div className="border-t border-gray-200 pt-5">
+                                <label className="block text-xs font-black text-gray-500 mb-3 uppercase tracking-wide">手動新增排除日</label>
+                                <div className="flex gap-3 mb-4">
+                                    <input type="date" id="newHoliday" className="flex-1 border-2 border-gray-300 p-3 text-sm rounded-sm outline-none focus:border-[#7F0019] font-bold text-gray-900" />
+                                    <MujiButton onClick={() => { const val = document.getElementById('newHoliday').value; if(val && !holidays.includes(val)) setHolidays([...holidays, val].sort()); }} label="新增" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                                    {holidays.map(h => (
+                                    <div key={h} className="flex justify-between items-center bg-white p-3 border border-gray-200 rounded-sm text-sm font-bold text-gray-700 shadow-sm">
+                                        <span>{h}</span>
+                                        <button 
+                                            onClick={() => setHolidays(holidays.filter(x => x !== h))} 
+                                            className="bg-red-600 text-white hover:bg-red-700 px-3 py-1.5 rounded-sm text-xs font-bold shadow-sm transition-colors flex items-center gap-1"
+                                        >
+                                            <X size={14} strokeWidth={4}/> 移除
+                                        </button>
+                                    </div>
+                                    ))}
+                                </div>
+                            </div>
+                            </div>
+                        )}
+
+                        {/* Tab: System Backup */}
+                        {activeTab === 'system' && (
+                            <div className="space-y-5">
+                                <div className="bg-emerald-50 p-4 rounded-sm border border-emerald-200 text-sm font-bold text-emerald-900 mb-4 shadow-sm">
+                                    🛡️ 真．單機版功能：您可以將完整資料庫打包下載。換電腦或瀏覽器時，使用還原功能即可無縫接軌。
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <MujiCard className="text-center space-y-3 py-8 cursor-pointer hover:border-emerald-500 transition-colors group">
+                                        <div className="bg-emerald-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-emerald-600 group-hover:scale-110 transition-transform">
+                                            <Download size={24} strokeWidth={3}/>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-gray-800">備份系統 (Backup)</h4>
+                                            <p className="text-xs text-gray-500 mt-1 font-bold">下載 .json 檔案</p>
+                                        </div>
+                                        <MujiButton onClick={handleBackup} label="下載備份檔" variant="success" className="w-full mt-2"/>
+                                    </MujiCard>
+
+                                    <MujiCard className="text-center space-y-3 py-8 cursor-pointer hover:border-orange-500 transition-colors group relative">
+                                        <div className="bg-orange-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-orange-600 group-hover:scale-110 transition-transform">
+                                            <HardDrive size={24} strokeWidth={3}/>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-gray-800">還原系統 (Restore)</h4>
+                                            <p className="text-xs text-gray-500 mt-1 font-bold">選取 .json 檔案</p>
+                                        </div>
+                                        <label className="absolute inset-0 cursor-pointer">
+                                            <input type="file" accept=".json" onChange={handleRestore} className="hidden" />
+                                        </label>
+                                        <MujiButton onClick={()=>{}} label="選取檔案還原" variant="warning" className="w-full mt-2 pointer-events-none"/>
+                                    </MujiCard>
+                                </div>
+                            </div>
+                        )}
+                        </div>
+                        <div className="p-5 border-t border-gray-200 text-right bg-white sm:rounded-b-sm sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                        <button onClick={() => setShowSettings(false)} className="bg-[#222] text-white px-8 py-3 rounded-sm text-sm font-bold hover:bg-black w-full sm:w-auto shadow-md transform hover:-translate-y-0.5 transition-all">完成設定</button>
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ClassTrackerV6 />);
+    </script>
+</body>
+</html>

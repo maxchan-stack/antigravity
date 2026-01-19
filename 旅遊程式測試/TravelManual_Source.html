@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="zh-TW"><head><script>(function(firebaseConfig, initialAuthToken, appId) {
+        window.__firebase_config = firebaseConfig;
+        window.__initial_auth_token = initialAuthToken;
+        window.__app_id = appId;
+            })("\n{\n  \"apiKey\": \"AIzaSyCqyCcs2R2e7AegGjvFAwG98wlamtbHvZY\",\n  \"authDomain\": \"bard-frontend.firebaseapp.com\",\n  \"projectId\": \"bard-frontend\",\n  \"storageBucket\": \"bard-frontend.firebasestorage.app\",\n  \"messagingSenderId\": \"175205271074\",\n  \"appId\": \"1:175205271074:web:2b7bd4d34d33bf38e6ec7b\"\n}\n","eyJhbGciOiJSUzI1NiIsImtpZCI6ImYwZjI0YjNjZGNmMjUwNzA5NWVlMDNmZWQxYWExYzRjYzFjZjZlY2MiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiJmaXJlYmFzZS1hZG1pbnNkay1mYnN2Y0BiYXJkLWZyb250ZW5kLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwiYXVkIjoiaHR0cHM6Ly9pZGVudGl0eXRvb2xraXQuZ29vZ2xlYXBpcy5jb20vZ29vZ2xlLmlkZW50aXR5LmlkZW50aXR5dG9vbGtpdC52MS5JZGVudGl0eVRvb2xraXQiLCJ1aWQiOiIxNjQzNTg3NjMyNjE2NzQ1MzUxNiIsImlzcyI6ImZpcmViYXNlLWFkbWluc2RrLWZic3ZjQGJhcmQtZnJvbnRlbmQuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJjbGFpbXMiOnsiYXBwSWQiOiJjX2Q2ZWZiNGI5NGRkMjQyMDRfZnVqaV90cmlwXzIwMjYuaHRtbC02NzEifSwiZXhwIjoxNzY0MDQ1NTc1LCJpYXQiOjE3NjQwNDE5NzUsImFsZyI6IlJTMjU2In0.L48lmTm5zeuC-54_VR6AfNovVlNj0szjuzmyctPfS20pSIYbb8iyzaUlMseTjwkNnQyIRA9987Dosph0qs76otSUjL_L__-P04MBiai0lOSRe82lHssmOx2GPRDGcST2rnMk145hP56ggaKp2nR_JYSsnGGJQ7R6oulOMRf2_y_BpDGLC443c-e7_UmTaGG1hf21XX1--y3I6mExOtEIPT6E9r6Sx-sFbkYTKUrw_pX047swfol0EC6zazbAK__HF_Emb_8jYNwBlJje1H21lXqRVpiMyeQqSRe8CsQsSaZlyy2o3EiRlOdihdp9wS-ipFYEcwrK9IRXb-m_CoV5zQ","c_d6efb4b94dd24204_fuji_trip_2026.html-671")</script><script>'use strict';var h=typeof Object.defineProperties=="function"?Object.defineProperty:function(a,b,d){if(a==Array.prototype||a==Object.prototype)return a;a[b]=d.value;return a};function l(a){a=["object"==typeof globalThis&&globalThis,a,"object"==typeof window&&window,"object"==typeof self&&self,"object"==typeof global&&global];for(var b=0;b<a.length;++b){var d=a[b];if(d&&d.Math==Math)return d}throw Error("Cannot find global object");}var n=l(this);
+function p(a,b){if(b)a:{var d=n;a=a.split(".");for(var c=0;c<a.length-1;c++){var e=a[c];if(!(e in d))break a;d=d[e]}a=a[a.length-1];c=d[a];b=b(c);b!=c&&b!=null&&h(d,a,{configurable:!0,writable:!0,value:b})}}function r(a){function b(c){return a.next(c)}function d(c){return a.throw(c)}return new Promise(function(c,e){function f(g){g.done?c(g.value):Promise.resolve(g.value).then(b,d).then(f,e)}f(a.next())})}function t(a){return r(a())}
+p("Object.values",function(a){return a?a:function(b){var d=[],c;for(c in b)Object.prototype.hasOwnProperty.call(b,c)&&d.push(b[c]);return d}});p("Array.prototype.includes",function(a){return a?a:function(b,d){var c=this;c instanceof String&&(c=String(c));var e=c.length;d=d||0;for(d<0&&(d=Math.max(d+e,0));d<e;d++){var f=c[d];if(f===b||Object.is(f,b))return!0}return!1}});/*
+
+ MIT License
+
+ Copyright (c) 2017-2023 W.Y.
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+
+*/
+function u(a,b){const d=a.style;b.backgroundColor&&(d.backgroundColor=b.backgroundColor);b.width&&(d.width=`${b.width}px`);b.height&&(d.height=`${b.height}px`);const c=b.style;c!=null&&Object.keys(c).forEach(e=>{d[e]=c[e]})};var v=(()=>{let a=0;return()=>{a+=1;return`u${`0000${(Math.random()*1679616<<0).toString(36)}`.slice(-4)}${a}`}})();function w(a){const b=[];for(let d=0,c=a.length;d<c;d++)b.push(a[d]);return b}let x=null;function y(a={}){return x?x:a.l?x=a.l:x=w(window.getComputedStyle(document.documentElement))}function z(a,b){return(a=(a.ownerDocument.defaultView||window).getComputedStyle(a).getPropertyValue(b))?parseFloat(a.replace("px","")):0}
+function A(a,b={}){var d;if(!(d=b.width)){d=z(a,"border-left-width");var c=z(a,"border-right-width");d=a.clientWidth+d+c}(b=b.height)||(b=z(a,"border-top-width"),c=z(a,"border-bottom-width"),b=a.clientHeight+b+c);return{width:d,height:b}}function B(a){return new Promise((b,d)=>{const c=new Image;c.onload=()=>{c.decode().then(()=>{requestAnimationFrame(()=>b(c))})};c.onerror=d;c.crossOrigin="anonymous";c.decoding="async";c.src=a})}
+function C(a){return t(function*(){return Promise.resolve().then(()=>(new XMLSerializer).serializeToString(a)).then(encodeURIComponent).then(b=>`data:image/svg+xml;charset=utf-8,${b}`)})}
+function D(a,b,d){return t(function*(){const c=document.createElementNS("http://www.w3.org/2000/svg","svg"),e=document.createElementNS("http://www.w3.org/2000/svg","foreignObject");c.setAttribute("width",`${b}`);c.setAttribute("height",`${d}`);c.setAttribute("viewBox",`0 0 ${b} ${d}`);e.setAttribute("width","100%");e.setAttribute("height","100%");e.setAttribute("x","0");e.setAttribute("y","0");e.setAttribute("externalResourcesRequired","true");c.appendChild(e);e.appendChild(a);return C(c)})}
+var E=(a,b)=>{if(a instanceof b)return!0;a=Object.getPrototypeOf(a);return a===null?!1:a.constructor.name===b.name||E(a,b)};function F(a,b){return y(b).map(d=>{const c=a.getPropertyValue(d),e=a.getPropertyPriority(d);return`${d}: ${c}${e?" !important":""};`}).join(" ")}
+function G(a,b,d,c){a=window.getComputedStyle(a,d);var e=a.getPropertyValue("content");if(e!==""&&e!=="none"){var f=v();try{b.className=`${b.className} ${f}`}catch(k){return}e=document.createElement("style");var g=e.appendChild;d=`.${f}:${d}`;a.cssText?(c=a.getPropertyValue("content"),c=`${a.cssText} content: '${c.replace(/'|"/g,"")}';`):c=F(a,c);g.call(e,document.createTextNode(`${d}{${c}}`));b.appendChild(e)}};function H(a){return a.search(/^(data:)/)!==-1}function I(a,b,d){return t(function*(){const c=yield fetch(a,b);if(c.status===404)throw Error(`Resource "${c.url}" not found`);const e=yield c.blob();return new Promise((f,g)=>{const k=new FileReader;k.onerror=g;k.onloadend=()=>{try{f(d({o:c,result:k.result}))}catch(m){g(m)}};k.readAsDataURL(e)})})}const J={};function K(a,b,d){let c=a.replace(/\?.*/,"");d&&(c=a);/ttf|otf|eot|woff2?/i.test(c)&&(c=c.replace(/.*\//,""));return b?`[${b}]${c}`:c}
+function L(a,b,d){return t(function*(){const c=K(a,b,d.C);if(J[c]!=null)return J[c];d.u&&(a+=(/\?/.test(a)?"&":"?")+(new Date).getTime());let e;try{const f=yield I(a,d.i,({o:g,result:k})=>{b||(b=g.headers.get("Content-Type")||"");return k.split(/,/)[1]});e=`data:${b};base64,${f}`}catch(f){e=d.B||""}return J[c]=e})};const M={P:"application/font-woff",R:"application/font-woff",N:"application/font-truetype",v:"application/vnd.ms-fontobject",H:"image/png",F:"image/jpeg",D:"image/jpeg",A:"image/gif",M:"image/tiff",L:"image/svg+xml",O:"image/webp"};function N(a){return(a=/\.([^./]*?)$/g.exec(a))?a[1]:""};function O(a){return t(function*(){const b=a.toDataURL();return b==="data:,"?a.cloneNode(!1):B(b)})}function aa(a,b){return t(function*(){if(a.currentSrc){var d=document.createElement("canvas");const c=d.getContext("2d");d.width=a.clientWidth;d.height=a.clientHeight;c==null||c.drawImage(a,0,0,d.width,d.height);d=d.toDataURL();return B(d)}d=a.poster;d=yield L(d,M[N(d).toLowerCase()]||"",b);return B(d)})}
+function ba(a,b){return t(function*(){try{let d;if(a==null?0:(d=a.contentDocument)==null?0:d.body)return yield P(a.contentDocument.body,b,!0)}catch(d){}return a.cloneNode(!1)})}function ca(a,b){return t(function*(){return E(a,HTMLCanvasElement)?O(a):E(a,HTMLVideoElement)?aa(a,b):E(a,HTMLIFrameElement)?ba(a,b):a.cloneNode(a.tagName!=null&&a.tagName.toUpperCase()==="SVG")})}
+function da(a,b,d){return t(function*(){if(b.tagName!=null&&b.tagName.toUpperCase()==="SVG")return b;let c=[];if(a.tagName!=null&&a.tagName.toUpperCase()==="SLOT"&&a.assignedNodes)c=w(a.assignedNodes());else{let e;if(E(a,HTMLIFrameElement)&&((e=a.contentDocument)==null?0:e.body))c=w(a.contentDocument.body.childNodes);else{let f;c=w(((f=a.shadowRoot)!=null?f:a).childNodes)}}if(c.length===0||E(a,HTMLVideoElement))return b;yield c.reduce((e,f)=>e.then(()=>P(f,d)).then(g=>{g&&b.appendChild(g)}),Promise.resolve());
+return b})}function ea(a,b,d){const c=b.style;if(c){var e=window.getComputedStyle(a);e.cssText?(c.cssText=e.cssText,c.transformOrigin=e.transformOrigin):y(d).forEach(f=>{let g=e.getPropertyValue(f);f==="font-size"&&g.endsWith("px")&&(g=`${Math.floor(parseFloat(g.substring(0,g.length-2)))-.1}px`);E(a,HTMLIFrameElement)&&f==="display"&&g==="inline"&&(g="block");f==="d"&&b.getAttribute("d")&&(g=`path(${b.getAttribute("d")})`);c.setProperty(f,g,e.getPropertyPriority(f))})}}
+function fa(a,b){E(a,HTMLSelectElement)&&(b=Array.from(b.children).find(d=>a.value===d.getAttribute("value")))&&b.setAttribute("selected","")}
+function ha(a,b){return t(function*(){var d=a.querySelectorAll?a.querySelectorAll("use"):[];if(d.length===0)return a;var c={};for(var e=0;e<d.length;e++){var f=d[e].getAttribute("xlink:href");if(f){const g=document.querySelector(f);a.querySelector(f)||!g||c[f]||(c[f]=yield P(g,b,!0))}}d=Object.values(c);if(d.length){c=document.createElementNS("http://www.w3.org/1999/xhtml","svg");c.setAttribute("xmlns","http://www.w3.org/1999/xhtml");c.style.position="absolute";c.style.width="0";c.style.height="0";
+c.style.overflow="hidden";c.style.display="none";e=document.createElementNS("http://www.w3.org/1999/xhtml","defs");c.appendChild(e);for(f=0;f<d.length;f++)e.appendChild(d[f]);a.appendChild(c)}return a})}
+function P(a,b,d){return t(function*(){return d||!b.filter||b.filter(a)?Promise.resolve(a).then(c=>ca(c,b)).then(c=>da(a,c,b)).then(c=>{E(c,Element)&&(ea(a,c,b),G(a,c,":before",b),G(a,c,":after",b),E(a,HTMLTextAreaElement)&&(c.textContent=a.value),E(a,HTMLInputElement)&&c.setAttribute("value",a.value),fa(a,c));return c}).then(c=>ha(c,b)):null})};const Q=/url\((['"]?)([^'"]+?)\1\)/g,ia=/url\([^)]+\)\s*format\((["']?)([^"']+)\1\)/g,ja=/src:\s*(?:url\([^)]+\)\s*format\([^)]+\)[,;]\s*)+/g;function ka(a){const b=[];a.replace(Q,(d,c,e)=>{b.push(e);return d});return b.filter(d=>!H(d))}
+function la(a,b,d,c){return t(function*(){try{const e=d?(new URL(b,d||void 0)).toString():b;let f;f=yield L(e,M[N(b).toLowerCase()]||"",c);return a.replace(new RegExp(`(url\\(['"]?)(${b.replace(/([.*+?^${}()|\[\]\/\\])/g,"\\$1")})(['"]?\\))`,"g"),`$1${f}$3`)}catch(e){}return a})}function ma(a,{I:b}){return b?a.replace(ja,d=>{for(;;){const [c,,e]=ia.exec(d)||[],f=c,g=e;if(!g)return"";if(g===b)return`src: ${f};`}}):a}
+function R(a,b,d){return t(function*(){if(a.search(Q)===-1)return a;const c=ma(a,d);return ka(c).reduce((e,f)=>e.then(g=>la(g,f,b,d)),Promise.resolve(c))})};function S(a,b,d){return t(function*(){var c;const e=(c=b.style)==null?void 0:c.getPropertyValue(a);return e?(c=yield R(e,null,d),b.style.setProperty(a,c,b.style.getPropertyPriority(a)),!0):!1})}function na(a,b){return t(function*(){(yield S("background",a,b))||(yield S("background-image",a,b));(yield S("mask",a,b))||(yield S("-webkit-mask",a,b))||(yield S("mask-image",a,b))||(yield S("-webkit-mask-image",a,b))})}
+function oa(a,b){return t(function*(){const d=E(a,HTMLImageElement);if(d&&!H(a.src)||E(a,SVGImageElement)&&!H(a.href.baseVal)){var c=d?a.src:a.href.baseVal,e=yield L(c,M[N(c).toLowerCase()]||"",b);yield new Promise((f,g)=>{a.onload=f;a.onerror=b.m?(...k)=>{try{f(b.m(...k))}catch(m){g(m)}}:g;a.decode&&(a.decode=f);a.loading==="lazy"&&(a.loading="eager");d?(a.srcset="",a.src=e):a.href.baseVal=e})}})}
+function pa(a,b){return t(function*(){const d=w(a.childNodes).map(c=>T(c,b));yield Promise.all(d).then(()=>a)})}function T(a,b){return t(function*(){E(a,Element)&&(yield na(a,b),yield oa(a,b),yield pa(a,b))})};const U={};function V(a){return t(function*(){var b=U[a];if(b!=null)return b;b=yield(yield fetch(a)).text();b={url:a,cssText:b};return U[a]=b})}function W(a,b){return t(function*(){let d=a.cssText;const c=/url\(["']?([^"')]+)["']?\)/g,e=(d.match(/url\([^)]+\)/g)||[]).map(f=>t(function*(){let g=f.replace(c,"$1");g.startsWith("https://")||(g=(new URL(g,a.url)).href);return I(g,b.i,({result:k})=>{d=d.replace(f,`url(${k})`);return[f,k]})}));return Promise.all(e).then(()=>d)})}
+function X(a){if(a==null)return[];const b=[];a=a.replace(/(\/\*[\s\S]*?\*\/)/gi,"");for(var d=RegExp("((@.*?keyframes [\\s\\S]*?){([\\s\\S]*?}\\s*?)})","gi");;){var c=d.exec(a);if(c===null)break;b.push(c[0])}a=a.replace(d,"");d=/@import[\s\S]*?url\([^)]*\)[\s\S]*?;/gi;for(c=RegExp("((\\s*?(?:\\/\\*[\\s\\S]*?\\*\\/)?\\s*?@media[\\s\\S]*?){([\\s\\S]*?)}\\s*?})|(([\\s\\S]*?){([\\s\\S]*?)})","gi");;){let e=d.exec(a);if(e===null)if(e=c.exec(a),e===null)break;else d.lastIndex=c.lastIndex;else c.lastIndex=
+d.lastIndex;b.push(e[0])}return b}
+function qa(a,b){return t(function*(){const d=[],c=[];a.forEach(e=>{if("cssRules"in e)try{w(e.cssRules||[]).forEach((f,g)=>{if(f.type===CSSRule.IMPORT_RULE){let k=g+1;f=V(f.href).then(m=>W(m,b)).then(m=>X(m).forEach(q=>{try{e.insertRule(q,q.startsWith("@import")?k+=1:e.cssRules.length)}catch(Da){}})).catch(()=>{});c.push(f)}})}catch(f){const g=a.find(k=>k.href==null)||document.styleSheets[0];e.href!=null&&c.push(V(e.href).then(k=>W(k,b)).then(k=>X(k).forEach(m=>{g.insertRule(m,g.cssRules.length)})).catch(()=>
+{}))}});return Promise.all(c).then(()=>{a.forEach(e=>{if("cssRules"in e)try{w(e.cssRules||[]).forEach(f=>{d.push(f)})}catch(f){}});return d})})}function ra(a){return a.filter(b=>b.type===CSSRule.FONT_FACE_RULE).filter(b=>b.style.getPropertyValue("src").search(Q)!==-1)}function sa(a,b){return t(function*(){if(a.ownerDocument==null)throw Error("Provided element is not within a Document");var d=w(a.ownerDocument.styleSheets);d=yield qa(d,b);return ra(d)})}
+function ta(a){function b(c){(c.style.fontFamily||getComputedStyle(c).fontFamily).split(",").forEach(e=>{d.add(e.trim().replace(/["']/g,""))});Array.from(c.children).forEach(e=>{e instanceof HTMLElement&&b(e)})}const d=new Set;b(a);return d}function ua(a,b){return t(function*(){const d=yield sa(a,b),c=ta(a);return(yield Promise.all(d.filter(e=>c.has(e.style.fontFamily.trim().replace(/["']/g,""))).map(e=>R(e.cssText,e.parentStyleSheet?e.parentStyleSheet.href:null,b)))).join("\n")})}
+function va(a,b){return t(function*(){const d=b.j!=null?b.j:b.K?null:yield ua(a,b);if(d){const c=document.createElement("style");c.appendChild(document.createTextNode(d));a.firstChild?a.insertBefore(c,a.firstChild):a.appendChild(c)}})};function wa(a,b={}){return t(function*(){const {width:d,height:c}=A(a,b),e=yield P(a,b,!0);yield va(e,b);yield T(e,b);u(e,b);return yield D(e,d,c)})}
+function xa(a,b={}){return t(function*(){const {width:d,height:c}=A(a,b);var e=yield wa(a,b);e=yield B(e);const f=document.createElement("canvas"),g=f.getContext("2d"),k=b.G||window.devicePixelRatio||1,m=b.h||d,q=b.g||c;f.width=m*k;f.height=q*k;!b.J&&(f.width>16384||f.height>16384)&&(f.width>16384&&f.height>16384?f.width>f.height?(f.height*=16384/f.width,f.width=16384):(f.width*=16384/f.height,f.height=16384):f.width>16384?(f.height*=16384/f.width,f.width=16384):(f.width*=16384/f.height,f.height=
+16384));f.style.width=`${m}`;f.style.height=`${q}`;b.backgroundColor&&(g.fillStyle=b.backgroundColor,g.fillRect(0,0,f.width,f.height));g.drawImage(e,0,0,f.width,f.height);return f})}function ya(a,b={}){return t(function*(){return(yield xa(a,b)).toDataURL()})};const za=["gemini.google.com","corp.google.com","proxy.googlers.com"];function Y(){return document.body.querySelectorAll('[class*="animate"]').length>0}function Z(a){return t(function*(){try{return yield ya(a,{h:a.offsetWidth,g:a.offsetHeight})}catch(d){var b=a.offsetHeight;const c=document.createElement("canvas");c.width=a.offsetWidth;c.height=b;return c.toDataURL("image/png")}})}
+function Aa(){return t(function*(){const a=document.body.offsetWidth,b=document.body.offsetHeight,d=document.body.cloneNode(!0);d.querySelectorAll('[class*="animate"]').forEach(c=>{c.classList.remove(...Array.from(c.classList).filter(e=>e.startsWith("animate")))});d.style.width=`${a}px`;d.style.height=`${b}px`;return d})}
+function Ba(a){return t(function*(){let b=document.body;if(Y()){var d=yield Aa();b=d;document.body.appendChild(d)}d=yield Z(b);Y()&&document.body.removeChild(b);window.parent.postMessage({type:"SEND_SCREENSHOT",image:d,topOffset:document.documentElement.scrollTop},a.origin)})}function Ca(a){return t(function*(){const b={type:"SEND_SCREENSHOT_FOR_DATA_VISUALIZATION",image:yield Z(document.body),topOffset:0};window.parent.postMessage(b,a.origin)})}
+window.addEventListener("message",a=>t(function*(){if(za.some(d=>a.origin.includes(d))){var b=a.data;b&&(b.type==="MAKE_SCREENSHOT"&&(yield Ba(a)),b.type==="MAKE_SCREENSHOT_FOR_DATA_VISUALIZATION"&&(yield Ca(a)))}}));
+</script><script>(function() {
+  // Ensure this script is executed only once
+  if (window.firebaseAuthBridgeScriptLoaded) {
+    return;
+  }
+  window.firebaseAuthBridgeScriptLoaded = true;
+
+  let nextTokenPromiseId = 0;
+
+  // Stores { resolve, reject } for ongoing token requests
+  const pendingTokenPromises = {};
+
+  // Listen for messages from the Host Application
+  window.addEventListener('message', function(event) {
+
+    const messageData = event.data;
+
+  if (messageData && messageData.type === 'RESOLVE_NEW_FIREBASE_TOKEN') {
+      const { success, token, error, promiseId } = messageData ?? {};
+      if (pendingTokenPromises[promiseId]) {
+        if (success) {
+          pendingTokenPromises[promiseId].resolve(token);
+        } else {
+          pendingTokenPromises[promiseId].reject(new Error(error || 'Token refresh failed from host.'));
+        }
+        delete pendingTokenPromises[promiseId];
+      }
+    }
+  });
+
+  // Expose a function for the Generated App to request a new Firebase token
+  window.requestNewFirebaseToken = function() {
+    const currentPromiseId = nextTokenPromiseId++;
+    const promise = new Promise((resolve, reject) => {
+      pendingTokenPromises[currentPromiseId] = { resolve, reject };
+    });
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'REQUEST_NEW_FIREBASE_TOKEN',
+        promiseId: currentPromiseId
+      }, '*');
+    } else {
+      pendingTokenPromises[currentPromiseId].reject(new Error('No parent window to request token from.'));
+      delete pendingTokenPromises[currentPromiseId];
+    }
+    return promise;
+  };
+})();</script><script>
+let realOriginalGetUserMedia = null;
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  realOriginalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+}
+
+(function() {
+  if (navigator.mediaDevices && navigator.mediaDevices.__proto__) {
+    try {
+      Object.defineProperty(navigator.mediaDevices.__proto__, 'getUserMedia', {
+        get: function() {
+          return undefined; // Or throw an error
+        },
+        configurable: false
+      });
+    } catch (error) {
+      console.error("Error defining prototype getter:", error);
+    }
+  }
+})();
+
+(function() {
+  const pendingMediaResolvers = {};
+  let nextMediaPromiseId = 0;
+
+  function requestMediaPermissions(constraints) {
+    const mediaPromiseId = nextMediaPromiseId++;
+    const promise = new Promise((resolve, reject) => {
+      pendingMediaResolvers[mediaPromiseId] = (granted) => {
+        delete pendingMediaResolvers[mediaPromiseId];
+        resolve(granted);
+      };
+    });
+
+    window.parent.postMessage({
+      type: 'requestMediaPermission',
+      constraints: constraints,
+      promiseId: mediaPromiseId,
+    }, '*');
+
+    return promise;
+  }
+
+  let originalGetUserMedia = realOriginalGetUserMedia;
+
+  function interceptGetUserMedia() {
+    if (navigator.mediaDevices) {
+      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+        value: function(constraints) {
+          return requestMediaPermissions(constraints).then((granted) => {
+            if (granted) {
+              if (originalGetUserMedia) {
+                return originalGetUserMedia(constraints);
+              } else {
+                throw new Error("Original getUserMedia not available.");
+              }
+            } else {
+              throw new DOMException('Permission denied', 'NotAllowedError');
+            }
+          });
+        },
+        writable: false,
+        configurable: false
+      });
+    }
+  }
+
+  interceptGetUserMedia();
+
+  const observer = new MutationObserver(function(mutationsList, observer) {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'reconfigured' && mutation.name === 'getUserMedia' && mutation.object === navigator.mediaDevices) {
+        interceptGetUserMedia();
+      } else if (mutation.type === 'attributes' && mutation.attributeName === 'getUserMedia' && mutation.target === navigator.mediaDevices) {
+        interceptGetUserMedia();
+      } else if (mutation.type === 'childList' && mutation.addedNodes) {
+        mutation.addedNodes.forEach(node => {
+          if (node === navigator.mediaDevices) {
+            interceptGetUserMedia();
+          }
+        });
+      }
+    }
+  });
+
+  function interceptSpeechRecognition() {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+      return;
+    }
+
+    const OriginalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const SpeechRecognitionWrapper = function(...args) {
+      const recognizer = new OriginalSpeechRecognition(...args);
+      const originalStart = recognizer.start.bind(recognizer);
+
+      recognizer.start = function() {
+        requestMediaPermissions({ audio: true }).then(granted => {
+          if (granted) {
+            originalStart();
+          } else {
+            const errorEvent = new SpeechRecognitionErrorEvent('error');
+            errorEvent.error = 'not-allowed'; // This is the standard error for permission denial.
+            recognizer.dispatchEvent(errorEvent);
+          }
+        });
+      };
+
+      return recognizer;
+    };
+
+    SpeechRecognitionWrapper.prototype = OriginalSpeechRecognition.prototype;
+    SpeechRecognitionWrapper.prototype.constructor = SpeechRecognitionWrapper;
+
+    if (window.SpeechRecognition) {
+      window.SpeechRecognition = SpeechRecognitionWrapper;
+    }
+    if (window.webkitSpeechRecognition) {
+      window.webkitSpeechRecognition = SpeechRecognitionWrapper;
+    }
+  }
+
+  interceptSpeechRecognition();
+
+  window.addEventListener('message', function(event) {
+    if (event.data) {
+      if (event.data.type === 'resolveMediaPermission') {
+        const { promiseId, granted } = event.data;
+        if (pendingMediaResolvers[promiseId]) {
+          pendingMediaResolvers[promiseId](granted);
+        }
+      }
+    }
+  });
+
+})();</script><script>((function(modelInformation) {
+  const originalFetch = window.fetch;
+  // TODO: b/421908508 - Move these out of the script and match all generative AI model calls.
+  let googleLlmBaseApiUrls = [
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':streamGenerateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predict',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predictLongRunning',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageEditModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageTransformModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predict',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predictLongRunning',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.ttsModelName + ':generateContent',
+  ];
+  modelInformation.deprecatedTextModelNames.forEach((modelName) => {
+    googleLlmBaseApiUrls.push(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':streamGenerateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent',
+    );
+  });
+  modelInformation.deprecatedImageModelNames.forEach((modelName) => {
+    googleLlmBaseApiUrls.push(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':predict',
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':predictLongRunning',
+    );
+  });
+
+  const pendingFetchResolvers = {};
+  let nextPromiseId = 0;
+
+  function handleStringInput(input, optionsArgument) {
+    const actualUrl = input;
+    const fetchCallArgs = [actualUrl, optionsArgument];
+    const effectiveOptions = optionsArgument || {};
+    const bodyForApiKeyCheck = effectiveOptions.body;
+    const bodyForPostMessage = effectiveOptions.body;
+    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
+  }
+
+  function handleRequestInput(input, optionsArgument) {
+    const actualUrl = input.url;
+    const fetchCallArgs = [input, optionsArgument];
+    const effectiveOptions = { method: input.method, headers: new Headers(input.headers) };
+    let bodyForApiKeyCheck;
+    let bodyForPostMessage;
+
+    if (optionsArgument) {
+      if (optionsArgument.method) effectiveOptions.method = optionsArgument.method;
+      if (optionsArgument.headers) effectiveOptions.headers = new Headers(optionsArgument.headers);
+      if ('body' in optionsArgument) {
+        bodyForApiKeyCheck = optionsArgument.body;
+        bodyForPostMessage = optionsArgument.body;
+      } else {
+        bodyForApiKeyCheck = undefined;
+        bodyForPostMessage = input.body;
+      }
+    } else {
+      bodyForApiKeyCheck = undefined;
+      bodyForPostMessage = input.body;
+    }
+    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
+  }
+
+  window.fetch = function(input, optionsArgument) {
+    let actualUrl;
+    let fetchCallArgs;
+    let effectiveOptions = {};
+    let bodyForApiKeyCheck;
+    let bodyForPostMessage;
+
+    if (typeof input === 'string') {
+      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleStringInput(input, optionsArgument));
+    } else if (input instanceof Request) {
+      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleRequestInput(input, optionsArgument));
+    } else {
+      return originalFetch.apply(window, [input, optionsArgument]);
+    }
+
+    effectiveOptions.method = effectiveOptions.method || 'GET';
+    if (!effectiveOptions.headers) {
+      effectiveOptions.headers = new Headers();
+    }
+
+
+    if (typeof actualUrl === 'string' && googleLlmBaseApiUrls.some((url) => actualUrl.startsWith(url))) {
+      let apiKeyIsNull = true;
+
+      const regex = new RegExp("models/([^:]+)");
+      const modelNameMatch = actualUrl.match(regex);
+      const modelName = modelNameMatch ? modelNameMatch[1] : 'unspecified';
+
+
+      try {
+        const urlObject = new URL(actualUrl);  // Use URL object for robust parsing
+        const apiKeyParam = urlObject.searchParams.get('key');
+        if (apiKeyParam) {
+          apiKeyIsNull = false;
+        }
+      } catch (e) {
+        // Continue checks even if URL parsing fails
+      }
+
+      if (apiKeyIsNull && effectiveOptions.headers) {
+        const h = new Headers(effectiveOptions.headers);
+        const apiKeyHeaderValue = h.get('X-API-Key') || h.get('x-api-key');
+        if (apiKeyHeaderValue) {
+          apiKeyIsNull = false;
+          return originalFetch.apply(window, fetchCallArgs);
+        }
+      }
+
+      if (apiKeyIsNull && effectiveOptions.method && ['POST', 'PUT', 'PATCH'].includes(effectiveOptions.method.toUpperCase()) && typeof bodyForApiKeyCheck === 'string') {
+        try {
+          const bodyData = JSON.parse(bodyForApiKeyCheck);
+          if (bodyData && bodyData.apiKey) {
+            apiKeyIsNull = false;
+            return originalFetch.apply(window, fetchCallArgs);
+          }
+        } catch (e) {
+          // Ignore JSON parsing errors
+        }
+      }
+
+      if(apiKeyIsNull) {
+        const promiseId = nextPromiseId++;
+        const promise = new Promise((resolve) => {
+          pendingFetchResolvers[promiseId] = (resolvedResponse) => {
+            delete pendingFetchResolvers[promiseId];
+            resolve(resolvedResponse);
+          };
+        });
+
+        let serializedBodyForPostMessage;
+        if (typeof bodyForPostMessage === 'string' || bodyForPostMessage == null) {
+            serializedBodyForPostMessage = bodyForPostMessage;
+        } else if (bodyForPostMessage instanceof ReadableStream) {
+            serializedBodyForPostMessage = null;
+        } else {
+            try {
+                serializedBodyForPostMessage = JSON.stringify(bodyForPostMessage);
+            } catch (e) {
+                serializedBodyForPostMessage = null;
+            }
+        }
+
+        const messageOptions = {
+            method: effectiveOptions.method,
+            headers: Object.fromEntries(new Headers(effectiveOptions.headers).entries()),
+            body: serializedBodyForPostMessage
+        };
+
+        window.parent.postMessage({
+          type: 'requestFetch',
+          url: actualUrl,
+          modelName: modelName,
+          options: messageOptions,
+          promiseId: promiseId,
+        }, '*');
+
+        return promise;
+      }
+      return originalFetch.apply(window, fetchCallArgs);
+    }
+    return originalFetch.apply(window, fetchCallArgs);
+  };
+
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'resolveFetch') {
+      const { promiseId, response } = event.data;
+      if (pendingFetchResolvers[promiseId]) {
+        try {
+          const reconstructedResponse = new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: new Headers(response.headers),
+          });
+          pendingFetchResolvers[promiseId](reconstructedResponse);
+        } catch (error) {
+          pendingFetchResolvers[promiseId](new Response(null, { status: 500, statusText: "Interceptor Response Reconstruction Error" }));
+        }
+      }
+    }
+  });
+
+}))({"textModelName":"gemini-2.5-flash-preview-09-2025","imageModelName":"imagen-4.0-generate-001","imageEditModelName":"gemini-2.5-flash-image-preview","imageTransformModelName":"gemini-2.5-flash-image-preview","videoModelName":"veo-2.0-generate-001","ttsModelName":"gemini-2.5-flash-preview-tts","deprecatedTextModelNames":["gemini-2.0-flash","gemini-2.5-flash-preview-04-17","gemini-2.5-flash-preview-05-20"],"deprecatedImageModelNames":["imagen-3.0-generate-001","imagen-3.0-generate-002"]})</script><script>(function() {
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+
+    /**
+   * Normalizes an error event or a promise rejection reason into a structured error object.
+   * @param {*} errorEventOrReason The error object or reason.
+   * @return {object} Structured error data { message, name, stack }.
+   */
+  function getErrorObject(errorEventOrReason) {
+    if (errorEventOrReason instanceof Error) {
+      return {
+        message: errorEventOrReason.message,
+        name: errorEventOrReason.name,
+        stack: errorEventOrReason.stack,
+      };
+    }
+    // Fallback for non-Error objects.
+    try {
+      return {
+        message: JSON.stringify(errorEventOrReason),
+        name: 'UnknownErrorType',
+        stack: null,
+      };
+    } catch (e) {
+      return {
+        message: String(errorEventOrReason),
+        name: 'UnknownErrorTypeNonStringifiable',
+        stack: null,
+      };
+    }
+  }
+
+  /**
+   * Converts an array of arguments (from log/error) into a single string.
+   * Handles Error objects specially to include their message and stack.
+   * @param {Array<*>} args - Arguments passed to console methods.
+   * @return {string} A string representation of the arguments.
+   */
+  function stringifyArgs(args) {
+    return args
+      .map((arg) => {
+        if (arg instanceof Error) {
+          const {message, stack} = arg;
+          return `Error: ${message}${stack ? ('\nStack: ' + stack) : ''}`;
+        }
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg);
+          } catch (error) {
+            return '[Circular Object]';
+          }
+        } else {
+          return String(arg);
+        }
+      })
+      .join(' ');
+  }
+
+  console.log = function(...args) {
+    const logString = stringifyArgs(args);
+    window.parent.postMessage({ type: 'log', message: logString }, '*');
+    originalConsoleLog.apply(console, args);
+  };
+
+  console.error = function(...args) {
+    let errorData;
+    if (args.length > 0 && args[0] instanceof Error) {
+      const err = args[0];
+      // If the first arg is an Error, capture its details.
+      errorData = {
+        type: 'error',
+        source: 'CONSOLE_ERROR',
+        ...getErrorObject(err),
+        rawArgsString: stringifyArgs(args.slice(1)),
+        timestamp: new Date().toISOString(),
+      };
+    } else {
+      // If not an Error object, treat all args as a general error message.
+      errorData = {
+        type: 'error',
+        source: 'CONSOLE_ERROR',
+        message: stringifyArgs(args),
+        name: 'ConsoleLoggedError',
+        stack: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    window.parent.postMessage(errorData, '*');
+    originalConsoleError.apply(console, args);
+  };
+
+  // Listen for global unhandled synchronous errors.
+  window.addEventListener('error', function(event) {
+    const errorDetails = event.error ? getErrorObject(event.error) : {
+      message: event.message,
+      name: 'GlobalError',
+      stack: null,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+    };
+
+    window.parent.postMessage({
+      type: 'error',
+      source: 'global',
+      ...errorDetails,
+      message: errorDetails.message || event.message,
+      timestamp: new Date().toISOString(),
+    }, '*');
+  });
+
+  // Listen for unhandled promise rejections (asynchronous errors).
+  window.addEventListener('unhandledrejection', function(event) {
+    const errorDetails = getErrorObject(event.reason);
+
+    window.parent.postMessage({
+      type: 'error',
+      source: 'unhandledrejection',
+      ...errorDetails,
+      message: errorDetails.message || 'Unhandled Promise Rejection',
+      timestamp: new Date().toISOString(),
+    }, '*');
+  });
+
+})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 春之森・富士山 | 家族旅行手冊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest" crossorigin="anonymous"></script>
+    <!-- Marked for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" crossorigin="anonymous"></script>
+    <!-- html2pdf library for direct download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&amp;display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: #FAF9F6; /* 米白 */
+            color: #5D5D5D;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e6e2dc' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        /* 水彩暈染效果 class */
+        .watercolor-pink {
+            background: radial-gradient(circle at center, rgba(255, 219, 233, 0.6) 0%, rgba(255, 219, 233, 0) 70%);
+        }
+        .watercolor-blue {
+            background: radial-gradient(circle at center, rgba(168, 216, 234, 0.6) 0%, rgba(168, 216, 234, 0) 70%);
+        }
+        .watercolor-green {
+            background: radial-gradient(circle at center, rgba(193, 225, 193, 0.5) 0%, rgba(193, 225, 193, 0) 70%);
+        }
+
+        .handwritten-border {
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            box-shadow: 2px 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* 模擬紙張質感 */
+        .page-card {
+            background-color: #fff;
+            position: relative;
+            overflow: hidden;
+            /* Ensure page breaks work for html2pdf */
+            page-break-after: always;
+            break-after: page;
+        }
+        .page-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        /* 標題裝飾線 */
+        .title-underline {
+            display: inline-block;
+            position: relative;
+        }
+        .title-underline::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background-color: rgba(255, 183, 178, 0.4);
+            border-radius: 4px;
+            z-index: -1;
+            transform: rotate(-1deg);
+        }
+
+        /* AI Feature Styles */
+        .sparkle-btn {
+            background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%);
+            border: 1px solid #fff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        .sparkle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+        }
+        
+        .ai-content ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .ai-content h3 {
+            font-weight: bold;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #57534e;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+            .page-break { page-break-after: always; }
+            .page-card { box-shadow: none; border: 1px solid #eee; margin-bottom: 0; height: 100vh; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col items-center gap-8">
+
+    <!-- 控制列 -->
+    <div class="no-print fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        <button id="btn-download-pdf" onclick="generatePDF()" class="bg-pink-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-pink-600 transition flex items-center gap-2">
+            <i data-lucide="file-down" class="w-5 h-5"></i> ⚡ 直接下載 PDF
+        </button>
+        
+        <div class="flex gap-2">
+            <button onclick="downloadHTML()" class="bg-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-blue-600 transition flex items-center gap-2 text-sm">
+                <i data-lucide="download" class="w-4 h-4"></i> 下載網頁檔 (HTML)
+            </button>
+            <button onclick="window.print()" class="bg-stone-600 text-white px-4 py-2 rounded-full shadow-md hover:bg-stone-700 transition flex items-center gap-2 text-sm">
+                <i data-lucide="printer" class="w-4 h-4"></i> 列印 / 高畫質 PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- 內容容器 (用於生成 PDF) -->
+    <div id="main-content" class="flex flex-col items-center gap-8 w-full">
+
+        <!-- 封面 -->
+        <div class="page-card w-full max-w-2xl min-h-[800px] p-8 md:p-12 handwritten-border page-break flex flex-col items-center justify-between text-center relative">
+            <div class="absolute top-0 left-0 w-64 h-64 watercolor-blue -translate-x-1/3 -translate-y-1/3 blur-xl"></div>
+            <div class="absolute bottom-0 right-0 w-64 h-64 watercolor-pink translate-x-1/3 translate-y-1/3 blur-xl"></div>
+
+            <div class="mt-8 z-10">
+                <div class="text-stone-400 text-lg mb-2 tracking-widest">2026.04.03 - 04.06</div>
+                <h1 class="text-5xl md:text-6xl font-bold text-slate-700 leading-tight mb-4">
+                    2026<br><span class="text-pink-400">春</span>之森<br>富士山
+                </h1>
+                <p class="text-xl text-stone-500 font-medium mt-4">帶著寶貝去散心・一家三口的避世慢旅</p>
+            </div>
+
+            <!-- 插畫示意區 -->
+            <div class="flex-grow flex items-center justify-center w-full my-8 relative">
+                <!-- 富士山示意 -->
+                <div class="relative w-64 h-64 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-blue-100 rounded-full opacity-30 blur-lg"></div>
+                    <i data-lucide="mountain-snow" class="w-48 h-48 text-slate-400 stroke-1"></i>
+                    <!-- 櫻花點綴 -->
+                    <i data-lucide="flower" class="absolute top-4 right-4 w-8 h-8 text-pink-300"></i>
+                    <i data-lucide="flower" class="absolute bottom-12 left-2 w-10 h-10 text-pink-400"></i>
+                    <i data-lucide="flower" class="absolute top-10 left-10 w-6 h-6 text-pink-300"></i>
+                </div>
+                <!-- 家庭示意 -->
+                <div class="absolute bottom-10 flex gap-2 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-sm border border-stone-100">
+                    <i data-lucide="user" class="w-6 h-6 text-stone-600"></i>
+                    <i data-lucide="heart" class="w-5 h-5 text-pink-400 fill-pink-400 mt-1"></i>
+                    <i data-lucide="user" class="w-6 h-6 text-stone-600"></i>
+                    <span class="text-stone-400 text-sm self-center ml-2">(+ Baby)</span>
+                </div>
+            </div>
+
+            <div class="w-full text-left border-t-2 border-stone-100 pt-6 flex justify-between items-end">
+                <div class="text-stone-400 text-sm">
+                    Traveler: <br>
+                    <span class="text-stone-600 text-lg">Papa, Mama &amp; Baby</span>
+                </div>
+                <div class="flex items-center gap-2 text-stone-500">
+                    <i data-lucide="car-front" class="w-5 h-5"></i>
+                    <span class="text-sm">Alphard 專屬包車</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第 1 頁：行前準備 -->
+        <div class="page-card w-full max-w-2xl min-h-[800px] p-8 md:p-12 handwritten-border page-break relative">
+            <div class="absolute top-0 right-0 w-48 h-48 watercolor-green translate-x-1/4 -translate-y-1/4 blur-xl"></div>
+            
+            <div class="flex justify-between items-center mb-8 flex-wrap gap-2">
+                <h2 class="text-3xl font-bold text-stone-700 title-underline">行前準備與備忘 Checklist</h2>
+                <!-- AI Button -->
+                <button onclick="openModal('packing')" class="no-print sparkle-btn text-stone-600 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 hover:text-stone-800">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-purple-500"></i>
+                    ✨ 魔法行李清單
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-8">
+                <!-- 航班 -->
+                <div class="bg-stone-50 p-6 rounded-2xl border border-stone-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-20 h-20 bg-blue-50 rounded-full"></div>
+                    <div class="flex items-start gap-4 relative z-10">
+                        <div class="bg-white p-3 rounded-full shadow-sm text-blue-400">
+                            <i data-lucide="plane" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-stone-700 mb-2">我們的航班 (JAL)</h3>
+                            <div class="space-y-2 text-stone-600">
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded">去</span>
+                                    <span>4/03 (五) JL096 | 松山 09:10 → 羽田 13:20</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-stone-200 text-stone-600 text-xs px-2 py-1 rounded">回</span>
+                                    <span>4/06 (一) JL097 | 羽田 08:55 → 松山 11:35</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 天氣 -->
+                <div class="bg-stone-50 p-6 rounded-2xl border border-stone-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-20 h-20 bg-pink-50 rounded-full"></div>
+                    <div class="flex items-start gap-4 relative z-10">
+                        <div class="bg-white p-3 rounded-full shadow-sm text-pink-400">
+                            <i data-lucide="thermometer" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-stone-700 mb-2">天氣與穿搭 (重要!)</h3>
+                            <p class="text-stone-600 mb-2">氣溫： <span class="font-bold">白天 10°C / 晚上 0°C</span> (山區早晚極冷！)</p>
+                            <ul class="list-disc list-inside text-stone-600 text-sm space-y-1 marker:text-pink-300">
+                                <li>寶寶穿著：洋蔥式穿法（發熱衣+毛衣+防風羽絨外套）</li>
+                                <li>必備小物：毛帽、保暖襪、嬰兒推車雨罩(防風用)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 交通 -->
+                <div class="bg-stone-50 p-6 rounded-2xl border border-stone-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-20 h-20 bg-green-50 rounded-full"></div>
+                    <div class="flex items-start gap-4 relative z-10">
+                        <div class="bg-white p-3 rounded-full shadow-sm text-green-600">
+                            <i data-lucide="car" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-stone-700 mb-2">移動城堡 (包車接送)</h3>
+                            <p class="text-stone-600 mb-2">全程安排 Alphard 保姆車，不用擠電車！</p>
+                            <div class="flex gap-2 mt-2">
+                                <span class="text-xs bg-white border border-stone-200 px-2 py-1 rounded-full text-stone-500">餵奶 OK</span>
+                                <span class="text-xs bg-white border border-stone-200 px-2 py-1 rounded-full text-stone-500">換尿布 OK</span>
+                                <span class="text-xs bg-white border border-stone-200 px-2 py-1 rounded-full text-stone-500">爸媽補眠 OK</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Generated Packing List Placeholder (Filled by user) -->
+                <div id="ai-packing-result" class="hidden bg-purple-50 p-6 rounded-2xl border border-purple-100 shadow-sm relative">
+                    <h3 class="font-bold text-lg text-purple-700 mb-2 flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i> 專屬清單
+                    </h3>
+                    <div class="ai-content text-stone-600 text-sm space-y-2"></div>
+                </div>
+            </div>
+            
+            <!-- 裝飾葉子 -->
+            <div class="absolute bottom-6 right-6 opacity-20">
+                <i data-lucide="leaf" class="w-16 h-16 text-green-700 rotate-45"></i>
+            </div>
+            <div class="absolute top-6 left-6 opacity-20">
+                <i data-lucide="leaf" class="w-12 h-12 text-green-700 -rotate-12"></i>
+            </div>
+        </div>
+
+        <!-- 第 2 頁：Day 1 -->
+        <div class="page-card w-full max-w-2xl min-h-[800px] p-8 md:p-12 handwritten-border page-break relative">
+            <div class="flex justify-between items-baseline border-b border-stone-200 pb-4 mb-8">
+                <h2 class="text-3xl font-bold text-stone-700">Day 1 初見富士山</h2>
+                <span class="text-stone-400 font-medium">April 03</span>
+            </div>
+
+            <!-- 示意圖區域 -->
+            <div class="w-full h-40 bg-stone-800 rounded-xl mb-8 flex flex-col items-center justify-center relative overflow-hidden text-white">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <i data-lucide="tent-tree" class="w-12 h-12 mb-2 relative z-10 text-yellow-100"></i>
+                <p class="relative z-10 text-sm font-light tracking-wider">星空下的森林露台</p>
+            </div>
+
+            <div class="space-y-8 border-l-2 border-stone-200 pl-8 ml-2">
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-stone-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-stone-300 rounded-full"></div>
+                    </div>
+                    <div class="text-stone-400 text-sm font-bold mb-1">13:20</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🇯🇵 抵達東京羽田</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        不用急，慢慢下機。拿完行李後，專屬司機已經在大廳舉牌等候。<br>
+                        上車脫鞋休息，出發前往富士山 (車程約 2.5 小時)。
+                    </p>
+                </div>
+
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-blue-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-blue-300 rounded-full"></div>
+                    </div>
+                    <div class="text-blue-400 text-sm font-bold mb-1">17:30</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">⛺ 入住：虹夕諾雅 富士</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        抵達山腳接待處，換乘吉普車進入森林。<br>
+                        進房第一件事：<span class="bg-blue-50 text-blue-600 px-1">到陽台深呼吸，跟富士山說嗨！</span>
+                    </p>
+                </div>
+
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-orange-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-orange-300 rounded-full"></div>
+                    </div>
+                    <div class="text-orange-400 text-sm font-bold mb-1">18:30</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🥘 房內晚餐 (Room Service)</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        第一天舟車勞頓，我們不外出。<br>
+                        在房間陽台享用 Glamping 咖哩或火鍋。<br>
+                        寶寶累了可以直接睡，爸媽在月光下享受久違的寧靜乾杯🥂。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第 3 頁：Day 2 -->
+        <div class="page-card w-full max-w-2xl min-h-[800px] p-8 md:p-12 handwritten-border page-break relative">
+            <div class="absolute top-0 right-0 w-32 h-32 watercolor-pink translate-x-1/4 -translate-y-1/4 blur-xl"></div>
+            
+            <div class="flex justify-between items-baseline border-b border-stone-200 pb-4 mb-8">
+                <h2 class="text-3xl font-bold text-stone-700">Day 2 避世西湖慢時光</h2>
+                <span class="text-stone-400 font-medium">April 04</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                 <div class="bg-amber-50 rounded-lg p-4 flex flex-col items-center justify-center text-amber-800 h-32">
+                     <i data-lucide="coffee" class="mb-2"></i>
+                     <span class="text-xs">森林早餐</span>
+                 </div>
+                 <div class="bg-stone-100 rounded-lg p-4 flex flex-col items-center justify-center text-stone-600 h-32" style="background-image: url('data:image/svg+xml,...'); background-size: cover;">
+                     <i data-lucide="home" class="mb-2"></i>
+                     <span class="text-xs">茅草屋聚落</span>
+                 </div>
+            </div>
+
+            <div class="space-y-8 border-l-2 border-stone-200 pl-8 ml-2">
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-amber-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-amber-300 rounded-full"></div>
+                    </div>
+                    <div class="text-amber-500 text-sm font-bold mb-1">08:30</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">☀️ 森林早餐 (Morning Box)</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        不用去餐廳排隊。穿著舒服的家居服，背著房間附的望遠鏡，在陽台享用早餐箱。
+                    </p>
+                </div>
+
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-stone-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-stone-300 rounded-full"></div>
+                    </div>
+                    <div class="text-stone-400 text-sm font-bold mb-1">11:00</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🏞️ 散步：西湖・療癒之里 根場</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        搭車避開擁擠的河口湖，來到安靜的茅草屋聚落。<br>
+                        這裡路面寬敞，適合推推車。<span class="text-pink-500">幫寶寶和富士山、合掌屋拍第一張合照吧！</span>
+                    </p>
+                </div>
+
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-orange-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-orange-300 rounded-full"></div>
+                    </div>
+                    <div class="text-orange-400 text-sm font-bold mb-1">13:00</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🍜 暖胃午餐</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        建議：不動茶屋 (東戀路店) 或 西湖湖畔咖啡。<br>
+                        來一碗熱熱的蔬菜餺飥麵 (Hoto)，南瓜燉得軟爛，很適合分給寶寶吃。
+                    </p>
+                </div>
+
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-green-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-green-300 rounded-full"></div>
+                    </div>
+                    <div class="text-green-500 text-sm font-bold mb-1">15:00</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🪵 度假村時光</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        回到飯店參加森林活動（劈柴、營火烤棉花糖）。<br>
+                        或是什麼都不做，就在吊床上晃過一個下午。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第 4 頁：Day 3 -->
+        <div class="page-card w-full max-w-2xl min-h-[800px] p-8 md:p-12 handwritten-border page-break relative">
+            <div class="absolute bottom-0 left-0 w-40 h-40 watercolor-blue -translate-x-1/4 translate-y-1/4 blur-xl"></div>
+            
+            <div class="flex justify-between items-baseline border-b border-stone-200 pb-4 mb-8">
+                <h2 class="text-3xl font-bold text-stone-700">Day 3 湖畔與最後的移動</h2>
+                <span class="text-stone-400 font-medium">April 05</span>
+            </div>
+
+            <!-- 示意圖區域 -->
+            <div class="w-full h-32 bg-sky-50 rounded-xl mb-8 flex items-center justify-center gap-4 border border-sky-100">
+                 <i data-lucide="cookie" class="w-8 h-8 text-stone-400"></i>
+                 <i data-lucide="coffee" class="w-8 h-8 text-stone-400"></i>
+                 <span class="text-sky-400 font-bold">富士大石 Hanaterrace</span>
+            </div>
+
+            <div class="space-y-8 border-l-2 border-stone-200 pl-8 ml-2">
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-stone-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-stone-300 rounded-full"></div>
+                    </div>
+                    <div class="text-stone-400 text-sm font-bold mb-1">10:00</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🥐 睡到自然醒 &amp; 退房</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        再見了，森林裡的家。
+                    </p>
+                </div>
+
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-pink-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-pink-300 rounded-full"></div>
+                    </div>
+                    <div class="text-pink-400 text-sm font-bold mb-1">12:00</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🗻 湖畔散策</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        <strong>富士大石 Hanaterrace</strong><br>
+                        這裡有平坦的步道與漂亮的白色店鋪。<br>
+                        在葡萄屋 Kofu 吃個甜點，買點富士山造型的伴手禮。
+                    </p>
+                </div>
+
+                <!-- Item -->
+                <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-stone-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-stone-300 rounded-full"></div>
+                    </div>
+                    <div class="text-stone-400 text-sm font-bold mb-1">14:00</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🚗 啟程返回東京</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        再次坐上舒適的 Alphard，避開傍晚車潮，一路睡回市區。
+                    </p>
+                </div>
+
+                 <!-- Item -->
+                 <div class="relative">
+                    <div class="absolute -left-[41px] top-1 bg-white border-2 border-purple-200 w-6 h-6 rounded-full flex items-center justify-center">
+                        <div class="w-2 h-2 bg-purple-300 rounded-full"></div>
+                    </div>
+                    <div class="text-purple-400 text-sm font-bold mb-1">17:00</div>
+                    <h3 class="text-xl font-bold text-stone-700 mb-2">🏨 入住：羽田機場泉空飯店</h3>
+                    <p class="text-stone-600 text-sm leading-relaxed">
+                        (Villa Fontaine) 這間飯店直通機場航廈！<br>
+                        晚餐直接在樓下商場解決 (有豬排、烏龍麵)，吃飽回房泡湯看飛機，為了明天早起做準備。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第 5 頁：Day 4 & 封底 -->
+        <div class="page-card w-full max-w-2xl min-h-[800px] p-8 md:p-12 handwritten-border page-break flex flex-col justify-between">
+            
+            <!-- Day 4 -->
+            <div>
+                <div class="flex justify-between items-baseline border-b border-stone-200 pb-4 mb-8">
+                    <h2 class="text-3xl font-bold text-stone-700">Day 4 輕鬆回家</h2>
+                    <span class="text-stone-400 font-medium">April 06</span>
+                </div>
+
+                <!-- 機場插畫示意 -->
+                <div class="flex justify-center mb-8">
+                    <div class="relative w-full max-w-xs h-32 border-b border-stone-200">
+                        <i data-lucide="plane-takeoff" class="absolute right-0 bottom-4 w-12 h-12 text-blue-400"></i>
+                        <div class="absolute left-0 bottom-4 flex items-center gap-2">
+                            <i data-lucide="baby" class="w-6 h-6 text-stone-400"></i>
+                            <div class="w-12 h-0.5 bg-stone-300"></div>
+                            <span class="text-xs text-stone-400">Walk</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex gap-4">
+                        <div class="font-bold text-stone-400 w-12 pt-1">07:00</div>
+                        <div>
+                            <h3 class="font-bold text-stone-700">推車散步去登機</h3>
+                            <p class="text-sm text-stone-600">不用趕電車、不用搬行李上下樓梯。推著推車，優雅地走到第三航廈出境大廳。</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="font-bold text-blue-400 w-12 pt-1">08:55</div>
+                        <div>
+                            <h3 class="font-bold text-stone-700">✈️ JL097 起飛</h3>
+                            <p class="text-sm text-stone-600">帶著滿滿的充電能量，我們回家囉！</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 封底 -->
+            <div class="mt-16 flex flex-col items-center justify-center flex-grow text-center relative w-full">
+                <div class="w-24 h-24 border-4 border-red-800/80 rounded-lg flex items-center justify-center mb-8 rotate-12 opacity-80" style="border-radius: 20px 4px 20px 4px;">
+                    <span class="text-4xl font-bold text-red-800/80" style="font-family: serif;">旅</span>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-stone-600 mb-2">See you next time, Fuji.</h3>
+                <p class="text-stone-400 mb-12">Made with love by Papa &amp; Mama</p>
+
+                <!-- 拍立得空間 -->
+                <div class="relative w-64 h-80 bg-stone-100 shadow-inner flex flex-col items-center justify-center border-2 border-dashed border-stone-300 rounded-lg group">
+                    <span id="memory-placeholder" class="text-stone-300 text-sm">Place your best memory here</span>
+                    
+                    <!-- AI Generated Memory (Hidden by default) -->
+                    <div id="ai-memory-result" class="hidden absolute inset-2 bg-white p-4 shadow-sm rounded flex items-center justify-center text-center">
+                        <p class="text-stone-600 text-sm font-handwriting italic" style="font-family: serif;"></p>
+                    </div>
+
+                    <!-- AI Button -->
+                    <button onclick="openModal('memory')" class="no-print absolute -bottom-4 bg-white border border-stone-200 px-3 py-1 rounded-full shadow-sm text-xs text-stone-500 hover:text-stone-800 flex items-center gap-1 transition-all">
+                        <i data-lucide="sparkles" class="w-3 h-3 text-pink-400"></i>
+                        ✨ 生成旅行心得
+                    </button>
+                </div>
+                
+                <div class="w-full mt-8 space-y-4">
+                    <div class="h-px bg-stone-300 w-3/4 mx-auto"></div>
+                    <div class="h-px bg-stone-300 w-3/4 mx-auto"></div>
+                    <div class="h-px bg-stone-300 w-3/4 mx-auto"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="no-print hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
+        <!-- Packing Modal -->
+        <div id="modal-packing" class="hidden bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="sparkles" class="w-6 h-6 text-purple-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-stone-700">✨ 魔法行李清單</h3>
+                <p class="text-stone-500 text-sm mt-1">告訴我寶寶的狀況，幫您客製化檢查表</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-stone-600 mb-1">寶寶年齡</label>
+                    <input type="text" id="pack-age" class="w-full border border-stone-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none" placeholder="例如：1歲3個月">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-stone-600 mb-1">特別擔心的事 / 需求</label>
+                    <textarea id="pack-worry" rows="3" class="w-full border border-stone-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none" placeholder="例如：怕冷、會認床、挑食、正在長牙..."></textarea>
+                </div>
+                <button onclick="generatePackingList()" id="btn-pack-gen" class="w-full bg-stone-800 text-white py-3 rounded-lg font-bold hover:bg-stone-700 transition flex items-center justify-center gap-2">
+                    開始生成
+                </button>
+            </div>
+        </div>
+
+        <!-- Memory Modal -->
+        <div id="modal-memory" class="hidden bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="bg-pink-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="pen-tool" class="w-6 h-6 text-pink-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-stone-700">✨ 旅程回憶明信片</h3>
+                <p class="text-stone-500 text-sm mt-1">輸入幾個關鍵字，幫您寫下溫暖的結語</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-stone-600 mb-1">印象最深刻的事</label>
+                    <textarea id="mem-keywords" rows="3" class="w-full border border-stone-300 rounded-lg p-2 focus:ring-2 focus:ring-pink-200 focus:border-pink-400 outline-none" placeholder="例如：富士山很害羞、咖哩好吃、寶寶第一次看雪..."></textarea>
+                </div>
+                <button onclick="generateMemory()" id="btn-mem-gen" class="w-full bg-stone-800 text-white py-3 rounded-lg font-bold hover:bg-stone-700 transition flex items-center justify-center gap-2">
+                    寫下回憶
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const apiKey = ""; // API Key injected by environment
+
+        // Function to handle correct UTF-8 downloading of HTML
+        function downloadHTML() {
+            const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'fuji_trip_2026.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Generate PDF directly
+        function generatePDF() {
+            const element = document.getElementById('main-content');
+            const btn = document.getElementById('btn-download-pdf');
+            const originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 處理中...`;
+            btn.disabled = true;
+            lucide.createIcons();
+
+            const opt = {
+                margin:       [10, 10], // top/bottom, left/right margins
+                filename:     'fuji_trip_2026.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                // scale 2 improves resolution on retina displays
+                html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                // Handle page breaks correctly
+                pagebreak:    { mode: ['css', 'legacy'] }
+            };
+
+            // Use html2pdf library
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Restore button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                lucide.createIcons();
+            }).catch(err => {
+                console.error(err);
+                alert("PDF 生成失敗，建議使用「列印 / 存為 PDF」功能");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                lucide.createIcons();
+            });
+        }
+
+        function openModal(type) {
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            if(type === 'packing') {
+                document.getElementById('modal-packing').classList.remove('hidden');
+                document.getElementById('modal-memory').classList.add('hidden');
+            } else {
+                document.getElementById('modal-packing').classList.add('hidden');
+                document.getElementById('modal-memory').classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+        }
+
+        async function callGemini(prompt) {
+            if (!apiKey) {
+                alert("API Key missing. Please ensure you are in the correct environment.");
+                return null;
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                     if (response.status === 503) {
+                         throw new Error("Service unavailable");
+                    }
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                
+                if (error.message === "Service unavailable") {
+                    let retries = 0;
+                    const maxRetries = 3;
+                    let delay = 1000;
+                    
+                    while (retries < maxRetries) {
+                         await new Promise(resolve => setTimeout(resolve, delay));
+                         try {
+                            const retryResponse = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                             if (retryResponse.ok) {
+                                const data = await retryResponse.json();
+                                return data.candidates[0].content.parts[0].text;
+                            }
+                         } catch (retryError) {
+                            // Continue loop
+                         }
+                         retries++;
+                         delay *= 2;
+                    }
+                }
+                
+                alert("AI 正在休息中，請稍後再試！");
+                return null;
+            }
+        }
+
+        async function generatePackingList() {
+            const age = document.getElementById('pack-age').value || "1歲";
+            const worry = document.getElementById('pack-worry').value || "一般";
+            const btn = document.getElementById('btn-pack-gen');
+            
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 思考中...`;
+            btn.disabled = true;
+            lucide.createIcons();
+
+            const prompt = `
+            你是一個專業的親子旅遊顧問。我們要去日本富士山 Glamping，氣溫約 0-10度。
+            請根據以下資訊生成一份「額外建議攜帶」的行李檢查清單。
+            寶寶年齡：${age}
+            家長擔心的點：${worry}
+            
+            請列出 5-8 個最重要的項目即可，不要太長。
+            請使用 Markdown 格式條列 (bullet points)，並在每個項目前面加上適合的 Emoji。
+            語氣要溫柔、令人安心。
+            `;
+
+            const result = await callGemini(prompt);
+            
+            if (result) {
+                const resultDiv = document.getElementById('ai-packing-result');
+                const contentDiv = resultDiv.querySelector('.ai-content');
+                contentDiv.innerHTML = marked.parse(result);
+                resultDiv.classList.remove('hidden');
+                closeModal();
+            }
+
+            btn.innerHTML = "開始生成";
+            btn.disabled = false;
+        }
+
+        async function generateMemory() {
+            const keywords = document.getElementById('mem-keywords').value;
+            if (!keywords) {
+                alert("請輸入一些關鍵字喔！");
+                return;
+            }
+
+            const btn = document.getElementById('btn-mem-gen');
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 書寫中...`;
+            btn.disabled = true;
+            lucide.createIcons();
+
+            const prompt = `
+            你是一個感性的旅遊作家。這是一家三口去富士山旅行的回憶錄。
+            關鍵字：${keywords}
+            
+            請寫一段約 50-80 字的短文，適合寫在拍立得照片旁邊或明信片上。
+            風格：溫暖、感人、稍微有點文青。
+            結尾請加上： "Love, Papa & Mama" (換行)
+            `;
+
+            const result = await callGemini(prompt);
+            
+            if (result) {
+                const resultDiv = document.getElementById('ai-memory-result');
+                const p = resultDiv.querySelector('p');
+                p.innerText = result.trim();
+                
+                document.getElementById('memory-placeholder').style.display = 'none';
+                resultDiv.classList.remove('hidden');
+                closeModal();
+            }
+
+            btn.innerHTML = "寫下回憶";
+            btn.disabled = false;
+        }
+    </script>
+
+</body></html>

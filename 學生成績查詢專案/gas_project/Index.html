@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <title>物理科段考成績查詢</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <!-- AJA 星宇設計系統字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rufina:wght@400;700&family=Montserrat:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* 
+           Design System: Starlux Airlines x Apple UI 
+           - Font: Apple System (San Francisco)
+           - Colors: Starlux Official Palette
+           - Components: iOS 15+ Rounded Cards, Large Headers
+        */
+        :root {
+            /* ═══════════════════════════════════════════
+               星宇航空官方品牌規範色 (STARLUX Brand Colors)
+               ═══════════════════════════════════════════ */
+
+            /* 大地金 (Earth Gold) - 早晨・創新思維・熱忱服務 */
+            --earth-gold: #9B8A5E;
+            --earth-gold-light: #F9C78B;
+            /* 數位校準色 */
+            --earth-gold-bright: #FFB554;
+            /* 螢幕高亮版 */
+
+            /* 玫瑰金 (Rose Gold) - 黃昏・專業本位・豪華配備 */
+            --rose-gold: #B4745A;
+            --rose-gold-deep: #794425;
+            /* 數位校準色 */
+            --rose-gold-light: #C9917A;
+            /* 淺色變體 */
+
+            /* 曜石灰 (Obsidian Grey) - 夜晚・謹慎紀律・安全至上 */
+            --obsidian-grey: #45464D;
+            --obsidian-deep: #0F2D3C;
+            /* 深星耀藍 (官網背景) */
+            --obsidian-light: #4E463F;
+            /* 數位校準色 */
+
+            /* 頁面背景 */
+            --cream-bg: #F3F1E5;
+            /* 奶油白 */
+            --cream-dark: #E8E6DA;
+
+            /* 語意色彩 */
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-dark: #1D1D1F;
+            --separator: rgba(255, 255, 255, 0.1);
+            --success: #32D74B;
+            --error: #FF453A;
+
+            /* 圓角系統 */
+            --radius-l: 24px;
+            --radius-m: 16px;
+            --radius-s: 8px;
+            --radius-pill: 50px;
+            /* 膠囊狀 */
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            /* AJA 內文字體：Montserrat */
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            /* AJA 奶油白背景 */
+            background-color: var(--cream-bg);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 24px;
+        }
+
+        /* Safe Centering Container */
+        .login-content {
+            width: 100%;
+            margin: auto 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 40px;
+        }
+
+        /* 標題字體：Rufina 襯線體 + 大地金 */
+        h1 {
+            font-family: 'Rufina', Georgia, serif;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin: 0 0 8px 0;
+            color: var(--earth-gold);
+            /* 大地金 - 創新思維 */
+            text-align: center;
+        }
+
+        h2 {
+            font-family: 'Rufina', Georgia, serif;
+            font-size: 34px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: var(--rose-gold);
+            /* 玫瑰金 - 專業本位 */
+            text-align: center;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 36px;
+            opacity: 0.9;
+        }
+
+        /* 輸入區塊 - 曜石灰卡片 */
+        .input-group {
+            background: var(--obsidian-grey);
+            /* 曜石灰 - 謹慎紀律 */
+            border-radius: var(--radius-l);
+            padding: 0;
+            margin-bottom: 24px;
+            border: 1px solid rgba(155, 138, 94, 0.2);
+            /* 大地金邊框 */
+            overflow: hidden;
+            color: var(--text-primary);
+            box-shadow: 0 8px 32px rgba(69, 70, 77, 0.4);
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 0.5px solid var(--separator);
+            min-height: 56px;
+        }
+
+        .input-row:last-child {
+            border-bottom: none;
+        }
+
+        .input-label {
+            width: 70px;
+            font-size: 16px;
+            color: #FFFFFF;
+            /* 🆕 Force White */
+            font-weight: 500;
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #FFFFFF;
+            /* 🆕 Force White */
+            font-size: 17px;
+            /* Prevent zoom on iOS */
+            outline: none;
+            padding: 0;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            /* 🆕 Opacity White */
+        }
+
+        /* Captcha */
+        .captcha-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+        }
+
+        #cap-box {
+            min-height: 50px;
+            height: auto;
+            background: #fff;
+            border-radius: 6px;
+            overflow: visible;
+            cursor: pointer;
+            min-width: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
+
+        #cap-box svg {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 膠囊狀按鈕 - 玫瑰金漸層 */
+        .btn-primary {
+            width: 100%;
+            padding: 18px 32px;
+            border-radius: var(--radius-pill);
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            margin-bottom: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 24px rgba(180, 116, 90, 0.4);
+            /* 玫瑰金陰影 */
+            letter-spacing: 2px;
+            text-transform: uppercase;
+
+            /* 玫瑰金漸層 (Rose Gold Gradient) */
+            background: linear-gradient(135deg, var(--rose-gold-deep) 0%, var(--rose-gold) 50%, var(--rose-gold-deep) 100%);
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 12px 32px rgba(180, 116, 90, 0.55);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98) translateY(0);
+            box-shadow: 0 4px 16px rgba(180, 116, 90, 0.35);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--rose-gold);
+            /* 玫瑰金 */
+            border: 1.5px solid var(--rose-gold);
+            padding: 14px 24px;
+            border-radius: var(--radius-pill);
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 24px;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--rose-gold);
+            color: #FFFFFF;
+        }
+
+        /* Result View */
+        .student-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .student-id {
+            font-size: 17px;
+            color: #86868b;
+            margin-top: 4px;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        /* 成績卡片 - 曜石灰深色卡片 */
+        .grade-card {
+            background: var(--obsidian-grey);
+            /* 曜石灰 */
+            border-radius: var(--radius-m);
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(155, 138, 94, 0.15);
+            /* 大地金邊框 */
+            color: var(--text-primary);
+            box-shadow: 0 8px 24px rgba(69, 70, 77, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .grade-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(69, 70, 77, 0.45);
+        }
+
+        .grade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .subject-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: #FFFFFF;
+            /* 🆕 Force White */
+        }
+
+        .grade-main-container {
+            display: flex;
+            align-items: baseline;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .grade-val {
+            font-size: 28px;
+            font-weight: 700;
+            color: #FFFFFF;
+            /* 🆕 Force White */
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Trend Badges */
+        .trend-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .trend-pill.up {
+            background: rgba(50, 215, 75, 0.15);
+            color: var(--success);
+        }
+
+        .trend-pill.down {
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--error);
+        }
+
+        .trend-pill.flat {
+            background: rgba(142, 142, 147, 0.15);
+            color: var(--text-secondary);
+        }
+
+        /* Stats Footer in Card */
+        .stats-footer {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+        }
+
+        .stat-item {
+            font-size: 14px;
+            /* Was 12px */
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .stat-val {
+            color: var(--earth-gold);
+            /* 大地金 */
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Loading */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--rose-gold);
+            /* 玫瑰金 */
+            border-radius: 50%;
+            animation: spin 0.8s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(50, 50, 50, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #toast.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+    <div id="toast"><span>Alert</span></div>
+
+    <!-- Login View -->
+    <div id="view-login" class="app-container">
+        <div class="login-content">
+            <h1>成績查詢</h1>
+            <div class="subtitle">PHYSICS DEPARTMENT</div>
+
+            <div class="input-group">
+                <div class="input-row">
+                    <span class="input-label">學號</span>
+                    <input type="number" id="inp-id" placeholder="Student ID" inputmode="numeric">
+                </div>
+                <div class="input-row">
+                    <span class="input-label">查詢碼</span>
+                    <input type="password" id="inp-pwd" placeholder="Code" inputmode="numeric">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="captcha-row">
+                    <input type="text" id="inp-cap" placeholder="驗證碼 Answer"
+                        style="width: 100px; text-align: left; padding-left: 16px;">
+                    <div id="cap-box">Loading...</div>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="doLogin()">登入查詢 Login</button>
+
+            <!-- 安全警告區塊 (星宇官方品牌規範色) -->
+            <div
+                style="margin-top: 24px; padding: 24px; background: var(--obsidian-grey); border: 1px solid rgba(155, 138, 94, 0.25); border-radius: var(--radius-m); box-shadow: 0 8px 24px rgba(69, 70, 77, 0.3);">
+                <div
+                    style="font-size: 14px; font-weight: 700; color: var(--earth-gold); margin-bottom: 14px; letter-spacing: 1px; text-transform: uppercase;">
+                    ⚠️ Security Notice
+                </div>
+                <div
+                    style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px; border-left: 3px solid var(--rose-gold); padding-left: 14px;">
+                    本系統已啟用完整安全日誌。所有操作均被記錄，惡意鎖定他人帳號將被追查並移送學務處處理。
+                </div>
+                <div
+                    style="font-size: 11px; color: rgba(255,255,255,0.5); font-family: 'SF Mono', 'Monaco', 'Courier', monospace; background: rgba(0,0,0,0.3); padding: 14px; border-radius: var(--radius-s); line-height: 2.0; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: rgba(255,255,255,0.4);">👤 User:</span>
+                        <span id="user-identity" style="color: var(--earth-gold); font-weight: 600;">驗證中...</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: rgba(255,255,255,0.4);">📍 SID:</span>
+                        <span id="session-id" style="color: var(--earth-gold-light); font-weight: 500;">載入中...</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: rgba(255,255,255,0.4);">⏰ TIME:</span>
+                        <span id="access-time" style="color: var(--earth-gold-light); font-weight: 500;">載入中...</span>
+                    </div>
+                </div>
+            </div>
+
+            <p style="text-align:center; color:var(--text-secondary); font-size:12px; margin-top:16px;">
+                Designed by MAXCHAN V6.3
+            </p>
+        </div>
+    </div>
+
+    <!-- Result View -->
+    <div id="view-result" class="app-container" style="display:none;">
+        <div class="student-header">
+            <h2 id="disp-name">--</h2>
+            <div class="student-id" id="disp-id">--</div>
+        </div>
+
+        <div id="list-container">
+            <!-- Cards go here -->
+        </div>
+
+        <button class="btn-secondary" onclick="location.reload()">登出系統</button>
+    </div>
+
+    <script>
+        // Init
+        let token = '';
+        let sessionId = '';  // 🆕 追蹤碼
+        window.onload = function () {
+            loadCaptcha();
+            initSecurityInfo();  // 🆕 初始化安全資訊
+        };
+        const capBox = document.getElementById('cap-box');
+        capBox.onclick = loadCaptcha;
+
+        // 🆕 初始化安全資訊
+        function initSecurityInfo() {
+            // 生成 Session ID（真實的追蹤碼）
+            const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+            const random = Math.random().toString(36).substring(2, 8);
+            sessionId = `${timestamp}-${random}`;
+
+            // 格式化時間
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+            // 🆕 更新顯示 (顯示真實 Email)
+            // userEmail 變數由後端 doGet 傳入 (透過 Scriptlet)
+            document.getElementById('user-identity').textContent = "<?= userEmail ?>";
+            document.getElementById('session-id').textContent = sessionId;
+            document.getElementById('access-time').textContent = timeStr;
+        }
+
+        function loadCaptcha() {
+            capBox.innerHTML = '<span style="color:#999;font-size:12px;">...</span>';
+            google.script.run.withSuccessHandler(r => {
+                capBox.innerHTML = r.svg;
+                token = r.token;
+            }).getCaptcha();
+        }
+
+        function showToast(msg, type = 'normal') {
+            const t = document.getElementById('toast');
+            t.innerHTML = msg;
+            t.className = type === 'error' ? 'visible error' : 'visible';
+            setTimeout(() => t.classList.remove('visible'), 3000);
+        }
+
+        function doLogin() {
+            const id = document.getElementById('inp-id').value;
+            const pwd = document.getElementById('inp-pwd').value;
+            const cap = document.getElementById('inp-cap').value;
+            const seat = document.getElementById('inp-seat')?.value || null;  // 🆕 座號
+            if (!id || !pwd || !cap) return showToast('請填寫完整資訊');
+
+            document.getElementById('loader').style.display = 'flex';
+            google.script.run.withSuccessHandler(res => {
+                document.getElementById('loader').style.display = 'none';
+                if (!res.success) {
+                    // 🆕 處理座號驗證要求
+                    if (res.requireSeatNumber) {
+                        showSeatNumberInput();
+                    }
+                    // 🆕 處理漸進式延遲
+                    if (res.waitSeconds) {
+                        showCountdown(res.waitSeconds);
+                        disableLoginButton(res.waitSeconds);
+                    }
+                    showToast(res.message, 'error');
+                    if (!res.locked && !res.waitSeconds) {
+                        document.getElementById('inp-cap').value = '';
+                        loadCaptcha();
+                    }
+                } else {
+                    renderResult(res.data);
+                }
+            }).login(id, pwd, token, cap, seat, sessionId);  // 🆕 新增 sessionId 參數
+        }
+
+        // 🆕 動態顯示座號輸入框
+        function showSeatNumberInput() {
+            if (document.getElementById('inp-seat')) return;  // 已存在
+
+            const seatRow = document.createElement('div');
+            seatRow.className = 'input-row';
+            seatRow.id = 'seat-row';
+            seatRow.style.animation = 'slideIn 0.3s ease';
+            seatRow.innerHTML = `
+                <label>📍 座號</label>
+                <input type="text" id="inp-seat" placeholder="請輸入您的座號" />
+            `;
+
+            const pwdRow = document.querySelector('.input-row:has(#inp-pwd)');
+            pwdRow.after(seatRow);
+
+            // 自動聚焦座號輸入框
+            setTimeout(() => document.getElementById('inp-seat').focus(), 100);
+        }
+
+        // 🆕 顯示倒數計時器
+        function showCountdown(seconds) {
+            const toast = document.getElementById('toast');
+            let remaining = seconds;
+
+            const updateCountdown = () => {
+                if (remaining > 0) {
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    const timeStr = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
+                    toast.innerHTML = `⏳ 請稍候 ${timeStr} 再試`;
+                    toast.className = 'visible error';
+                    remaining--;
+                    setTimeout(updateCountdown, 1000);
+                } else {
+                    toast.classList.remove('visible');
+                    showToast('可以再次嘗試了！');
+                }
+            };
+            updateCountdown();
+        }
+
+        // 🆕 禽用登入按鈕 N 秒
+        function disableLoginButton(seconds) {
+            const btn = document.querySelector('.btn-primary');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                loadCaptcha();  // 重新載入驗證碼
+            }, seconds * 1000);
+        }
+
+        function renderResult(data) {
+            document.getElementById('view-login').style.display = 'none';
+            document.getElementById('view-result').style.display = 'flex';
+
+            document.getElementById('disp-name').innerText = data['姓名'] || '同學';
+            document.getElementById('disp-id').innerText = data['學號'];
+
+            // Debug Log (Hidden from UI, visible in Console as requested previously)
+            if (data._debug) {
+                console.group('Backend Debug Logic');
+                data._debug.forEach(l => console.log(l));
+                console.groupEnd();
+            }
+
+            const container = document.getElementById('list-container');
+            container.innerHTML = '';
+
+            const ignore = ['姓名', '學號', 'sheetName', 'rowIndex', '查詢碼', '_stats', '_debug', 'Email', 'email'];
+            const stats = data._stats || {};
+
+            Object.keys(data).forEach(key => {
+                if (ignore.includes(key)) return;
+
+                const val = data[key];
+                const s = stats[key] || {};
+
+                // Trend
+                let trendHtml = '';
+                if (s.diff !== undefined && s.diff !== null) {
+                    const diff = parseFloat(s.diff);
+                    if (diff > 0) trendHtml = `<div class="trend-pill up">▲ ${diff}</div>`;
+                    else if (diff < 0) trendHtml = `<div class="trend-pill down">▼ ${Math.abs(diff)}</div>`; // Use abs for display
+                    else trendHtml = `<div class="trend-pill flat">-</div>`;
+                }
+
+                // Stats
+                let footerHtml = '';
+                if (s.avg) {
+                    footerHtml = `
+                        <div class="stats-footer">
+                            <div class="stat-item">班排名 <span class="stat-val">${s.rank}</span></div>
+                            <div class="stat-item">班級平均 <span class="stat-val">${s.avg}</span></div>
+                        </div>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'grade-card';
+                card.innerHTML = `
+                    <div class="grade-header">
+                        <span class="subject-name">${key}</span>
+                        ${trendHtml}
+                    </div>
+                    <div class="grade-main-container">
+                        <span class="grade-val">${val}</span>
+                    </div>
+                    ${footerHtml}
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+
+</html>

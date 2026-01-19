@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>富士山之旅 2026</title>
+
+    <!-- PWA / Mobile Capable -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f2f2f7">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/fuji-mount.png">
+
+    <!-- CSS / Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Utilities -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'muji-red': '#7F0019',
+                        'muji-text': '#4A4A4A',
+                        'muji-sub': '#8E8E93',
+                        'ios-bg': '#F2F2F7',
+                        'ios-separator': '#C6C6C8',
+                        'ios-blue': '#007AFF'
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+                    },
+                    spacing: {
+                        'safe-top': 'env(safe-area-inset-top)',
+                        'safe-bottom': 'env(safe-area-inset-bottom)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.2s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+
+        .slide-up-enter-active {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .slide-up-enter-from {
+            transform: translateY(100%);
+        }
+
+        /* Drag & Drop Ghost */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #fce8e8;
+        }
+
+        .sortable-drag {
+            cursor: grabbing;
+        }
+
+        /* Toggle Switch */
+        /* ... existing styles ... */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 51px;
+            height: 31px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e9e9ea;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked+.slider {
+            background-color: #34C759;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        /* GPS Pulse */
+        .gps-pulse {
+            width: 16px;
+            height: 16px;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            background-color: #007AFF;
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.3);
+        }
+
+        /* Checklist Checkbox */
+        .custom-checkbox:checked+div {
+            background-color: #7F0019;
+            border-color: #7F0019;
+        }
+    </style>
+</head>
+
+<body class="text-muji-text h-[100dvh] flex flex-col overflow-hidden bg-ios-bg">
+
+    <div id="app"
+        class="flex flex-col h-full w-full max-w-md mx-auto bg-ios-bg relative sm:border-x sm:border-ios-separator/30">
+
+        <!-- Top Navigation -->
+        <header class="bg-ios-bg/90 backdrop-blur-xl sticky top-0 z-30 pt-safe-top transition-all duration-200"
+            :class="{'border-b border-ios-separator/50': !isScrolledTop}">
+
+            <div class="px-5 pt-2 pb-2 flex justify-between items-center h-11">
+                <!-- Left: Menu -->
+                <button @click="showTripMenu = true" class="text-muji-red flex items-center gap-1 text-[17px]">
+                    <i class="ph-bold ph-list text-xl"></i>
+                </button>
+
+                <!-- Center: Title (Simplified) -->
+                <div v-if="!isScrolledTop"
+                    class="text-[17px] font-bold absolute left-1/2 -translate-x-1/2 transition-opacity duration-200">
+                    {{ getPageTitle() }}
+                </div>
+
+                <!-- Right: Action -->
+                <div class="flex items-center gap-3">
+                    <button v-if="viewMode === 'plan'" @click="exportToPDF" class="text-muji-red">
+                        <i class="ph-bold ph-export text-xl"></i>
+                    </button>
+                    <button v-if="viewMode === 'plan'" @click="addDay"
+                        class="text-muji-red text-[17px] flex items-center gap-1">
+                        <i class="ph-bold ph-plus"></i> <span class="font-normal hidden sm:inline">新增</span>
+                    </button>
+                    <button v-if="viewMode === 'map'" @click="centerOnUser" class="text-muji-red">
+                        <i class="ph-fill ph-navigation-arrow text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Large Title & Countdown -->
+            <div class="px-5 pb-2 transition-all duration-300 origin-top overflow-hidden"
+                :class="{'h-0 opacity-0': !isScrolledTop, 'h-auto opacity-100': isScrolledTop}">
+                <div class="flex justify-between items-end">
+                    <h1 class="text-[34px] font-bold leading-tight tracking-tight text-black">{{ getPageTitle() }}</h1>
+
+                    <!-- Widget: Countdown -->
+                    <div v-if="daysUntilStart !== null && viewMode === 'plan'" class="mb-1.5 flex flex-col items-end">
+                        <div class="text-[10px] text-muji-sub font-bold uppercase tracking-wider">距離出發</div>
+                        <div class="text-xl font-bold text-muji-red tabular-nums">{{ daysUntilStart }} <span
+                                class="text-xs text-muji-text font-normal">天</span></div>
+                    </div>
+                </div>
+
+                <div v-if="viewMode === 'plan'" class="text-sm text-muji-sub mt-1 font-medium flex items-center gap-2">
+                    <span>{{ setup.destination || '目的地' }}</span>
+                    <span class="text-xs opacity-50">•</span>
+                    <span>{{ days[currentDayIdx]?.shortDate || '選擇日期' }}</span>
+                </div>
+            </div>
+
+            <!-- Day Selector (Plan Only) -->
+            <div v-if="viewMode === 'plan'" class="flex overflow-x-auto hide-scroll px-4 pb-3 space-x-2 snap-x mt-2">
+                <div v-for="(day, index) in days" :key="index" @click="currentDayIdx = index"
+                    class="snap-center shrink-0 flex flex-col items-center justify-center w-[4.5rem] h-14 rounded-xl cursor-pointer transition-all border"
+                    :class="currentDayIdx === index ? 'bg-muji-red text-white border-muji-red shadow-md scale-105' : 'bg-white text-muji-text border-transparent shadow-sm'">
+                    <span class="text-[10px] uppercase font-bold opacity-80 mb-0.5">{{ day.shortDate }}</span>
+                    <span class="text-sm font-bold">D{{ index + 1 }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 overflow-y-auto bg-ios-bg relative hide-scroll" @scroll="handleScroll"
+            ref="mainScroll">
+
+            <!-- VIEW: PLAN -->
+            <transition name="fade">
+                <div v-if="viewMode === 'plan'" class="p-4 pb-32 space-y-6">
+
+                    <!-- Date & Weather -->
+                    <div class="bg-white rounded-xl overflow-hidden shadow-ios">
+                        <div
+                            class="p-4 flex justify-between items-center bg-gradient-to-r from-red-50/50 to-transparent">
+                            <div>
+                                <input type="date" :value="currentDay.fullDate" @change="updateDate($event, currentDay)"
+                                    class="absolute opacity-0 w-8 h-8 pointer-events-auto cursor-pointer">
+                                <h3 class="text-lg font-bold text-muji-text flex items-center gap-2">
+                                    {{ currentDay.date.split(' ')[0] }}
+                                    <span class="text-muji-sub font-normal text-base">{{ currentDay.date.split(' ')[1]
+                                        }}</span>
+                                    <i class="ph-bold ph-caret-down text-xs text-muji-sub/50"></i>
+                                </h3>
+                                <div class="mt-1">
+                                    <input v-model="currentDay.title"
+                                        class="w-full text-[15px] bg-transparent placeholder-muji-sub/40 text-muji-text focus:outline-none"
+                                        placeholder="輸入當日主題...">
+                                </div>
+                            </div>
+                            <div v-if="weatherDisplay" class="text-right">
+                                <div class="text-2xl font-light text-muji-text tracking-tighter">{{ weatherDisplay.temp
+                                    }}</div>
+                                <div class="text-xs text-muji-sub flex items-center justify-end gap-1"><i
+                                        :class="['ph-fill', weatherDisplay.icon]"></i> {{ weatherDisplay.label }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flight Card -->
+                    <div class="bg-white rounded-xl shadow-ios overflow-hidden relative group">
+                        <div class="bg-muji-red/5 px-4 py-2 border-b border-muji-red/10 flex justify-between items-center cursor-pointer"
+                            @click="toggleFlightCard">
+                            <span class="text-[11px] font-bold text-muji-red uppercase tracking-wider">航班資訊</span>
+                            <i class="ph-bold text-muji-red"
+                                :class="currentDay.flight ? 'ph-caret-up' : 'ph-caret-down'"></i>
+                        </div>
+                        <div v-if="currentDay.flight" class="p-5">
+                            <div class="flex justify-between items-center">
+                                <div class="text-center w-1/3">
+                                    <input v-model="currentDay.flight.startTime" type="time"
+                                        class="text-[28px] font-light text-muji-text w-full text-center bg-transparent focus:outline-none p-0">
+                                    <input v-model="currentDay.flight.startAirport"
+                                        class="text-[13px] font-bold text-muji-sub uppercase w-full text-center bg-transparent focus:outline-none p-0 tracking-wider">
+                                </div>
+                                <div class="w-1/3 flex flex-col items-center justify-center px-1">
+                                    <div class="text-[10px] font-bold text-muji-sub/50 mb-1">飛行時間</div>
+                                    <div class="w-full h-[2px] bg-muji-sub/20 relative rounded-full">
+                                        <i
+                                            class="ph-fill ph-airplane absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1 text-muji-sub/50 text-xs"></i>
+                                    </div>
+                                    <input v-model="currentDay.flight.number"
+                                        class="text-[11px] font-medium text-muji-sub mt-1 w-full text-center bg-transparent uppercase p-0 focus:outline-none">
+                                </div>
+                                <div class="text-center w-1/3 relative">
+                                    <input v-model="currentDay.flight.endTime" type="time"
+                                        class="text-[28px] font-light text-muji-text w-full text-center bg-transparent focus:outline-none p-0">
+                                    <input v-model="currentDay.flight.endAirport"
+                                        class="text-[13px] font-bold text-muji-sub uppercase w-full text-center bg-transparent focus:outline-none p-0 tracking-wider">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Itinerary List (Sortable) -->
+                    <div class="space-y-4" ref="itineraryList">
+                        <div v-for="(item, idx) in currentDay.items" :key="idx"
+                            class="flex gap-4 group itinerary-item select-none" :data-id="idx">
+
+                            <!-- Time & Connector -->
+                            <div class="w-12 pt-1 flex flex-col items-center shrink-0">
+                                <input v-model="item.time" type="time"
+                                    class="text-[13px] font-semibold text-muji-text bg-transparent text-center w-full focus:outline-none font-mono">
+                                <div
+                                    class="h-full w-[2px] bg-ios-separator/30 my-1 rounded-full group-last:bg-transparent relative">
+                                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-ios-bg rounded-full flex items-center justify-center cursor-pointer border border-ios-separator/50 hover:bg-white transition"
+                                        @click="cycleType(item)">
+                                        <i class="ph-fill text-[10px] text-muji-sub" :class="getIcon(item.type)"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Content -->
+                            <div
+                                class="flex-1 bg-white rounded-xl p-4 shadow-ios relative active:shadow-md transition-shadow">
+                                <!-- Drag Handle (Invisible specific area or just whole card, using handler icon here) -->
+                                <div
+                                    class="drag-handle absolute top-4 right-4 text-muji-sub/20 cursor-grab active:cursor-grabbing p-2 -mt-2 -mr-2">
+                                    <i class="ph-bold ph-dots-six"></i>
+                                </div>
+
+                                <div class="flex flex-col gap-2 pr-6">
+                                    <input v-model="item.activity"
+                                        class="text-[17px] font-semibold text-muji-text bg-transparent w-full focus:outline-none"
+                                        placeholder="行程名稱">
+
+                                    <div class="flex items-center gap-2 border-b border-ios-bg pb-2">
+                                        <i class="ph-fill ph-map-pin text-muji-red/70 text-sm shrink-0"></i>
+                                        <input v-model="item.location"
+                                            class="text-[15px] text-muji-sub flex-1 bg-transparent focus:outline-none w-0"
+                                            placeholder="新增地點...">
+
+                                        <!-- Widget: Smart Links -->
+                                        <div v-if="item.location" class="flex gap-1 shrink-0">
+                                            <a :href="getGoogleMapLink(item.location)" target="_blank"
+                                                class="p-1 bg-ios-bg rounded text-muji-sub hover:text-muji-red transition">
+                                                <i class="ph-bold ph-map-trifold text-sm"></i>
+                                            </a>
+                                            <a :href="getTransitLink(item.location)" target="_blank"
+                                                class="p-1 bg-ios-bg rounded text-muji-sub hover:text-muji-red transition">
+                                                <i class="ph-bold ph-train text-sm"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start gap-2">
+                                        <i
+                                            class="ph-fill ph-text-align-left text-muji-sub/40 text-sm mt-1 shrink-0"></i>
+                                        <textarea v-model="item.note" rows="1"
+                                            class="text-[13px] text-muji-sub w-full bg-transparent focus:outline-none resize-none"
+                                            placeholder="備註..."></textarea>
+                                    </div>
+                                </div>
+
+                                <button @click="removeItem(idx)"
+                                    class="absolute bottom-2 right-2 text-muji-sub/20 hover:text-red-500 p-2"><i
+                                        class="ph-bold ph-trash"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Add Button -->
+                        <button @click="addItem"
+                            class="w-full py-4 rounded-xl border-2 border-dashed border-ios-separator/50 text-muji-sub font-medium hover:border-muji-red hover:text-muji-red transition flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-plus"></i> 加入行程
+                        </button>
+                    </div>
+                </div>
+            </transition>
+
+            <!-- VIEW: CHECKLIST (New) -->
+            <transition name="fade">
+                <div v-if="viewMode === 'checklist'" class="p-4 pb-32 space-y-6">
+                    <div v-for="(category, catName) in checklist" :key="catName"
+                        class="bg-white rounded-xl shadow-ios overflow-hidden">
+                        <div
+                            class="bg-ios-bg/50 px-4 py-2 border-b border-ios-separator/30 flex justify-between items-center">
+                            <span
+                                class="text-[13px] font-bold text-muji-text uppercase tracking-wide flex items-center gap-2">
+                                <i class="ph-fill text-muji-red/80 text-lg" :class="getCategoryIcon(catName)"></i> {{
+                                catName }}
+                            </span>
+                            <span class="text-xs text-muji-sub font-bold">{{ category.filter(i => i.checked).length }} /
+                                {{ category.length }}</span>
+                        </div>
+                        <div class="divide-y divide-ios-separator/30">
+                            <label v-for="(item, idx) in category" :key="idx"
+                                class="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition">
+                                <div class="relative flex items-center">
+                                    <input type="checkbox" v-model="item.checked"
+                                        class="peer opacity-0 absolute h-full w-full cursor-pointer">
+                                    <div
+                                        class="w-6 h-6 rounded-full border-2 border-ios-separator peer-checked:bg-muji-red peer-checked:border-muji-red transition-all flex items-center justify-center text-white">
+                                        <i class="ph-bold ph-check text-sm opacity-0 peer-checked:opacity-100"></i>
+                                    </div>
+                                </div>
+                                <span class="text-[15px] text-muji-text transition-all"
+                                    :class="{'opacity-40 line-through': item.checked}">{{ item.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <!-- VIEW: MAP (Same as v1) -->
+            <div v-if="viewMode === 'map'" class="h-full flex flex-col relative w-full">
+                <div id="map" class="flex-1 w-full bg-ios-bg/20 z-0"></div>
+                <div v-if="isMapLoading"
+                    class="absolute inset-0 bg-white/80 backdrop-blur z-10 flex items-center justify-center text-muji-sub font-bold text-sm">
+                    地圖載入中...</div>
+                <div
+                    class="absolute bottom-6 left-5 right-5 bg-white/90 backdrop-blur-xl rounded-2xl p-4 shadow-xl z-20 border border-white/20">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-xs text-muji-sub font-bold uppercase tracking-wide">今日地點</div>
+                            <div class="text-xl font-bold text-muji-text">{{
+                                currentDay.items.filter(i=>i.location).length }} <span
+                                    class="text-sm font-normal text-muji-sub">個</span></div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="initMap"
+                                class="w-10 h-10 bg-ios-bg rounded-full text-muji-text flex items-center justify-center"><i
+                                    class="ph-bold ph-arrows-clockwise"></i></button>
+                            <button @click="centerOnUser"
+                                class="w-10 h-10 bg-muji-red text-white rounded-full shadow-lg flex items-center justify-center"><i
+                                    class="ph-bold ph-crosshair"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: MONEY (Simplified) -->
+            <transition name="fade">
+                <div v-if="viewMode === 'money'" class="p-4 pb-32 space-y-4">
+                    <div class="bg-white rounded-xl p-5 shadow-ios text-center">
+                        <div class="text-[11px] text-muji-sub font-bold uppercase tracking-wide mb-1">總支出預估</div>
+                        <div class="text-[34px] font-bold text-muji-text tabular-nums tracking-tight">{{ currencySymbol
+                            }} {{ totalExpense.toLocaleString() }}</div>
+                        <div v-if="debtSettlement.length > 0"
+                            class="mt-4 pt-4 border-t border-ios-separator/50 space-y-2">
+                            <div v-for="d in debtSettlement" :key="d.from"
+                                class="text-[15px] font-bold text-muji-text flex items-center justify-center gap-2">
+                                <span>{{ d.from }}</span>
+                                <i class="ph-bold ph-arrow-right text-xs text-muji-sub"></i>
+                                <span>{{ d.to }}</span>
+                                <span class="text-muji-red bg-muji-red/10 px-2 py-0.5 rounded text-sm">{{ currencySymbol
+                                    }}{{ Math.round(d.amount).toLocaleString() }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 shadow-ios">
+                        <div class="flex items-center gap-3 mb-3">
+                            <input v-model="newExpense.item" placeholder="消費項目"
+                                class="flex-1 text-[17px] bg-transparent border-b border-ios-bg py-2 focus:border-muji-red focus:outline-none">
+                            <select v-model="newExpense.payer"
+                                class="bg-ios-bg text-sm rounded-lg px-2 py-1.5 font-bold text-muji-text border-none focus:ring-0">
+                                <option v-for="p in participants" :value="p">{{ p }} 先付</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-lg font-bold text-muji-sub">{{ currencySymbol }}</span>
+                            <input v-model.number="newExpense.amount" type="number" placeholder="金額"
+                                class="flex-1 text-2xl font-bold bg-transparent py-1 focus:outline-none">
+                            <button @click="addExpense"
+                                class="bg-muji-red text-white flex items-center gap-1 px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition-transform"><i
+                                    class="ph-bold ph-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-ios overflow-hidden">
+                        <div
+                            class="px-4 py-2 bg-ios-bg/50 border-b border-ios-bg text-[11px] text-muji-sub font-bold uppercase">
+                            支出明細</div>
+                        <div v-for="(exp, idx) in expenses" :key="idx"
+                            class="flex justify-between items-center p-4 border-b border-ios-bg last:border-0">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-muji-red/10 text-muji-red flex items-center justify-center font-bold text-xs">
+                                    {{ exp.payer.charAt(0) }}</div>
+                                <div class="text-[17px] text-muji-text">{{ exp.item }}</div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-[17px] font-bold text-muji-text tabular-nums">{{ currencySymbol }}{{
+                                    exp.amount.toLocaleString() }}</span>
+                                <button @click="removeExpense(idx)" class="text-muji-sub/40 hover:text-red-500"><i
+                                        class="ph-fill ph-minus-circle text-xl"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+        </main>
+
+        <!-- Bottom Tab Bar -->
+        <nav
+            class="shrink-0 bg-white/95 backdrop-blur-xl border-t border-ios-separator/50 pb-safe-bottom z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.03)]">
+            <div class="flex justify-around items-center h-[55px]">
+                <button @click="viewMode = 'plan'"
+                    class="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+                    :class="viewMode === 'plan' ? 'text-muji-red' : 'text-muji-sub/60'">
+                    <i :class="viewMode === 'plan' ? 'ph-fill ph-calendar-check' : 'ph ph-calendar-check'"
+                        class="text-2xl"></i>
+                    <span class="text-[10px] font-medium">行程</span>
+                </button>
+                <button @click="viewMode = 'map'"
+                    class="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+                    :class="viewMode === 'map' ? 'text-muji-red' : 'text-muji-sub/60'">
+                    <i :class="viewMode === 'map' ? 'ph-fill ph-map-trifold' : 'ph ph-map-trifold'"
+                        class="text-2xl"></i>
+                    <span class="text-[10px] font-medium">地圖</span>
+                </button>
+                <button @click="viewMode = 'checklist'"
+                    class="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+                    :class="viewMode === 'checklist' ? 'text-muji-red' : 'text-muji-sub/60'">
+                    <i :class="viewMode === 'checklist' ? 'ph-fill ph-clipboard-text' : 'ph ph-clipboard-text'"
+                        class="text-2xl"></i>
+                    <span class="text-[10px] font-medium">清單</span>
+                </button>
+                <button @click="viewMode = 'money'"
+                    class="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+                    :class="viewMode === 'money' ? 'text-muji-red' : 'text-muji-sub/60'">
+                    <i :class="viewMode === 'money' ? 'ph-fill ph-currency-dollar' : 'ph ph-currency-dollar'"
+                        class="text-2xl"></i>
+                    <span class="text-[10px] font-medium">分帳</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Sidebar Menu (Simplified) -->
+        <transition name="fade">
+            <div v-if="showTripMenu"
+                class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
+                <div
+                    class="bg-ios-bg w-full max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden animate-slide-up max-h-[80vh] flex flex-col">
+                    <div class="p-4 bg-white border-b border-ios-separator/50 flex justify-between items-center">
+                        <h2 class="text-[17px] font-bold text-muji-text">我的旅程</h2>
+                        <button @click="showTripMenu = false"
+                            class="w-8 h-8 bg-ios-bg rounded-full flex items-center justify-center text-muji-sub"><i
+                                class="ph-bold ph-x"></i></button>
+                    </div>
+                    <div class="p-4 overflow-y-auto">
+                        <div class="space-y-3">
+                            <div v-for="trip in tripList" :key="trip.id" @click="switchTrip(trip.id)"
+                                class="p-4 rounded-xl border transition cursor-pointer relative flex justify-between items-center"
+                                :class="currentTripId === trip.id ? 'bg-white border-muji-red ring-1 ring-muji-red' : 'bg-white border-transparent'">
+                                <div>
+                                    <div class="font-bold text-[17px]">{{ trip.destination }}</div>
+                                    <div class="text-xs text-muji-sub mt-1">{{ trip.startDate }}</div>
+                                </div>
+                                <i v-if="currentTripId === trip.id"
+                                    class="ph-fill ph-check-circle text-muji-red text-xl"></i>
+                            </div>
+                        </div>
+
+                        <!-- Backup/Restore Buttons -->
+                        <div class="mt-4 pt-4 border-t border-ios-separator/50 flex gap-2">
+                            <button @click="exportJSON"
+                                class="flex-1 py-2.5 bg-ios-bg text-muji-text rounded-xl text-sm font-bold active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                                <i class="ph-bold ph-export"></i> 備份
+                            </button>
+                            <button @click="triggerImport"
+                                class="flex-1 py-2.5 bg-ios-bg text-muji-text rounded-xl text-sm font-bold active:scale-95 transition-transform flex items-center justify-center gap-1.5">
+                                <i class="ph-bold ph-download-simple"></i> 還原
+                            </button>
+                            <input type="file" id="importFile" class="hidden" accept=".json" @change="importJSON">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+    </div>
+
+    <script type="module">
+        import { createApp, ref, computed, watch, onMounted, nextTick, reactive } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+
+        createApp({
+            setup() {
+                const viewMode = ref('plan');
+                const currentDayIdx = ref(0);
+                const isScrolledTop = ref(true);
+                const mainScroll = ref(null);
+                const itineraryList = ref(null); // Sortable ref
+
+                let mapInstance, userMarker, sortableInstance;
+
+                // Trip Data
+                const showTripMenu = ref(false);
+                const tripList = ref([]);
+                const currentTripId = ref(null);
+                const showSetupModal = ref(false);
+
+                // Core Data
+                const days = ref([]);
+                const expenses = ref([]);
+                const participants = ref(['我', '旅伴']);
+                const exchangeRate = ref(0.215);
+                const newExpense = ref({ item: '', amount: '', payer: '我' });
+                const weather = ref({ temp: null, icon: 'ph-sun', code: 0, location: '', daily: [] });
+                const setup = ref({ destination: '富士山', startDate: '2026-04-03', days: 4, rate: 0.215, currency: 'JPY' });
+
+                // Checklist Data
+                const checklist = ref({
+                    '證件與財物': [
+                        { name: '護照 (檢查效期)', checked: false }, { name: '日幣現金', checked: false }, { name: '信用卡 (海外回饋高)', checked: false }, { name: 'VJW截圖 / QR Code', checked: false }
+                    ],
+                    '寶寶用品': [
+                        { name: '奶瓶 / 奶粉 / 隨身包', checked: false }, { name: '尿布 (預計一天6片)', checked: false }, { name: '安撫奶嘴 / 玩具', checked: false }, { name: '常備藥 (退燒/益生菌)', checked: false }, { name: '防寒推車罩 / 雨罩', checked: false }
+                    ],
+                    '衣物 (0-10度)': [
+                        { name: '發熱衣 / 羊毛內層', checked: false }, { name: '防風厚外套 (洋蔥式)', checked: false }, { name: '手套 / 毛帽 / 圍巾', checked: false }, { name: '好走的鞋子', checked: false }
+                    ],
+                    '電子與雜物': [
+                        { name: '漫遊 / SIM 卡', checked: false }, { name: '行動電源', checked: false }, { name: '充電器 / 轉接頭', checked: false }, { name: '簡易醫藥包', checked: false }
+                    ]
+                });
+
+                // Auto-Import Data
+                const fujiTripMeta = { id: 'trip_fuji_2026', destination: '富士山', startDate: '2026-04-03', daysCount: 4 };
+                const fujiDays = [
+                    {
+                        date: '4/3 週五', shortDate: '4/3', fullDate: '2026-04-03', title: '初見富士山',
+                        items: [
+                            { time: '13:20', type: 'transport', activity: '抵達東京羽田', location: '東京羽田空港', coord: [35.5494, 139.7798], note: '機邊取嬰兒車，司機舉牌接機' },
+                            { time: '17:30', type: 'spot', activity: '入住：虹夕諾雅 富士', location: '虹夕諾雅 富士', coord: [35.5295, 138.7615], note: '換乘吉普車入森林，陽台看富士山！' },
+                            { time: '18:30', type: 'food', activity: '房內晚餐 (Glamping)', location: '虹夕諾雅 富士', coord: [35.5295, 138.7615], note: '壽喜燒/咖哩，輕鬆吃' }
+                        ],
+                        flight: { type: 'arrival', startTime: '09:10', startAirport: 'TSA', number: 'JL096', endTime: '13:20', endAirport: 'HND', arrivalOffset: 0 }
+                    },
+                    {
+                        date: '4/4 週六', shortDate: '4/4', fullDate: '2026-04-04', title: '避世西湖慢時光',
+                        items: [
+                            { time: '08:30', type: 'food', activity: '森林早餐 Box', location: '虹夕諾雅 富士', coord: [35.5295, 138.7615], note: '陽台享用，背單筒望遠鏡' },
+                            { time: '11:00', type: 'spot', activity: '西湖・療癒之里 根場', location: '西湖療癒之里根場', coord: [35.5049, 138.6615], note: '茅草屋聚落，路平好推車' },
+                            { time: '13:00', type: 'food', activity: '暖胃午餐 (餺飥麵)', location: '不動茶屋 東戀路店', coord: [35.4910, 138.7571], note: '南瓜蔬菜麵，適合寶寶' },
+                            { time: '15:00', type: 'spot', activity: '度假村森林時光', location: '虹夕諾雅 富士', coord: [35.5295, 138.7615], note: '劈柴體驗、烤棉花糖、吊床午睡' }
+                        ], flight: null
+                    },
+                    {
+                        date: '4/5 週日', shortDate: '4/5', fullDate: '2026-04-05', title: '湖畔與最後的移動',
+                        items: [
+                            { time: '10:00', type: 'spot', activity: '睡到自然醒 & 退房', location: '虹夕諾雅 富士', coord: [35.5295, 138.7615], note: '再見森林裡的家' },
+                            { time: '12:00', type: 'spot', activity: '富士大石 Hanaterrace', location: '富士大石花園平台', coord: [35.5138, 138.7562], note: '葡萄屋甜點、富士山伴手禮' },
+                            { time: '14:00', type: 'transport', activity: '啟程返回東京', location: '羽田機場泉空飯店', coord: [35.5439, 139.7657], note: 'Alphard 包車直達飯店' },
+                            { time: '17:00', type: 'spot', activity: '入住：羽田泉空飯店', location: 'Villa Fontaine Grand Haneda Airport', coord: [35.5439, 139.7657], note: '直通第三航廈，樓下有溫泉與商場' }
+                        ], flight: null
+                    },
+                    {
+                        date: '4/6 週一', shortDate: '4/6', fullDate: '2026-04-06', title: '輕鬆回家',
+                        items: [
+                            { time: '07:00', type: 'transport', activity: '推車散步去登機', location: '羽田機場第三航廈', coord: [35.5433, 139.7770], note: '免搬行李，優雅通關' }
+                        ],
+                        flight: { type: 'departure', startTime: '08:55', startAirport: 'HND', number: 'JL097', endTime: '11:35', endAirport: 'TSA', arrivalOffset: 0 }
+                    }
+                ];
+
+                // Computed
+                const currentDay = computed(() => days.value[currentDayIdx.value] || { items: [], flight: null, date: '', title: '' });
+                const totalExpense = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
+                const debtSettlement = computed(() => {
+                    const total = totalExpense.value;
+                    const share = total / participants.value.length;
+                    const paid = {};
+                    participants.value.forEach(p => paid[p] = 0);
+                    expenses.value.forEach(e => paid[e.payer] += e.amount);
+
+                    const debts = [];
+                    // Simple 2-person settlement
+                    if (participants.value.length === 2) {
+                        const [p1, p2] = participants.value;
+                        const bal1 = paid[p1] - share;
+                        const bal2 = paid[p2] - share;
+                        if (bal1 > bal2) debts.push({ from: p2, to: p1, amount: bal1 });
+                        else if (bal2 > bal1) debts.push({ from: p1, to: p2, amount: bal2 });
+                    }
+                    return debts;
+                });
+                const currencySymbol = computed(() => ({ 'JPY': '¥', 'USD': '$', 'TWD': 'NT$' }[setup.value.currency] || '$'));
+                const daysUntilStart = computed(() => {
+                    if (!setup.value.startDate) return null;
+                    const start = new Date(setup.value.startDate);
+                    const now = new Date();
+                    const diffTime = start - now;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays > 0 ? diffDays : null;
+                });
+                const weatherDisplay = computed(() => {
+                    if (!weather.value.current) return { temp: '--°C', icon: 'ph-dots-three', label: '載入中' };
+                    const cur = weather.value.current.current;
+                    const min = weather.value.current.daily.temperature_2m_min[0];
+                    const max = weather.value.current.daily.temperature_2m_max[0];
+                    // Mapping codes: 0=Clear, 1-3=Cloudy, 50+=Rain, 70+=Snow
+                    const c = cur.weather_code;
+                    let icon = 'ph-sun';
+                    if (c > 0 && c <= 3) icon = 'ph-cloud-sun';
+                    if (c >= 45 && c < 50) icon = 'ph-cloud';
+                    if (c >= 50 && c < 70) icon = 'ph-cloud-rain';
+                    if (c >= 70) icon = 'ph-snowflake';
+
+                    return { temp: `${Math.round(cur.temperature_2m)}°C`, icon, label: `${Math.round(min)}° / ${Math.round(max)}°` };
+                });
+
+                const fetchWeather = async () => {
+                    // Coordinates for Mt. Fuji area (Lake Kawaguchi)
+                    const lat = 35.53; const lng = 138.76;
+                    try {
+                        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`);
+                        const data = await res.json();
+                        weather.value.current = data;
+                    } catch (e) { console.error('Weather fetch fail', e); }
+                };
+
+                // Helpers
+                const getPageTitle = () => ({ 'plan': '行程規劃', 'map': '地圖模式', 'money': '分帳助手', 'checklist': '打包清單' }[viewMode.value]);
+                const handleScroll = (e) => { isScrolledTop.value = e.target.scrollTop < 20; };
+                const generateId = () => 'trip_' + Date.now().toString(36);
+                const toggleFlightCard = () => { if (!currentDay.value.flight) currentDay.value.flight = { type: 'arrival', startTime: '10:00', startAirport: 'TPE', number: 'BR198', endTime: '14:00', endAirport: 'KIX' }; };
+                const getIcon = (t) => t === 'food' ? 'ph-fork-knife' : t === 'shop' ? 'ph-shopping-bag' : t === 'flight' ? 'ph-airplane' : 'ph-map-pin';
+                const getCategoryIcon = (c) => c.includes('證件') ? 'ph-identification-card' : c.includes('寶寶') ? 'ph-baby' : c.includes('衣物') ? 'ph-t-shirt' : 'ph-plug';
+                const cycleType = (item) => { const types = ['spot', 'food', 'shop', 'transport']; item.type = types[(types.indexOf(item.type) + 1) % types.length]; };
+                const updateDate = (e, day) => { const val = e.target.value; if (!val) return; day.fullDate = val; const d = new Date(val); const w = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'][d.getDay()]; day.date = `${d.getMonth() + 1}/${d.getDate()} ${w}`; day.shortDate = `${d.getMonth() + 1}/${d.getDate()}`; };
+
+                // Widget Links
+                const getGoogleMapLink = (loc) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`;
+                const getTransitLink = (loc) => `https://transit.yahoo.co.jp/search/result?from=${encodeURIComponent('Current Location')}&to=${encodeURIComponent(loc)}`; // Note: Yahoo Japan Transit might need specific station names, generic Google Maps Transit is safer often but Yahoo is requested for Japan. Let's use Google Maps Transit mode for broader compatibility if precise station unknown.
+                // Refined Transit Link using Google Maps transit mode
+                const getTransitLinkRefined = (loc) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc)}&travelmode=transit`;
+
+                // Actions
+                const addItem = () => currentDay.value.items.push({ time: '', type: 'spot', activity: '', location: '', note: '' });
+                const removeItem = (idx) => currentDay.value.items.splice(idx, 1);
+                const addDay = () => days.value.push({ date: `Day ${days.value.length + 1}`, items: [] });
+                const addExpense = () => { if (newExpense.value.item) { expenses.value.unshift({ ...newExpense.value }); newExpense.value.item = ''; newExpense.value.amount = ''; } };
+                const removeExpense = (idx) => expenses.value.splice(idx, 1);
+
+                // Persistence
+                const persistTrip = (id, data) => {
+                    localStorage.setItem(`${id}_days`, JSON.stringify(data.days));
+                    localStorage.setItem(`${id}_exp`, JSON.stringify(data.exp));
+                    localStorage.setItem(`${id}_check`, JSON.stringify(data.check));
+                    localStorage.setItem(`${id}_config`, JSON.stringify(data.config));
+                }
+                const switchTrip = (id) => {
+                    currentTripId.value = id; showTripMenu.value = false;
+                    const d = localStorage.getItem(`${id}_days`); if (d) days.value = JSON.parse(d);
+                    const e = localStorage.getItem(`${id}_exp`); if (e) expenses.value = JSON.parse(e);
+                    const c = localStorage.getItem(`${id}_check`); if (c) checklist.value = JSON.parse(c);
+                    const cfg = localStorage.getItem(`${id}_config`); if (cfg) setup.value = JSON.parse(cfg);
+                };
+
+                // Export
+                const exportToPDF = () => {
+                    const el = document.getElementById('app');
+                    html2pdf().set({ margin: 0, filename: 'fuji_trip.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save();
+                };
+
+                const exportJSON = () => {
+                    const data = { store: { ...localStorage } };
+                    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = 'travel_app_backup.json'; a.click();
+                };
+                const triggerImport = () => document.getElementById('importFile').click();
+                const importJSON = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        try {
+                            const data = JSON.parse(evt.target.result);
+                            if (data.store) {
+                                if (confirm('確定要還原備份嗎？這將會覆蓋目前的資料。')) {
+                                    Object.keys(data.store).forEach(k => {
+                                        if (k.startsWith('trip_') || k === 'travel_app_index') localStorage.setItem(k, data.store[k]);
+                                    });
+                                    alert('還原完成，即將重新整理。');
+                                    location.reload();
+                                }
+                            } else { alert('無效的備份檔案'); }
+                        } catch (err) { alert('檔案讀取失敗'); }
+                    };
+                    reader.readAsText(file);
+                };
+
+                // Sortable Init
+                const initSortable = () => {
+                    if (itineraryList.value) {
+                        // Destroy old instance if exists to prevent duplicates
+                        if (sortableInstance) sortableInstance.destroy();
+
+                        sortableInstance = new Sortable(itineraryList.value, {
+                            animation: 150,
+                            handle: '.drag-handle', // dragging via handle only
+                            ghostClass: 'sortable-ghost',
+                            dragClass: 'sortable-drag',
+                            onEnd: (evt) => {
+                                const item = currentDay.value.items.splice(evt.oldIndex, 1)[0];
+                                currentDay.value.items.splice(evt.newIndex, 0, item);
+                            }
+                        });
+                    }
+                };
+
+                watch(viewMode, async (v) => { if (v === 'plan') { await nextTick(); initSortable(); } if (v === 'map') initMap(); });
+                watch(currentDayIdx, async () => { if (viewMode.value === 'plan') { await nextTick(); initSortable(); } });
+                watch([days, expenses, checklist], () => {
+                    if (!currentTripId.value) return;
+                    persistTrip(currentTripId.value, { days: days.value, exp: expenses.value, check: checklist.value, config: setup.value });
+                }, { deep: true });
+
+                onMounted(async () => {
+                    const list = localStorage.getItem('travel_app_index');
+                    tripList.value = list ? JSON.parse(list) : [];
+
+                    const existingFuji = tripList.value.find(t => t.id === fujiTripMeta.id);
+                    if (!existingFuji) {
+                        persistTrip(fujiTripMeta.id, { days: fujiDays, exp: [], check: checklist.value, config: setup.value });
+                        tripList.value.unshift(fujiTripMeta);
+                        localStorage.setItem('travel_app_index', JSON.stringify(tripList.value));
+                    } else {
+                        // NOTE: 強制用程式碼中的座標更新 LocalStorage，避免使用舊的錯誤座標
+                        localStorage.setItem(`${fujiTripMeta.id}_days`, JSON.stringify(fujiDays));
+                    }
+                    switchTrip(tripList.value.length > 0 ? tripList.value[0].id : fujiTripMeta.id);
+
+                    if (viewMode.value === 'plan') { await nextTick(); initSortable(); }
+                    fetchWeather();
+                });
+
+                // Map (Simplified)
+                const isMapLoading = ref(false);
+                const initMap = async () => {
+                    isMapLoading.value = true;
+                    await nextTick(); if (!document.getElementById('map')) return;
+                    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
+                    mapInstance = L.map('map', { zoomControl: false }).setView([35.6895, 139.6917], 13);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' }).addTo(mapInstance);
+
+                    if ("geolocation" in navigator) {
+                        // Watch user location for blue dot
+                        navigator.geolocation.getCurrentPosition(pos => {
+                            const icon = L.divIcon({ className: 'custom-div-icon', html: "<div class='gps-pulse'></div>", iconSize: [16, 16] });
+                            L.marker([pos.coords.latitude, pos.coords.longitude], { icon: icon }).addTo(mapInstance);
+                            userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        });
+                    }
+
+                    const locs = currentDay.value.items.filter(i => i.location);
+                    const bounds = L.latLngBounds();
+                    for (const item of locs) {
+                        if (item.coord) {
+                            // Use hardcoded coordinates if available
+                            L.marker(item.coord).addTo(mapInstance).bindPopup(`<b>${item.activity}</b><br>${item.location}`);
+                            bounds.extend(item.coord);
+                        } else {
+                            try {
+                                await new Promise(r => setTimeout(r, 200)); // rate limit niceness
+                                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(item.location)}`);
+                                const d = await res.json();
+                                if (d && d.length > 0) {
+                                    const lat = parseFloat(d[0].lat);
+                                    const lon = parseFloat(d[0].lon);
+                                    L.marker([lat, lon]).addTo(mapInstance).bindPopup(`<b>${item.activity}</b><br>${item.location}`);
+                                    bounds.extend([lat, lon]);
+                                }
+                            } catch (e) { console.error(e); }
+                        }
+                    }
+                    isMapLoading.value = false;
+                    if (locs.length > 0 && bounds.isValid()) mapInstance.fitBounds(bounds, { padding: [50, 50] });
+                };
+                const centerOnUser = () => { };
+
+                return {
+                    viewMode, currentDayIdx, days, currentDay, isScrolledTop, handleScroll, mainScroll,
+                    tripList, currentTripId, showTripMenu, switchTrip, showSetupModal, setup,
+                    itineraryList, addItem, removeItem, addDay, toggleFlightCard, updateDate,
+                    expenses, newExpense, totalExpense, debtSettlement, addExpense, removeExpense, currencySymbol,
+                    checklist, getCategoryIcon,
+                    getPageTitle, weatherDisplay, daysUntilStart,
+                    getIcon, cycleType, getGoogleMapLink, getTransitLink: getTransitLinkRefined,
+                    exportToPDF, exportJSON, triggerImport, importJSON,
+                    isMapLoading, initMap, centerOnUser
+                };
+            }
+        }).mount('#app')
+    </script>
+</body>
+
+</html>

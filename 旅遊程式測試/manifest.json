@@ -1,0 +1,16 @@
+{
+    "name": "TravelApp V5",
+    "short_name": "TravelApp",
+    "description": "旅遊行程規劃 App",
+    "start_url": "./TravelApp_V5_Beta.html",
+    "display": "standalone",
+    "background_color": "#F2F2F7",
+    "theme_color": "#7F0019",
+    "icons": [
+        {
+            "src": "https://img.icons8.com/color/180/fuji-mount.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ]
+}
