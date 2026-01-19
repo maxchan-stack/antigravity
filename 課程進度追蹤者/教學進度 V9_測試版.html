@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>教學進度 V9 (Starlux Test)</title>
+    <title>教學進度 V9</title>
 
     <!-- PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,7 +12,7 @@
     <meta name="theme-color" content="#9B8A5E">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
-    <!-- Starlux Fonts -->
+    <!-- Custom Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -26,7 +26,7 @@
             theme: {
                 extend: {
                     colors: {
-                        starlux: {
+                        premium: {
                             gold: '#9B8A5E', // Earth Gold
                             goldDark: '#7B6D45',
                             rose: '#B4745A', // Rose Gold
@@ -206,7 +206,7 @@
         };
 
         const AppleCard = ({ children, className = "" }) => (
-            <div className={`bg-white dark:bg-starlux-obsidianLight rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none p-6 sm:p-8 border border-transparent dark:border-white/10 ${className}`}>
+            <div className={`bg-white dark:bg-premium-obsidianLight rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none p-6 sm:p-8 border border-transparent dark:border-white/10 ${className}`}>
                 {children}
             </div>
         );
@@ -307,7 +307,6 @@
                 // V9 Exam Migration
                 const loadedExams = loadMigrate('v9_exams', 'v8_6_exams', {});
                 setExams(loadedExams);
-
                 setHolidays(loadMigrate('v9_holidays', 'v8_6_holidays', INITIAL_HOLIDAYS));
                 setTags(loadMigrate('v9_tags', 'v8_6_tags', ['複習', '實驗', '影片', '學習單', '分組', '口試']));
 
@@ -695,7 +694,7 @@
                         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="bg-white text-[#9B8A5E] p-2.5 rounded-2xl shadow-lg"><LucideIcon name="BookOpen" size={28} /></div>
-                                <div><h1 className="text-2xl sm:text-3xl font-black text-white leading-none">教學日誌</h1><span className="text-xs font-bold text-white/80 uppercase">V9 (Starlux)</span></div>
+                                <div><h1 className="text-2xl sm:text-3xl font-black text-white leading-none">教學日誌</h1><span className="text-xs font-bold text-white/80 uppercase">V9</span></div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="hidden md:flex items-center bg-white/10 rounded-full px-4 py-2">
@@ -1236,6 +1235,10 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<ErrorBoundary><ClassTrackerV8 /></ErrorBoundary>);
     </script>
+    <footer
+        className="fixed bottom-0 left-0 right-0 p-2 text-center text-[10px] text-gray-400 opacity-50 z-[60] pointer-events-none">
+        Designed by MAXCHAN
+    </footer>
 </body>
 
 </html>
