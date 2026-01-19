@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>教學進度 V8.5 (Clean)</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        apple: {
+                            red: '#7F0019',
+                            darkRed: '#590012',
+                            darkBg: '#1C1C1E',
+                            cardDark: '#2C2C2E',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        * {
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .animate-pop {
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .micro-interaction:active {
+            transform: scale(0.95);
+        }
+
+        .stagger-enter {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-[#F2F2F7] dark:bg-[#000000] text-[#1C1C1E] dark:text-gray-100 transition-colors duration-300 pb-24 md:pb-0">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- Robust Icon Component ---
+        const LucideIcon = ({ name, size = 24, className }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    iconRef.current.setAttribute('data-lucide', name.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, ''));
+                    window.lucide.createIcons({
+                        root: iconRef.current.parentNode,
+                        nameAttr: 'data-lucide',
+                        attrs: { width: size, height: size, class: className, 'stroke-width': 2.5 }
+                    });
+                }
+            }, [name, size, className]);
+            return <span ref={iconRef} className="flex items-center justify-center" style={{ width: size, height: size }}></span>;
+        };
+
+        const AppleCard = ({ children, className = "" }) => (
+            <div className={`bg-white dark:bg-apple-cardDark rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none p-6 sm:p-8 border border-transparent dark:border-white/10 ${className}`}>
+                {children}
+            </div>
+        );
+
+        const AppleButton = ({ onClick, iconName, label, variant = 'primary', className = "", disabled = false, size = "md", type = "button" }) => {
+            const sizeClasses = size === 'sm' ? 'px-4 py-2 text-base' : 'px-6 py-4 text-lg';
+            const vars = {
+                primary: "bg-[#7F0019] text-white hover:bg-[#660014] dark:bg-[#FF3B30] dark:text-white dark:hover:bg-[#FF453A] shadow-red-900/10",
+                secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20",
+                ghost: "bg-transparent text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10",
+                header: "bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm shadow-none"
+            };
+            return (
+                <button onClick={onClick} type={type} disabled={disabled} className={`flex items-center justify-center gap-2.5 font-bold tracking-wide transition-all rounded-full active:scale-95 disabled:opacity-50 ${sizeClasses} ${vars[variant]} ${className}`}>
+                    {iconName && <LucideIcon name={iconName} size={size === 'sm' ? 20 : 24} />}
+                    {label && <span>{label}</span>}
+                </button>
+            );
+        };
+
+        const AppleBadge = ({ label, value, urgent }) => (
+            <div className={`flex flex-col items-center justify-center px-4 py-3 rounded-2xl flex-1 min-w-[80px] transition-colors ${urgent ? 'bg-[#7F0019] dark:bg-[#FF3B30] text-white' : 'bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300'}`}>
+                <span className={`text-xs font-bold uppercase tracking-widest ${urgent ? 'opacity-90' : 'opacity-50'}`}>{label}</span>
+                <span className="text-2xl font-black mt-1 leading-none">{value}</span>
+                <span className="text-[10px] opacity-60 font-bold mt-1">堂</span>
+            </div>
+        );
+
+        function ClassTrackerV8() {
+            const DEFAULT_YEARS = ['113-1', '113-2', '114-1', '114-2'];
+            const DEFAULT_CURRENT_YEAR = '114-1';
+            const INITIAL_HOLIDAYS = ['2025-01-27', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-28', '2025-04-03', '2025-04-04', '2025-05-30', '2025-10-10', '2026-01-01'];
+            const GOV_API_URL = "https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/2025.json";
+
+            const formatDate = (d) => {
+                const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+                return z.toISOString().split('T')[0];
+            };
+            const getDayBefore = (s) => { if (!s) return null; const d = new Date(s); d.setDate(d.getDate() - 1); return formatDate(d); };
+            const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
+
+            const [academicYears, setAcademicYears] = useState(DEFAULT_YEARS);
+            const [currentYear, setCurrentYear] = useState(DEFAULT_CURRENT_YEAR);
+            const [records, setRecords] = useState([]);
+            const [classes, setClasses] = useState([]);
+            const [exams, setExams] = useState({ exam1: { start: '', end: '' }, exam2: { start: '', end: '' }, exam3: { start: '', end: '' } });
+            const [holidays, setHolidays] = useState(INITIAL_HOLIDAYS);
+
+            const [viewMode, setViewMode] = useState('list');
+            const [darkMode, setDarkMode] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+            const [settingTab, setSettingTab] = useState('class');
+            const [filter, setFilter] = useState('');
+
+            const [form, setForm] = useState({ className: '', subject: '', date: formatDate(new Date()), progress: '', homework: '', quiz: false, tags: [], note: '' });
+            const [tags, setTags] = useState(['複習', '實驗', '影片', '學習單', '分組', '口試']);
+            const [expandedClasses, setExpandedClasses] = useState({});
+            const [calendarDate, setCalendarDate] = useState(new Date());
+            const [restoreText, setRestoreText] = useState('');
+
+            useEffect(() => {
+                const load = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) || def; } catch { return def; } };
+
+                // V8.5: Changed keys to 'v8_5_' to ensure clean start
+                setAcademicYears(load('v8_5_years', DEFAULT_YEARS));
+                setCurrentYear(localStorage.getItem('v8_5_current_year') || DEFAULT_CURRENT_YEAR);
+                setRecords(load('v8_5_records', []));
+                setClasses(load('v8_5_classes', []));
+                setExams(load('v8_5_exams', { exam1: { start: '', end: '' }, exam2: { start: '', end: '' }, exam3: { start: '', end: '' } }));
+
+                setHolidays(load('v8_5_holidays', INITIAL_HOLIDAYS));
+                setTags(load('v8_5_tags', ['複習', '實驗', '影片', '學習單', '分組', '口試']));
+
+                if (localStorage.getItem('v8_5_theme') === 'dark' || (!('v8_5_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    setDarkMode(true);
+                    document.documentElement.classList.add('dark');
+                }
+                if (window.lucide) window.lucide.createIcons();
+            }, []);
+
+            // V8.5: Updated localStorage keys
+            useEffect(() => { localStorage.setItem('v8_5_records', JSON.stringify(records)); }, [records]);
+            useEffect(() => { localStorage.setItem('v8_5_classes', JSON.stringify(classes)); }, [classes]);
+            useEffect(() => { localStorage.setItem('v8_5_exams', JSON.stringify(exams)); }, [exams]);
+            useEffect(() => { localStorage.setItem('v8_5_holidays', JSON.stringify(holidays)); }, [holidays]);
+
+            useEffect(() => { localStorage.setItem('v8_5_years', JSON.stringify(academicYears)); }, [academicYears]);
+            useEffect(() => { localStorage.setItem('v8_5_tags', JSON.stringify(tags)); }, [tags]);
+            useEffect(() => { localStorage.setItem('v8_5_current_year', currentYear); }, [currentYear]);
+            useEffect(() => {
+                if (darkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('v8_5_theme', 'dark'); }
+                else { document.documentElement.classList.remove('dark'); localStorage.setItem('v8_5_theme', 'light'); }
+                if (window.lucide) window.lucide.createIcons();
+            }, [darkMode]);
+
+            const currentYearClasses = useMemo(() => classes.filter(c => c.year === currentYear), [classes, currentYear]);
+            const currentYearRecords = useMemo(() => records.filter(r => r.year === currentYear), [records, currentYear]);
+
+            const isClassDoneToday = (className) => {
+                const today = formatDate(new Date());
+                return currentYearRecords.some(r => r.className === className && r.date === today);
+            };
+
+            const calculateSessions = (sStr, eStr, days) => {
+                if (!sStr || !eStr || !days || days.length === 0) return 0;
+                let c = 0, cur = new Date(sStr), end = new Date(eStr);
+                if (cur > end) return 0;
+                while (cur <= end) { if (days.includes(cur.getDay()) && !holidays.includes(formatDate(cur))) c++; cur.setDate(cur.getDate() + 1); }
+                return c;
+            };
+
+            const currentClassStats = useMemo(() => {
+                if (!form.className) return null;
+                const target = currentYearClasses.find(c => c.name === form.className);
+                if (!target?.days?.length) return null;
+
+                let startDate = new Date();
+                if (isClassDoneToday(form.className)) {
+                    startDate.setDate(startDate.getDate() + 1);
+                }
+                const startStr = formatDate(startDate);
+
+                const getEnd = (ex) => ex.start ? getDayBefore(ex.start) : null;
+                return {
+                    exam1: exams.exam1.start ? calculateSessions(startStr, getEnd(exams.exam1), target.days) : 0,
+                    exam2: exams.exam2.start ? calculateSessions(startStr, getEnd(exams.exam2), target.days) : 0,
+                    exam3: exams.exam3.start ? calculateSessions(startStr, getEnd(exams.exam3), target.days) : 0
+                };
+            }, [form.className, currentYearClasses, exams, holidays, currentYearRecords]);
+
+            const todayClasses = useMemo(() => {
+                const day = new Date().getDay();
+                if (holidays.includes(formatDate(new Date()))) return [];
+                const doneClasses = currentYearRecords.filter(r => r.date === formatDate(new Date())).map(r => r.className);
+                return currentYearClasses
+                    .filter(c => c.days && c.days.includes(day))
+                    .map(c => ({ ...c, isDone: doneClasses.includes(c.name) }));
+            }, [currentYearClasses, currentYearRecords, holidays]);
+
+            const handleExport = () => {
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Add BOM
+                csvContent += "日期,班級,科目,進度,作業,標籤\n";
+                const sortedRecords = [...currentYearRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+                sortedRecords.forEach(r => {
+                    const cleanTags = [r.quiz ? '小考' : '', ...(r.tags || [])].filter(Boolean).join(';');
+                    const row = [
+                        r.date,
+                        r.className,
+                        r.subject,
+                        `"${r.progress.replace(/"/g, '""')}"`, // Escape quotes
+                        `"${(r.homework || '').replace(/"/g, '""')}"`,
+                        cleanTags
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `教學進度報表_${currentYear}_${formatDate(new Date())}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const getRemainingForClass = (clsName) => {
+                const target = classes.find(c => c.name === clsName);
+                if (!target?.days?.length) return null;
+
+                let startDate = new Date();
+                if (isClassDoneToday(clsName)) {
+                    startDate.setDate(startDate.getDate() + 1);
+                }
+                const startStr = formatDate(startDate);
+
+                let nextExam = null;
+                if (exams.exam1.start && startStr < exams.exam1.start) nextExam = exams.exam1;
+                else if (exams.exam2.start && startStr < exams.exam2.start) nextExam = exams.exam2;
+                else if (exams.exam3.start && startStr < exams.exam3.start) nextExam = exams.exam3;
+                if (nextExam) return calculateSessions(startStr, getDayBefore(nextExam.start), target.days);
+                return null;
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!form.className || !form.subject || !form.progress) return;
+                setRecords([{ id: Date.now(), ...form, year: currentYear, timestamp: new Date().toISOString() }, ...records]);
+
+                setForm({ ...form, progress: '', homework: '', quiz: false, tags: [], note: '' });
+                setExpandedClasses(p => ({ ...p, [form.className]: true }));
+            };
+
+            const handleRestore = (e) => {
+                const r = new FileReader();
+                r.onload = (ev) => {
+                    try {
+                        const d = JSON.parse(ev.target.result);
+                        if (confirm(`確定還原？`)) {
+                            if (d.records) setRecords(d.records);
+                            if (d.classes) setClasses(d.classes);
+                            if (d.exams) setExams(d.exams);
+                            if (d.holidays) setHolidays(d.holidays);
+                            alert('還原成功！');
+                            setShowSettings(false);
+                        }
+                    } catch { alert('檔案錯誤'); }
+                };
+                if (e.target.files[0]) r.readAsText(e.target.files[0]);
+                e.target.value = '';
+            };
+
+            const handleTextRestore = () => {
+                try {
+                    const d = JSON.parse(restoreText);
+                    if (confirm(`確定還原？`)) {
+                        if (d.records) setRecords(d.records);
+                        if (d.classes) setClasses(d.classes);
+                        if (d.exams) setExams(d.exams);
+                        if (d.holidays) setHolidays(d.holidays);
+                        alert('還原成功！');
+                        setShowSettings(false);
+                        setRestoreText('');
+                    }
+                } catch { alert('格式錯誤，請確認貼上的是正確的 JSON 內容'); }
+            };
+
+            const getCalendarDays = () => {
+                const year = calendarDate.getFullYear();
+                const month = calendarDate.getMonth();
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const days = [];
+                const startPad = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+                for (let i = 0; i < startPad; i++) days.push({ date: null });
+
+                for (let i = 1; i <= lastDay.getDate(); i++) {
+                    const dateStr = formatDate(new Date(year, month, i));
+                    const dayOfWeek = new Date(year, month, i).getDay();
+                    const dayRecords = currentYearRecords.filter(r => r.date === dateStr);
+                    const isHoliday = holidays.includes(dateStr);
+                    const ghostClasses = [];
+
+                    if (!isHoliday) {
+                        currentYearClasses.forEach(cls => {
+                            if (cls.days && cls.days.includes(dayOfWeek) && !dayRecords.find(r => r.className === cls.name)) {
+                                ghostClasses.push(cls);
+                            }
+                        });
+                    }
+                    days.push({ date: dateStr, dayNum: i, records: dayRecords, isHoliday, ghostClasses });
+                }
+                return days;
+            };
+
+            const toggleTag = (tag) => {
+                const newTags = form.tags.includes(tag)
+                    ? form.tags.filter(t => t !== tag)
+                    : [...form.tags, tag];
+                setForm({ ...form, tags: newTags });
+            };
+
+            return (
+                <div className="min-h-screen pb-20">
+                    <header className="sticky top-0 z-40 bg-[#7F0019] dark:bg-black/80 dark:backdrop-blur-md shadow-md border-b border-white/10">
+                        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-white text-[#7F0019] p-2.5 rounded-2xl shadow-lg"><LucideIcon name="BookOpen" size={28} /></div>
+                                <div><h1 className="text-2xl sm:text-3xl font-black text-white leading-none">教學日誌</h1><span className="text-xs font-bold text-white/80 uppercase">V8.5</span></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="hidden md:flex items-center bg-white/10 rounded-full px-4 py-2">
+                                    <select value={currentYear} onChange={e => setCurrentYear(e.target.value)} className="bg-transparent text-white font-bold text-lg outline-none cursor-pointer [&>option]:text-black">{academicYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+                                </div>
+                                <AppleButton onClick={() => setDarkMode(!darkMode)} iconName={darkMode ? "Sun" : "Moon"} variant="header" size="sm" className="!px-3" />
+                                <div className="hidden md:block w-px h-8 bg-white/20"></div>
+                                <div className="hidden md:flex gap-2">
+                                    <AppleButton onClick={() => setViewMode('list')} iconName="List" label="列表" variant={viewMode === 'list' ? 'header' : 'ghost'} className={viewMode === 'list' ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'} size="sm" />
+                                    <AppleButton onClick={() => setViewMode('calendar')} iconName="Calendar" label="月曆" variant={viewMode === 'calendar' ? 'header' : 'ghost'} className={viewMode === 'calendar' ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'} size="sm" />
+                                </div>
+                                <AppleButton onClick={() => setShowSettings(true)} iconName="Settings" variant="header" size="sm" className="hidden md:flex" />
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Mobile Bottom Navigation */}
+                    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-[#1C1C1E]/90 backdrop-blur-lg border-t border-gray-200 dark:border-white/10 pb-safe">
+                        <div className="grid grid-cols-4 h-16">
+                            <button onClick={() => setViewMode('list')} className={`flex flex-col items-center justify-center gap-1 transition-colors ${viewMode === 'list' && !showSettings ? 'text-[#7F0019] dark:text-[#FF3B30]' : 'text-gray-400'}`}>
+                                <LucideIcon name="LayoutList" size={24} />
+                                <span className="text-[10px] font-bold">列表</span>
+                            </button>
+                            <button onClick={() => setViewMode('calendar')} className={`flex flex-col items-center justify-center gap-1 transition-colors ${viewMode === 'calendar' && !showSettings ? 'text-[#7F0019] dark:text-[#FF3B30]' : 'text-gray-400'}`}>
+                                <LucideIcon name="Calendar" size={24} />
+                                <span className="text-[10px] font-bold">月曆</span>
+                            </button>
+                            <div className="relative -top-6 flex justify-center">
+                                <button onClick={() => { setShowSettings(false); setViewMode('list'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="w-14 h-14 bg-[#7F0019] dark:bg-[#FF3B30] rounded-full shadow-lg shadow-red-900/20 text-white flex items-center justify-center micro-interaction">
+                                    <LucideIcon name="Plus" size={28} />
+                                </button>
+                            </div>
+                            <button onClick={() => setShowSettings(true)} className={`flex flex-col items-center justify-center gap-1 transition-colors ${showSettings ? 'text-[#7F0019] dark:text-[#FF3B30]' : 'text-gray-400'}`}>
+                                <LucideIcon name="Settings" size={24} />
+                                <span className="text-[10px] font-bold">設定</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <main className="max-w-7xl mx-auto p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-2">
+                        {/* Today Dashboard */}
+                        <div className="lg:col-span-12 mb-4 animate-pop">
+                            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2"><LucideIcon name="Sparkles" className="text-[#7F0019] dark:text-[#FF3B30]" /> 今日課表</h2>
+                            {todayClasses.length > 0 ? (
+                                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
+                                    {todayClasses.map(c => (
+                                        <div key={c.name} onClick={() => setForm(f => ({ ...f, className: c.name }))} className={`snap-start shrink-0 w-40 p-4 rounded-2xl border cursor-pointer transition-all micro-interaction ${form.className === c.name ? 'bg-[#7F0019] border-[#7F0019] dark:bg-[#FF3B30] dark:border-[#FF3B30] shadow-xl text-white' : c.isDone ? 'bg-gray-100 border-transparent dark:bg-white/5 text-gray-400' : 'bg-white border-gray-100 dark:border-white/10 dark:bg-apple-cardDark text-gray-900 dark:text-white'}`}>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className={`text-xs font-black px-2 py-1 rounded-md ${form.className === c.name ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-white/10 text-gray-500'}`}>{weekDays[new Date().getDay() - 1]}</span>
+                                                {c.isDone && <LucideIcon name="Check" size={16} className={`${form.className === c.name ? 'text-white' : 'text-gray-400'}`} />}
+                                            </div>
+                                            <div className="text-xl font-black">{c.name}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="bg-white/50 dark:bg-white/5 rounded-2xl p-6 text-center text-gray-400 font-bold border border-dashed border-gray-300 dark:border-white/10">
+                                    ☕️ 今天沒有課，好好休息吧！
+                                </div>
+                            )}
+                        </div>
+
+                        <div className={`lg:col-span-5 space-y-6 lg:sticky lg:top-28 ${viewMode === 'calendar' ? 'hidden lg:block' : ''}`}>
+                            <AppleCard className="border-t-8 border-[#7F0019] dark:border-[#FF3B30]">
+                                <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-3"><LucideIcon name="Plus" size={32} className="text-[#7F0019] dark:text-[#FF3B30]" /> 新增進度</h2>
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <div className="relative">
+                                        <select name="className" value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} required className="w-full bg-gray-100 dark:bg-black/20 text-gray-900 dark:text-white font-bold text-2xl p-4 rounded-2xl outline-none focus:ring-4 focus:ring-[#7F0019]/20 appearance-none">
+                                            <option value="" disabled>選擇班級...</option>
+                                            {currentYearClasses.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><LucideIcon name="ChevronDown" /></div>
+                                    </div>
+
+                                    {currentClassStats && (exams.exam1.start || exams.exam1.start || exams.exam2.start || exams.exam3.start) ? (
+                                        <div className="bg-gray-50 dark:bg-white/5 rounded-2xl p-2 border border-gray-100 dark:border-white/5 flex gap-2">
+                                            <AppleBadge label="一段前" value={currentClassStats.exam1} urgent={currentClassStats.exam1 > 0 && currentClassStats.exam1 < 5} />
+                                            <AppleBadge label="二段前" value={currentClassStats.exam2} />
+                                            <AppleBadge label="期末前" value={currentClassStats.exam3} />
+                                        </div>
+                                    ) : (
+                                        <div onClick={() => { setShowSettings(true); setSettingTab('exam') }} className="bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl text-center text-red-600 dark:text-red-400 font-bold text-sm cursor-pointer border border-dashed border-red-200">
+                                            ⚠ 尚未設定段考日期，點此設定以開啟倒數功能
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input type="text" placeholder="科目" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} required className="bg-gray-100 dark:bg-black/20 p-4 rounded-2xl font-bold text-lg text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-[#7F0019]/20" />
+                                        <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required className="bg-gray-100 dark:bg-black/20 p-4 rounded-2xl font-bold text-lg text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-[#7F0019]/20" />
+                                    </div>
+                                    <textarea value={form.progress} onChange={e => setForm({ ...form, progress: e.target.value })} required rows={3} className="w-full bg-gray-100 dark:bg-black/20 p-4 rounded-2xl font-bold text-lg text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-[#7F0019]/20 resize-none" placeholder="輸入章節進度..." />
+                                    <div className="flex gap-2 flex-wrap mb-4">
+                                        <span className="text-xs font-bold text-gray-400 flex items-center mb-1 w-full">標籤</span>
+                                        {tags.map(t => (
+                                            <button type="button" key={t} onClick={() => toggleTag(t)} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all micro-interaction ${form.tags.includes(t) ? 'bg-[#7F0019] text-white dark:bg-[#FF3B30]' : 'bg-gray-100 text-gray-400 dark:bg-white/10'}`}>
+                                                #{t}
+                                            </button>
+                                        ))}
+                                        <button type="button" onClick={() => { const t = prompt('輸入新標籤'); if (t && !tags.includes(t)) setTags([...tags, t]) }} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-200 text-gray-500 dark:bg-white/10 hover:bg-gray-300">+</button>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-2">
+                                        <label className="flex items-center gap-3 cursor-pointer group micro-interaction">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${form.quiz ? 'bg-[#7F0019] dark:bg-[#FF3B30]' : 'bg-gray-200 dark:bg-white/10'}`}>{form.quiz && <LucideIcon name="CheckSquare" size={18} className="text-white" />}</div>
+                                            <input type="checkbox" checked={form.quiz} onChange={e => setForm({ ...form, quiz: e.target.checked })} className="hidden" />
+                                            <span className="font-bold text-gray-600 dark:text-gray-400">下次小考</span>
+                                        </label>
+                                        <AppleButton type="submit" iconName="Save" label="儲存" className="px-8 py-3 text-lg shadow-xl shadow-red-900/10" />
+                                    </div>
+                                </form>
+                            </AppleCard>
+                        </div>
+
+                        <div className="lg:col-span-7 space-y-6">
+                            {viewMode === 'list' && (
+                                <div className="space-y-6 animate-pop">
+                                    <div className="flex justify-between items-center">
+                                        <h2 className="text-3xl font-black text-gray-900 dark:text-white">歷史紀錄</h2>
+                                        <div className="bg-white dark:bg-[#2C2C2E] p-2 rounded-2xl flex items-center shadow-sm w-48 border border-transparent dark:border-white/10">
+                                            <div className="pl-3 text-gray-400"><LucideIcon name="Filter" size={20} /></div>
+                                            <input type="text" placeholder="搜尋..." value={filter} onChange={e => setFilter(e.target.value)} className="bg-transparent p-2 outline-none font-bold text-base w-full placeholder-gray-300 text-gray-800 dark:text-white" />
+                                        </div>
+                                    </div>
+
+                                    {currentYearClasses.map((cls, idx) => {
+                                        const items = currentYearRecords.filter(r => r.className === cls.name && (r.progress.includes(filter) || r.date.includes(filter) || (r.tags && r.tags.some(t => t.includes(filter)))));
+                                        if (!items.length && filter) return null;
+                                        const isOpen = expandedClasses[cls.name] !== false;
+                                        const remain = getRemainingForClass(cls.name);
+                                        return (
+                                            <div key={cls.name} className="bg-white dark:bg-apple-cardDark rounded-[2rem] shadow-sm overflow-hidden border border-transparent dark:border-white/10" style={{ animationDelay: `${idx * 0.05}s` }}>
+                                                <div onClick={() => setExpandedClasses(p => ({ ...p, [cls.name]: !p[cls.name] }))} className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors micro-interaction">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform ${isOpen ? 'bg-[#7F0019] dark:bg-[#FF3B30] text-white rotate-90' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}><LucideIcon name="ChevronRight" size={18} /></div>
+                                                        <div><h3 className="text-2xl font-black text-gray-900 dark:text-white">{cls.name}</h3><p className="text-sm font-bold text-gray-400">{items.length} 筆紀錄</p></div>
+                                                    </div>
+                                                    {remain !== null && (
+                                                        <div className="bg-[#7F0019] dark:bg-[#FF3B30] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                                                            <span className="text-xs font-bold opacity-80 uppercase">剩</span><span className="text-xl font-black leading-none">{remain}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {isOpen && (
+                                                    <div className="bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-white/5">
+                                                        {items.map((r, i) => (
+                                                            <div key={r.id} className={`p-6 flex gap-6 group relative ${i !== items.length - 1 ? 'border-b border-gray-200/50 dark:border-white/5' : ''}`}>
+                                                                <div className="w-24 text-right">
+                                                                    <div className="font-mono text-xl font-black text-gray-900 dark:text-white opacity-80">{r.date.slice(5)}</div>
+                                                                    <div className="text-xs font-bold text-gray-400 mt-1">{r.subject}</div>
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <p className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">{r.progress}</p>
+                                                                    <div className="flex gap-2 flex-wrap">
+                                                                        {r.homework && <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold">作業: {r.homework}</span>}
+                                                                        {r.quiz && <span className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-bold">小考</span>}
+                                                                        {r.homework && <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold">作業: {r.homework}</span>}
+                                                                        {r.quiz && <span className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-bold">小考</span>}
+                                                                        {r.tags && r.tags.map(t => <span key={t} className="px-3 py-1 bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 rounded-lg text-xs font-bold">#{t}</span>)}
+                                                                    </div>
+                                                                </div>
+                                                                <button onClick={() => setRecords(records.filter(x => x.id !== r.id))} className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-opacity"><LucideIcon name="Trash2" size={20} /></button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+
+                            {viewMode === 'calendar' && (
+                                <div className="bg-white dark:bg-[#1C1C1E] rounded-[2rem] p-4 shadow-sm border border-gray-100 dark:border-white/10 overflow-hidden animate-pop">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-2xl font-black dark:text-white ml-2">行事曆</h2>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setCalendarDate(new Date(calendarDate.setMonth(calendarDate.getMonth() - 1)))} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl dark:text-white"><LucideIcon name="ChevronLeft" /></button>
+                                            <span className="font-black text-xl py-2 dark:text-white">{calendarDate.getFullYear()}/{calendarDate.getMonth() + 1}</span>
+                                            <button onClick={() => setCalendarDate(new Date(calendarDate.setMonth(calendarDate.getMonth() + 1)))} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl dark:text-white"><LucideIcon name="ChevronRight" /></button>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-7 mb-4 text-center">
+                                        {weekDays.map(d => <div key={d} className="text-gray-400 text-sm font-bold py-2">{d}</div>)}
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                                        {getCalendarDays().map((day, i) => (
+                                            <div key={i} className={`min-h-[80px] sm:min-h-[120px] rounded-xl p-1.5 sm:p-2 border transition-colors relative flex flex-col gap-1 ${!day.date ? 'border-transparent' : day.isHoliday ? 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30' : 'bg-gray-50 dark:bg-[#2C2C2E] border-gray-100 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20'}`}>
+                                                {day.date && (
+                                                    <>
+                                                        <div className={`text-right text-sm font-black mb-1 ${day.date === formatDate(new Date()) ? 'text-[#7F0019] dark:text-[#FF3B30]' : 'text-gray-400'}`}>{day.dayNum}</div>
+                                                        {day.records.map(r => (
+                                                            <div key={r.id} onClick={() => alert(`${r.className}: ${r.progress}`)} className="cursor-pointer bg-white dark:bg-[#3A3A3C] p-1 sm:px-2 rounded-lg shadow-sm border-l-4 border-[#7F0019] dark:border-[#FF3B30] text-[10px] sm:text-xs truncate font-bold dark:text-gray-200">{r.className}</div>
+                                                        ))}
+                                                        {day.ghostClasses.map((c, idx) => (
+                                                            <div key={idx} className="bg-gray-200/50 dark:bg-white/5 p-1 sm:px-2 rounded-lg text-[10px] sm:text-xs truncate font-bold text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-white/10">{c.name}?</div>
+                                                        ))}
+                                                        {day.isHoliday && <div className="text-[10px] text-red-400 font-bold text-center mt-auto">放假</div>}
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-4 text-sm font-bold text-gray-500 justify-center mt-4">
+                                        <span className="flex items-center gap-2"><div className="w-3 h-3 bg-[#7F0019] dark:bg-[#FF3B30] rounded-full"></div> 已上課</span>
+                                        <span className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full border border-dashed border-gray-400"></div> 預定 (Ghost)</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </main>
+
+                    {showSettings && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-pop">
+                            <div className="bg-white dark:bg-[#1C1C1E] w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto no-scrollbar flex flex-col">
+                                <div className="flex justify-between items-center"><h3 className="text-3xl font-black text-gray-900 dark:text-white">設定</h3><button onClick={() => setShowSettings(false)} className="bg-gray-100 dark:bg-white/10 p-2 rounded-full"><LucideIcon name="X" className="dark:text-white" /></button></div>
+                                <div className="flex bg-gray-100 dark:bg-black/40 p-1.1 rounded-2xl">
+                                    {['class', 'exam', 'system'].map(t => (
+                                        <button key={t} onClick={() => setSettingTab(t)} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${settingTab === t ? 'bg-white dark:bg-[#2C2C2E] text-black dark:text-white shadow-sm' : 'text-gray-400'}`}>{t === 'class' ? '排課' : t === 'exam' ? '段考' : t === 'system' ? '系統' : t}</button>
+                                    ))}
+                                </div>
+
+                                <div className="flex-1 space-y-6 overflow-y-auto">
+                                    {settingTab === 'class' && (
+                                        <div className="space-y-6">
+                                            <div>
+                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">新增班級</h4>
+                                                <div className="flex gap-2 mb-3">
+                                                    <input id="newClass" placeholder="班級名稱" className="flex-1 bg-gray-50 dark:bg-black/20 p-4 rounded-2xl font-bold dark:text-white outline-none" />
+                                                    <AppleButton onClick={() => {
+                                                        const n = document.getElementById('newClass').value;
+                                                        const days = Array.from(document.querySelectorAll('.day-sel:checked')).map(x => parseInt(x.value));
+                                                        if (!n) return alert('請輸入班級名稱');
+                                                        if (days.length === 0) return alert('請選擇每週上課日（星期幾），否則月曆無法顯示！');
+                                                        setClasses([...classes, { name: n, days, year: currentYear }]); document.getElementById('newClass').value = '';
+                                                    }} iconName="Plus" />
+                                                </div>
+                                                <div className="flex justify-between bg-gray-50 dark:bg-black/20 p-4 rounded-2xl">
+                                                    {[1, 2, 3, 4, 5].map(d => (
+                                                        <label key={d} className="flex flex-col items-center cursor-pointer">
+                                                            <input type="checkbox" value={d} className="day-sel hidden peer" />
+                                                            <div className="w-10 h-10 rounded-full bg-white dark:bg-white/10 peer-checked:bg-[#7F0019] dark:peer-checked:bg-[#FF3B30] peer-checked:text-white flex items-center justify-center font-bold text-gray-400 transition-colors">{weekDays[d - 1]}</div>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {currentYearClasses.map(c => (
+                                                    <div key={c.name} className="flex justify-between p-4 bg-gray-50 dark:bg-black/20 rounded-2xl items-center">
+                                                        <div>
+                                                            <span className="font-bold dark:text-white text-lg block">{c.name}</span>
+                                                            <div className="flex gap-1 mt-1">
+                                                                {c.days && c.days.length > 0 ?
+                                                                    c.days.sort().map(d => <span key={d} className="text-xs bg-white dark:bg-white/10 px-2 py-0.5 rounded text-gray-500 dark:text-gray-300 font-bold">{weekDays[d - 1]}</span>)
+                                                                    : <span className="text-xs text-red-500 font-bold">⚠ 未設定星期 (月曆無法顯示)</span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => setClasses(classes.filter(x => x !== c))} className="text-gray-400 hover:text-red-500"><LucideIcon name="Trash2" size={20} /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {settingTab === 'exam' && (
+                                        <div className="space-y-6">
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl text-blue-700 dark:text-blue-300 text-sm font-bold leading-relaxed border border-blue-100 dark:border-blue-900/30">設定段考日期後，系統將自動計算倒數堂數。</div>
+                                            {['exam1', 'exam2', 'exam3'].map((ex, i) => (
+                                                <div key={ex} className="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl">
+                                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">{['第一次段考', '第二次段考', '期末考'][i]}</label>
+                                                    <div className="flex gap-2 items-center">
+                                                        <input type="date" value={exams[ex].start} onChange={e => setExams({ ...exams, [ex]: { ...exams[ex], start: e.target.value } })} className="flex-1 bg-white dark:bg-[#2C2C2E] p-3 rounded-xl font-bold dark:text-white outline-none" />
+                                                        <LucideIcon name="ChevronRight" size={20} className="text-gray-300" />
+                                                        <input type="date" value={exams[ex].end} onChange={e => setExams({ ...exams, [ex]: { ...exams[ex], end: e.target.value } })} className="flex-1 bg-white dark:bg-[#2C2C2E] p-3 rounded-xl font-bold dark:text-white outline-none" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {settingTab === 'system' && (
+                                        <div className="space-y-6">
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">資料同步</h4>
+                                                <AppleButton onClick={async () => {
+                                                    try {
+                                                        const res = await fetch(GOV_API_URL);
+                                                        const d = await res.json();
+                                                        const h = d.filter(x => x.isHoliday).map(x => x.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+                                                        setHolidays([...new Set([...holidays, ...h])].sort());
+                                                        alert(`已更新 ${h.length} 筆假日`);
+                                                    } catch { alert('連線失敗'); }
+                                                }} label="更新 2025 行事曆" iconName="RefreshCw" variant="secondary" className="w-full" />
+                                            </div>
+                                            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">匯出</h4>
+                                                <AppleButton onClick={handleExport} label="匯出課程報表 (CSV)" iconName="FileSpreadsheet" variant="secondary" className="w-full" />
+                                            </div>
+                                            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">備份與還原</h4>
+                                                <AppleButton onClick={() => {
+                                                    const a = document.createElement('a');
+                                                    a.href = URL.createObjectURL(new Blob([JSON.stringify({ version: "8.5", records, classes, exams, holidays, academicYears })], { type: 'application/json' }));
+                                                    a.download = `Backup_${formatDate(new Date())}.json`; a.click();
+                                                }} label="下載備份檔" iconName="Download" variant="secondary" className="w-full" />
+                                                <div className="relative">
+                                                    <label className="flex items-center justify-center gap-2.5 font-bold tracking-wide transition-all rounded-full active:scale-95 px-6 py-4 text-lg bg-transparent text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-white/10 w-full cursor-pointer">
+                                                        <LucideIcon name="HardDrive" size={24} />
+                                                        <span>讀取備份檔 (還原)</span>
+                                                        <input type="file" onChange={handleRestore} className="hidden" accept=".json" onClick={(e) => e.target.value = null} />
+                                                    </label>
+                                                </div>
+                                                <div className="relative pt-4 border-t border-gray-100 dark:border-white/10">
+                                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">或：貼上備份內容還原</h4>
+                                                    <textarea value={restoreText} onChange={e => setRestoreText(e.target.value)} placeholder="請將 .json 檔案內容複製並貼上到這裡..." className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-2xl text-xs font-mono h-24 mb-2 outline-none dark:text-gray-300" />
+                                                    <AppleButton onClick={handleTextRestore} label="確認還原" iconName="Check" variant="ghost" className="w-full text-blue-600 dark:text-blue-400" disabled={!restoreText} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ClassTrackerV8 />);
+    </script>
+</body>
+
+</html>
