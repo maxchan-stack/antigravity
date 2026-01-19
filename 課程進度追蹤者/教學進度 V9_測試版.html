@@ -179,7 +179,7 @@
         // --- Robust Icon Component ---
         // --- Robust Icon Component (Safe for React) ---
         // --- Robust Icon Component (Safe for React) ---
-        const LucideIcon = ({ name, size = 24, className }) => {
+        const LucideIcon = React.memo(({ name, size = 24, className }) => {
             const [svgContent, setSvgContent] = useState('');
 
             useEffect(() => {
@@ -203,15 +203,20 @@
 
             // Render SVG inside the span
             return <span className="flex items-center justify-center shrink-0" style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: svgContent }} />;
-        };
+        }, (prevProps, nextProps) =>
+            prevProps.name === nextProps.name &&
+            prevProps.size === nextProps.size &&
+            prevProps.className === nextProps.className
+        );
 
-        const AppleCard = ({ children, className = "" }) => (
+        // V9 Optimization #3: React.memo for components
+        const AppleCard = React.memo(({ children, className = "" }) => (
             <div className={`bg-white dark:bg-premium-obsidianLight rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none p-6 sm:p-8 border border-transparent dark:border-white/10 ${className}`}>
                 {children}
             </div>
-        );
+        ));
 
-        const AppleButton = ({ onClick, iconName, label, variant = 'primary', className = "", disabled = false, size = "md", type = "button" }) => {
+        const AppleButton = React.memo(({ onClick, iconName, label, variant = 'primary', className = "", disabled = false, size = "md", type = "button" }) => {
             const sizeClasses = size === 'sm' ? 'px-4 py-2 text-base' : 'px-6 py-4 text-lg';
             const vars = {
                 primary: "bg-[#9B8A5E] text-white hover:bg-[#7B6D45] dark:bg-[#B4745A] dark:text-white dark:hover:bg-[#C88569] shadow-yellow-900/10",
@@ -225,7 +230,7 @@
                     {label && <span>{label}</span>}
                 </button>
             );
-        };
+        });
 
         const AppleBadge = ({ label, value, urgent, total }) => {
             // Simple visual stat: circular progress or just a bar
@@ -317,28 +322,26 @@
                 if (window.lucide) window.lucide.createIcons();
             }, []);
 
-            // V9: Updated localStorage keys
-            useEffect(() => { localStorage.setItem('v9_records', JSON.stringify(records)); }, [records]);
-            useEffect(() => { localStorage.setItem('v9_classes', JSON.stringify(classes)); }, [classes]);
-            useEffect(() => { localStorage.setItem('v9_exams', JSON.stringify(exams)); }, [exams]);
-            useEffect(() => { localStorage.setItem('v9_holidays', JSON.stringify(holidays)); }, [holidays]);
+            // V9 Optimization #1: Consolidated localStorage writes
+            const persistentData = useMemo(() => ({
+                records, classes, exams, holidays,
+                years: academicYears, tags, currentYear, cloudSettings
+            }), [records, classes, exams, holidays, academicYears, tags, currentYear, cloudSettings]);
 
-            useEffect(() => { localStorage.setItem('v9_years', JSON.stringify(academicYears)); }, [academicYears]);
-            useEffect(() => { localStorage.setItem('v9_tags', JSON.stringify(tags)); }, [tags]);
-            useEffect(() => { localStorage.setItem('v9_current_year', currentYear); }, [currentYear]);
+            useEffect(() => {
+                Object.entries(persistentData).forEach(([key, value]) => {
+                    const storageKey = key === 'years' ? 'v9_years' :
+                        key === 'currentYear' ? 'v9_current_year' :
+                            key === 'cloudSettings' ? 'v9_cloud_settings' : `v9_${key}`;
+                    localStorage.setItem(storageKey, typeof value === 'string' ? value : JSON.stringify(value));
+                });
+            }, [persistentData]);
+
             useEffect(() => {
                 if (darkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('v9_theme', 'dark'); }
                 else { document.documentElement.classList.remove('dark'); localStorage.setItem('v9_theme', 'light'); }
                 if (window.lucide) window.lucide.createIcons();
-
             }, [darkMode]);
-
-            // V9: Cloud Sync Implementation
-            useEffect(() => {
-                const saved = localStorage.getItem('v9_cloud_settings');
-                if (saved) setCloudSettings(JSON.parse(saved));
-            }, []);
-            useEffect(() => { localStorage.setItem('v9_cloud_settings', JSON.stringify(cloudSettings)); }, [cloudSettings]);
 
             // Sync: Upload a single record
             const uploadRecordToCloud = async (record) => {
@@ -414,12 +417,31 @@
                 return currentYearRecords.some(r => r.className === className && r.date === today);
             };
 
+            // V9 Optimization #2: Improved calculateSessions algorithm (O(1) complexity)
             const calculateSessions = (sStr, eStr, days) => {
-                if (!sStr || !eStr || !days || days.length === 0) return 0;
-                let c = 0, cur = new Date(sStr), end = new Date(eStr);
-                if (cur > end) return 0;
-                while (cur <= end) { if (days.includes(cur.getDay()) && !holidays.includes(formatDate(cur))) c++; cur.setDate(cur.getDate() + 1); }
-                return c;
+                if (!sStr || !eStr || !days?.length) return 0;
+
+                const start = new Date(sStr);
+                const end = new Date(eStr);
+                if (start > end) return 0;
+
+                const totalDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                const startDay = start.getDay();
+
+                // Calculate weekday occurrences
+                let count = days.reduce((acc, day) => {
+                    const offset = (day - startDay + 7) % 7;
+                    const fullWeeks = Math.floor((totalDays - offset - 1) / 7) + (offset < totalDays ? 1 : 0);
+                    return acc + (fullWeeks < 0 ? 0 : fullWeeks);
+                }, 0);
+
+                // Subtract holidays that fall on class days
+                const holidayCount = holidays.filter(h => {
+                    const hDate = new Date(h);
+                    return hDate >= start && hDate <= end && days.includes(hDate.getDay());
+                }).length;
+
+                return Math.max(0, count - holidayCount);
             };
 
             const currentClassStats = useMemo(() => {
