@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>島民行政中心 v5.0.1 </title>
+    
+    <!-- 0. 全域錯誤捕捉 -->
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Global Error Caught:", message, error);
+        };
+    </script>
+
+    <!-- 1. 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. 載入字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Noto+Sans+TC:wght@400;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- 3. 載入 React & ReactDOM -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- 4. 載入 Babel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
+    <!-- 5. 載入功能庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* --- ACNH 風格變數 --- */
+        :root {
+            --ac-bg: #F9F5E3;
+            --ac-green: #7FD1B9; /* NookPhone Green */
+            --ac-yellow: #F2D879; /* Bell Yellow */
+            --ac-brown: #7A5C3E; /* Wood */
+            --ac-text: #574E44;
+            --ac-radius: 20px;
+
+             /* 2048 專用變數 */
+            --nook-2048-bg: #F0F3D8;
+            --nook-2048-grid: #D8D2C2;
+            --nook-2048-empty: #EEE9D7;
+            
+            /* Tile Colors */
+            --tile-2: #FFF8E7;   /* 樹枝 */
+            --tile-4: #FBE7C6;   /* 石頭 */
+            --tile-8: #FFCCB6;   /* 鐵礦 */
+            --tile-16: #F3B0C3;  /* 金礦 */
+            --tile-32: #C6E2E9;  /* 家具 */
+            --tile-64: #A7C5EB;  /* 化石 */
+            --tile-128: #F4E04D; /* 鈴錢 */
+            --tile-256: #A8D8EA; /* 機票 */
+            --tile-512: #95E1D3; /* 帳篷 */
+            --tile-1024: #EAFFD0;/* 狸克 */
+            --tile-2048: #FCE38A;/* 無人島 */
+        }
+
+        body { 
+            font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif; 
+            background-color: var(--ac-bg);
+            color: var(--ac-text);
+            /* 圓點紋理背景 */
+            background-image: radial-gradient(#e0e0d0 1.5px, transparent 1.5px);
+            background-size: 20px 20px;
+            touch-action: manipulation; 
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 隱藏捲軸 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 14px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: var(--ac-green); 
+            border-radius: 20px; 
+            border: 4px solid white; 
+        }
+
+        /* --- 動畫 --- */
+        @keyframes balloon-float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .animate-pop { animation: pop 0.15s ease-out forwards; }
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .animate-drop { animation: drop 0.8s cubic-bezier(0.6, 0.04, 0.98, 0.335) forwards; }
+        @keyframes drop {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(80vh) rotate(180deg); opacity: 0; }
+        }
+        
+        /* --- 震動特效 --- */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
+        }
+
+        /* 木桌紋理 */
+        .wood-pattern-light {
+            background-color: #DEB887; 
+            background-image: repeating-linear-gradient(45deg, #DEB887 0, #DEB887 10px, #D2B48C 10px, #D2B48C 12px);
+            border-color: #8B4513;
+        }
+
+        /* --- 座位大師樣式 --- */
+        .nook-phone-header {
+            background-color: #F0F3EC;
+            border-bottom: 4px solid #FFFFFF;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .nook-btn {
+            border-radius: 15px;
+            font-weight: 700;
+            transition: all 0.1s;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .nook-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+        }
+        .nook-input {
+            background: #FFFFFF;
+            border: 2px solid #EBE4D5;
+            border-radius: 12px;
+            padding: 6px 10px;
+            color: var(--ac-text);
+            font-weight: bold;
+            transition: border-color 0.2s;
+        }
+        .nook-input:focus {
+            border-color: var(--ac-green);
+            outline: none;
+        }
+        
+        /* 座位卡片 */
+        .seat-item {
+            border-radius: 12px;
+            transition: all 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            font-weight: bold;
+            overflow: hidden;
+            padding: 4px;
+        }
+        .seat-note-input {
+            width: 90%;
+            background: rgba(255,255,255,0.4);
+            border: none;
+            border-bottom: 1px dashed rgba(255,255,255,0.6);
+            color: inherit;
+            text-align: center;
+            font-size: 0.75em;
+            margin-top: 4px;
+            padding: 1px 0;
+            outline: none;
+            border-radius: 4px;
+        }
+        .seat-note-input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .screen-mode .seat-item {
+            background-color: #88C9A1; 
+            border: 2px dashed rgba(255,255,255,0.8);
+            color: white;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+            font-size: clamp(12px, 1.2vw, 18px); 
+        }
+        .screen-mode .seat-item.empty {
+            background-color: #E0E0E0;
+            border: 2px dashed #CCC;
+            color: #AAA;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            text-shadow: none;
+        }
+        .screen-mode .seat-item.empty .seat-note-input { display: none; }
+        
+        .screen-mode .seat-item.blocked {
+            background-color: #8D6E63; 
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px);
+            border: none;
+            box-shadow: 0 4px 0 #5D4037;
+        }
+        .screen-mode .seat-item.blocked .seat-note-input { display: none; }
+
+        .screen-mode .seat-item.selected {
+            background-color: var(--ac-yellow);
+            border: 3px solid #FFF;
+            transform: scale(1.05) rotate(-2deg);
+            z-index: 20;
+            color: #7A5C3E;
+            text-shadow: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .screen-mode .seat-item.selected .seat-note-input {
+            border-bottom: 1px dashed #7A5C3E;
+            background: rgba(255,255,255,0.5);
+            color: #7A5C3E;
+        }
+        .screen-mode .seat-item.selected .seat-note-input::placeholder { color: rgba(122, 92, 62, 0.5); }
+        
+        .seat-swap-anim {
+            animation: seat-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes seat-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .teacher-view-transform { transform: rotate(180deg); }
+        .teacher-view-transform .seat-item { transform: rotate(-180deg); }
+
+        /* 響應式網格容器 */
+        .seat-grid-wrapper {
+            display: grid;
+            gap: 10px;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-content: center;
+        }
+
+        /* --- 2048 遊戲專用樣式 --- */
+        .game-2048-container {
+            background: var(--nook-2048-grid);
+            border-radius: 20px;
+            padding: 10px;
+            width: 320px;
+            height: 320px;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.1), 0 8px 0 #C4BEAF;
+            border: 4px solid #FFF;
+            position: relative;
+            touch-action: none;
+            margin: 0 auto;
+        }
+        .game-2048-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+            width: 100%;
+            height: 100%;
+        }
+        .game-2048-cell {
+            background: var(--nook-2048-empty);
+            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.05);
+        }
+        .game-2048-tile {
+            position: absolute;
+            width: 65px; 
+            height: 65px;
+            border-radius: 8px;
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center;
+            font-weight: bold; 
+            font-size: 24px;
+            transition: transform 0.1s ease-in-out, top 0.1s ease-in-out, left 0.1s ease-in-out;
+            z-index: 10;
+            border: 2px solid rgba(255,255,255,0.5);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+        .game-2048-tile-new { animation: pop 0.2s ease-in; }
+        .game-2048-tile-merged { animation: pop 0.2s ease-in; z-index: 20; }
+        
+        /* Tile Specifics */
+        .tile-2 { background: var(--tile-2); }
+        .tile-4 { background: var(--tile-4); }
+        .tile-8 { background: var(--tile-8); }
+        .tile-16 { background: var(--tile-16); }
+        .tile-32 { background: var(--tile-32); }
+        .tile-64 { background: var(--tile-64); }
+        .tile-128 { background: var(--tile-128); box-shadow: 0 0 10px var(--tile-128); }
+        .tile-256 { background: var(--tile-256); }
+        .tile-512 { background: var(--tile-512); }
+        .tile-1024 { background: var(--tile-1024); }
+        .tile-2048 { background: var(--tile-2048); box-shadow: 0 0 15px gold; border: 2px solid gold; }
+        
+        /* 房產面板 */
+        .house-panel {
+            background: #FFF;
+            border-radius: 20px;
+            border: 4px solid #FFF;
+            box-shadow: 0 8px 0 #E0DBC5;
+            width: 320px;
+            height: 320px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            justify-content: space-between;
+        }
+        .house-display-box {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #F9F5E3 50%, transparent 60%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .house-emoji-large {
+            font-size: 50px;
+            line-height: 1;
+            filter: drop-shadow(0 5px 0px rgba(0,0,0,0.1));
+        }
+
+        /* --- 列印 --- */
+        /* ... 上面是 .house-emoji-large 的樣式 ... */
+
+/* --- 強力列印樣式 (V2 自動填滿版) --- */
+        @media print {
+            /* 設定 A4 橫向，邊距設為 0，由內部 padding 控制 */
+            @page { size: A4 landscape; margin: 0; }
+            
+            body, html { 
+                width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; 
+                background: white !important;
+            }
+            body * { visibility: hidden; }
+            #print-root, #print-root * { visibility: visible; }
+
+            #print-root {
+                display: block !important;
+                position: fixed;
+                top: 0; left: 0;
+                width: 100vw; height: 100vh;
+                background: white;
+                z-index: 9999;
+            }
+
+            /* 通用頁面容器 */
+            .print-page {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                top: 0; left: 0;
+                box-sizing: border-box;
+                padding: 5mm 10mm; /* 稍微縮小邊距以爭取空間 */
+                display: none;
+                background: white;
+            }
+
+            /* 學生視角：垂直排列 */
+            #page-student {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            /* 導師視角：左右排列 */
+            #page-teacher {
+                flex-direction: row;
+                gap: 10px;
+            }
+
+            /* 顯示控制 */
+            body.print-mode-all .print-page { display: flex !important; page-break-after: always; }
+            body.print-mode-student #page-student { display: flex !important; }
+            body.print-mode-teacher #page-teacher { display: flex !important; }
+            .print-page:last-child { page-break-after: avoid; }
+
+            /* 標題與黑板講台調整 */
+            h1 { font-size: 18pt !important; margin: 0 0 10px 0 !important; text-align: center; width: 100%; }
+            
+            .blackboard-print {
+                background: #333 !important; color: white !important;
+                border: 2px solid black !important; width: 50% !important;
+                height: 40px !important; margin: 0 auto 10px auto !important;
+                display: flex !important; align-items: center; justify-content: center;
+                font-size: 14pt !important;
+            }
+            .podium-print {
+                border: 2px solid black !important; width: 100px !important;
+                height: 30px !important; margin: 0 auto 10px auto !important;
+                display: flex !important; align-items: center; justify-content: center;
+                font-size: 10pt !important;
+            }
+
+            /* ★關鍵修改：網格自動填滿剩餘高度★ */
+            .seat-grid-wrapper {
+                width: 100% !important;
+                flex: 1 !important;        /* 佔用所有剩餘空間 */
+                min-height: 0 !important;  /* 允許被壓縮 */
+                display: grid !important;
+                gap: 4px !important;       /* 稍微縮小間距 */
+                align-content: stretch !important;
+                justify-content: stretch !important;
+            }
+
+            /* 導師視角右側容器修正 */
+            #page-teacher .flex-1.flex.flex-col {
+                display: flex !important;
+                flex-direction: column !important;
+                height: 100% !important;
+            }
+            #page-teacher .teacher-view-container {
+                flex: 1 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                min-height: 0 !important;
+            }
+
+            /* 座位卡片樣式 */
+            .seat-item {
+                border: 2px solid #000 !important;
+                border-radius: 6px !important;
+                color: #000 !important;
+                display: flex !important;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: white !important;
+                overflow: hidden;
+                page-break-inside: avoid;
+            }
+            
+            /* 字體縮小以防撐開格子 */
+            .seat-item > div:first-child {
+                font-size: 14pt !important; 
+                font-weight: 900 !important;
+                line-height: 1.1;
+            }
+            .seat-note-input {
+                font-size: 9pt !important;
+                color: #555 !important;
+                margin-top: 1px !important;
+            }
+
+            /* 狀態樣式 */
+            .seat-item.blocked { background: #ddd !important; border: 2px dashed #999 !important; }
+            .seat-item.empty { border: 1px dashed #ccc !important; color: transparent !important; }
+
+            /* 點名表 */
+            .roster-print {
+                display: flex; flex-wrap: wrap; gap: 4px;
+                border: 1px solid #000; padding: 5px;
+                font-size: 9pt;
+            }
+        }    
+</style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Zen Maru Gothic', 'Noto Sans TC', 'sans-serif'] },
+                    screens: { 'xs': '375px' },
+                    colors: {
+                        'ac-green': '#7FD1B9',
+                        'ac-yellow': '#F2D879',
+                        'ac-brown': '#7A5C3E',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#F0F5F1] text-[#574E44] selection:bg-[#F2D879] selection:text-[#7A5C3E]">
+    <div id="root" class="h-full w-full"></div>
+
+    <script type="text/babel">
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+            document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red; text-align: center;">系統錯誤：核心元件載入失敗。</div>';
+            throw new Error("React not loaded");
+        }
+
+        const { useState, useRef, useEffect, Component, useMemo } = React;
+
+        // --- Error Boundary ---
+        class ErrorBoundary extends Component {
+            constructor(props) { super(props); this.state = { hasError: false }; }
+            static getDerivedStateFromError(error) { return { hasError: true }; }
+            componentDidCatch(error, errorInfo) { console.error("UI Error:", error, errorInfo); }
+            render() {
+                if (this.state.hasError) return <div className="p-8 text-center h-full flex flex-col items-center justify-center"><h2 className="text-xl font-bold text-[#797365]">發生錯誤</h2><button onClick={() => window.location.reload()} className="mt-4 bg-[#7FD1B9] text-white px-4 py-2 rounded-full">重新整理</button></div>;
+                return this.props.children;
+            }
+        }
+
+        // --- Icon System ---
+        const Icon = ({ size = 24, className = "", children, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
+        );
+        
+        // --- Full Icon Definitions ---
+        const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></Icon>;
+        const FileText = (props) => <Icon {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></Icon>;
+        const Scissors = (props) => <Icon {...props}><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" x2="8.12" y1="4" y2="15.88"/><line x1="14.47" x2="20" y1="14.48" y2="20"/><line x1="8.12" x2="12" y1="8.12" y2="12"/></Icon>;
+        const Layers = (props) => <Icon {...props}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></Icon>;
+        const ImageIcon = (props) => <Icon {...props}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></Icon>;
+        const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>;
+        const X = (props) => <Icon {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
+        const AlertCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Icon>;
+        const Loader2 = (props) => <Icon {...props} className={`animate-spin ${props.className || ''}`}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></Icon>;
+        const Stamp = (props) => <Icon {...props}><path d="M5 22h14"/><path d="M19.27 13.73A2.5 2.5 0 0 0 17.5 13h-11A2.5 2.5 0 0 0 4.73 13.73L2.5 16a2.5 2.5 0 0 0 0 3.54C2.7 19.74 3.03 20 4.5 20h15c1.47 0 1.8-.26 2-4.46a2.5 2.5 0 0 0 0-3.54l-2.23-2.27z"/><path d="M12 2v11"/></Icon>;
+        const Type = (props) => <Icon {...props}><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></Icon>;
+        const Shield = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></Icon>;
+        const Leaf = (props) => <Icon {...props}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-11 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></Icon>;
+        const FileInput = (props) => <Icon {...props}><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 8 20 8"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/></Icon>;
+        const FileOutput = (props) => <Icon {...props}><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 8 20 8"/><path d="M2 15h10"/><path d="m5 12-3 3 3 3"/></Icon>;
+        const RotateCw = (props) => <Icon {...props}><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></Icon>;
+        const Trash2 = (props) => <Icon {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></Icon>;
+        const Hash = (props) => <Icon {...props}><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></Icon>;
+        const Lock = (props) => <Icon {...props}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
+        const Home = (props) => <Icon {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+        const MessageCircle = (props) => <Icon {...props}><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></Icon>;
+        const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275-1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></Icon>;
+        const FileCog = (props) => <Icon {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><circle cx="12" cy="13" r="2"/><path d="M12 11V9"/><path d="M12 17v-2"/><path d="M9 13H7"/><path d="M17 13h-2"/></Icon>;
+        const Gift = (props) => <Icon {...props}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.9 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></Icon>;
+        const Tent = (props) => <Icon {...props}><path d="M3.5 21 14 3"/><path d="M20.5 21 10 3"/><path d="M15.5 21 12 15l-3.5 6"/><path d="M2 21h20"/></Icon>;
+        const Gem = (props) => <Icon {...props}><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/></Icon>;
+        const Tree = (props) => <Icon {...props}><path d="M12 19v-6"/><path d="M12 2a9 9 0 0 0-9 9c0 1.5.3 2.9.9 4.2L3 22h18l-.9-6.8c.6-1.3.9-2.7.9-4.2a9 9 0 0 0-9-9Z"/></Icon>;
+        const Sun = (props) => <Icon {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></Icon>;
+        const CalendarDays = (props) => <Icon {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></Icon>;
+        const Dice5 = (props) => <Icon {...props}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></Icon>;
+        const Timer = (props) => <Icon {...props}><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></Icon>;
+        const AlarmClock = (props) => <Icon {...props}><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/></Icon>;
+        const Users = (props) => <Icon {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
+        const ClipboardList = (props) => <Icon {...props}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></Icon>;
+        const StickyNote = (props) => <Icon {...props}><path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/></Icon>;
+        const School = (props) => <Icon {...props}><path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></Icon>;
+        const BarChart = (props) => <Icon {...props}><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></Icon>;
+        const Eye = (props) => <Icon {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></Icon>;
+        const EyeOff = (props) => <Icon {...props}><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></Icon>;
+        const RefreshCw = (props) => <Icon {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></Icon>;
+        const Copy = (props) => <Icon {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
+        const Check = (props) => <Icon {...props}><polyline points="20 6 9 17 4 12"/></Icon>;
+        const Key = (props) => <Icon {...props}><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></Icon>;
+        const Smile = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></Icon>;
+        const Laugh = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><path d="M18 13a6 6 0 0 1-6 5 6 6 0 0 1-6-5h12Z"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></Icon>;
+        const Meh = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="8" x2="16" y1="15" y2="15"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></Icon>;
+        const Grid = (props) => <Icon {...props}><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></Icon>;
+        const Bush = (props) => <Icon {...props}><path d="M4 15s1-7 8-7 8 7 8 7-3 7-8 7-8-7-8-7Z"/><path d="M8 14s.5-3 4-3 4 3 4 3"/></Icon>;
+        const Save = (props) => <Icon {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
+        const FolderOpen = (props) => <Icon {...props}><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v2"/></Icon>;
+        const Printer = (props) => <Icon {...props}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></Icon>;
+
+        // --- Infrastructure ---
+        const useExternalScripts = () => {
+            const [loaded, setLoaded] = useState(false);
+            const [error, setError] = useState(null);
+            useEffect(() => {
+                const initLibs = async () => {
+                    try {
+                        if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                        if (window.PDFLib && window.JSZip && window.pdfjsLib && window.html2canvas && window.XLSX && window.Chart) {
+                            setLoaded(true);
+                        } else {
+                            if (window.PDFLib && window.JSZip && window.pdfjsLib && window.XLSX) setLoaded(true); 
+                            else throw new Error("核心庫載入失敗");
+                        }
+                    } catch (err) {
+                        console.error("Library load error:", err);
+                        setError(err.message);
+                    }
+                };
+                const timer = setTimeout(initLibs, 1000);
+                return () => clearTimeout(timer);
+            }, []);
+            return { loaded, error };
+        };
+        
+        // --- Sound Effect Utility ---
+        const playAlarm = () => {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                
+                const ctx = new AudioContext();
+                
+                const playNote = (freq, time, duration, type = 'sine') => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, time);
+                    gain.gain.setValueAtTime(0, time);
+                    gain.gain.linearRampToValueAtTime(0.3, time + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(time);
+                    osc.stop(time + duration);
+                };
+
+                const now = ctx.currentTime;
+                playNote(523.25, now, 0.4);       // C5
+                playNote(659.25, now + 0.15, 0.4); // E5
+                playNote(783.99, now + 0.30, 0.4); // G5
+                playNote(987.77, now + 0.45, 0.4); // B5
+                playNote(1046.50, now + 0.60, 0.8, 'triangle'); // C6
+            } catch (e) {
+                console.error("Audio play failed", e);
+            }
+        };
+
+        // --- Core Utilities ---
+        const Utils = {
+            formatBytes: (bytes, decimals = 2) => {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024; const dm = decimals < 0 ? 0 : decimals;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+            },
+            readFileAsArrayBuffer: (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsArrayBuffer(file); }),
+            readImageAsDataURL: (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }),
+            loadImage: (src) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = src; }),
+            numberToChinese: (n) => {
+                const digits = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'];
+                const units = ['', '拾', '佰', '仟', '萬'];
+                let str = n.toString();
+                let result = '';
+                for (let i = 0; i < str.length; i++) {
+                    result += digits[parseInt(str[i])];
+                    if (str.length - i - 1 > 0) result += units[str.length - i - 1];
+                }
+                return result;
+            }
+        };
+
+        // --- UI Components ---
+        const LeafPattern = () => (
+            <div className="fixed inset-0 pointer-events-none opacity-[0.05] z-0 leaf-pattern" 
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0c16.569 0 30 13.431 30 30 0 16.569-13.431 30-30 30C13.431 60 0 46.569 0 30 0 13.431 13.431 0 30 0zm0 5c-13.807 0-25 11.193-25 25 0 13.807 11.193 25 25 25 13.807 0 25-11.193 25-25 0-13.807-11.193-25-25-25z' fill='%237FD1B9' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E")`, backgroundSize: '60px 60px' }}
+            />
+        );
+        const Card = ({ children, className = "" }) => (<div className={`bg-white/95 backdrop-blur-md rounded-[30px] md:rounded-[40px] shadow-[0_4px_20px_rgb(0,0,0,0.04)] border-[6px] border-white relative z-10 ${className}`}>{children}</div>);
+        const Button = ({ onClick, disabled, variant = 'primary', className = "", children, icon: Icon }) => {
+            const variants = { primary: "bg-[#7FD1B9] text-white hover:bg-[#68C0A6]", secondary: "bg-[#F2D879] text-[#7A5C3E] hover:bg-[#E6C964]", blue: "bg-[#7ACBD5] text-white hover:bg-[#68b8c2]", danger: "bg-[#FF9A8B] text-white hover:bg-[#ee897a]", purple: "bg-[#C4A9E8] text-white hover:bg-[#b092da]", outline: "bg-white border-[3px] border-[#E0E4CC] text-[#9CA38F] hover:bg-[#F2F4E6]", teal: "bg-[#26A69A] text-white hover:bg-[#00897B]", pink: "bg-[#FF91B3] text-white hover:bg-[#FF75A0]" };
+            return (<button onClick={onClick} disabled={disabled} className={`inline-flex items-center justify-center px-4 py-3 md:px-6 md:py-4 rounded-full font-bold transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_0_0_rgba(0,0,0,0.15)] active:shadow-none translate-y-0 active:translate-y-1 text-sm md:text-base ${variants[variant]} ${className}`}>{Icon && <Icon className={`w-4 h-4 md:w-5 md:h-5 ${children ? 'mr-2' : ''} stroke-[3]`} />}{children}</button>);
+        };
+        const FileItem = ({ file, onRemove }) => (
+            <div className="flex items-center justify-between p-3 md:p-4 bg-[#F8F9F0] rounded-[16px] md:rounded-[20px] border-[3px] border-white group transition-all">
+                <div className="flex items-center space-x-3 md:space-x-4 overflow-hidden">
+                <div className="p-2 md:p-3 bg-white rounded-xl md:rounded-2xl text-[#88C9A1] shadow-sm shrink-0">{file.type.includes('pdf') ? <FileText className="w-5 h-5 md:w-6 md:h-6 stroke-[2.5]" /> : <ImageIcon className="w-5 h-5 md:w-6 md:h-6 stroke-[2.5]" />}</div>
+                <div className="min-w-0"><p className="text-sm md:text-base font-bold text-[#797365] truncate">{file.name}</p><p className="text-xs text-[#9CA38F] font-bold">{Utils.formatBytes(file.size)}</p></div>
+                </div>
+                <button onClick={onRemove} className="p-1.5 md:p-2 text-[#FF9A8B] hover:bg-white rounded-full transition-colors shrink-0"><X className="w-5 h-5 md:w-6 md:h-6 stroke-[3]" /></button>
+            </div>
+        );
+        const DropZone = ({ onDrop, accept, multiple = false, label }) => {
+            const [isDragOver, setIsDragOver] = useState(false); const inputRef = useRef(null);
+            const handleDrop = (e) => { e.preventDefault(); setIsDragOver(false); if (e.dataTransfer.files.length > 0) onDrop(Array.from(e.dataTransfer.files)); };
+            const handleChange = (e) => { if (e.target.files.length > 0) onDrop(Array.from(e.target.files)); e.target.value = null; };
+            return (
+                <div onClick={() => inputRef.current?.click()} onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleDrop} className={`relative border-[3px] md:border-[5px] border-dashed rounded-[24px] md:rounded-[40px] p-6 md:p-10 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center gap-2 md:gap-4 ${isDragOver ? 'border-[#88C9A1] bg-[#F2F4E6] scale-[1.02]' : 'border-[#E0E4CC] bg-[#FEFEFD] hover:border-[#88C9A1] hover:bg-[#F9FAF4]'}`}>
+                <input ref={inputRef} type="file" className="hidden" accept={accept} multiple={multiple} onChange={handleChange} />
+                <div className={`p-4 md:p-5 rounded-full shadow-sm transition-colors ${isDragOver ? 'bg-[#88C9A1] text-white' : 'bg-[#F2F4E6] text-[#88C9A1]'}`}><Upload className="w-8 h-8 md:w-10 md:h-10 stroke-[2.5]" /></div>
+                <div><p className="text-base md:text-lg font-bold text-[#797365]">點擊或拖曳文件</p><p className="text-xs md:text-sm text-[#9CA38F] mt-1 font-bold">{label}</p></div>
+                </div>
+            );
+        };
+
+        // --- SEATING MASTER (Refined: Separate Buttons, Notes, Print Logic) ---
+        // --- SEATING MASTER (PDF Export Version) ---
+       // --- SEATING MASTER (Logic Fixed Version) ---
+        // --- SEATING MASTER (Dual Column Roster Version) ---
+        // --- SEATING MASTER (Fix: Roster Height) ---
+        // --- SEATING MASTER (Clean Fix) ---
+        const SeatingChartTool = () => {
+            const [namesStr, setNamesStr] = useState(""); 
+            const [rows, setRows] = useState(6);
+            const [cols, setCols] = useState(7);
+            const [seats, setSeats] = useState(Array.from({length: 42}, () => ({ text: "", note: "", type: "empty" }))); 
+            const [title, setTitle] = useState(""); 
+            const [ignoreStr, setIgnoreStr] = useState(""); 
+            const [mode, setMode] = useState("swap"); 
+            const [selectedIdx, setSelectedIdx] = useState(null);
+            const [sortDir, setSortDir] = useState("row");
+            const [currentView, setCurrentView] = useState("student");
+            const [isExporting, setIsExporting] = useState(false);
+            const containerRef = useRef(null);
+            const [gridStyle, setGridStyle] = useState({});
+
+            const parseNames = () => {
+                if (!namesStr) return [];
+                return namesStr.split('\n').filter(s => s.trim() && !ignoreStr.includes(s.trim()));
+            };
+
+            useEffect(() => {
+                setSeats(prev => {
+                    const newSize = rows * cols;
+                    if (prev.length === newSize) return prev;
+                    const newSeats = Array.from({length: newSize}, () => ({ text: "", note: "", type: "empty" }));
+                    for(let i=0; i<Math.min(prev.length, newSize); i++) {
+                        newSeats[i] = prev[i];
+                    }
+                    return newSeats;
+                });
+            }, [rows, cols]);
+
+            useEffect(() => {
+                const updateGridSize = () => {
+                    if (!containerRef.current) return;
+                    const { width, height } = containerRef.current.getBoundingClientRect();
+                    const availableWidth = width - 48;
+                    const availableHeight = height - 120;
+                    const gap = 8;
+                    const cellH = (availableHeight - ((rows - 1) * gap)) / rows;
+                    const cellW = (availableWidth - ((cols - 1) * gap)) / cols;
+                    const size = Math.max(30, Math.min(cellH, cellW, 100)); 
+                    
+                    setGridStyle({
+                        gridTemplateColumns: `repeat(${cols}, ${size}px)`,
+                        gridTemplateRows: `repeat(${rows}, ${size}px)`
+                    });
+                };
+
+                const resizeObserver = new ResizeObserver(() => window.requestAnimationFrame(updateGridSize));
+                if(containerRef.current) resizeObserver.observe(containerRef.current);
+                updateGridSize(); 
+
+                return () => resizeObserver.disconnect();
+            }, [rows, cols]);
+
+            const fillGrid = (list) => {
+                let currentListIdx = 0;
+                const newSeats = seats.map(s => s.type === 'blocked' ? s : { ...s, text: "", note: s.note, type: "empty" });
+
+                if (sortDir === 'row') {
+                    for (let i = 0; i < newSeats.length; i++) {
+                        if (newSeats[i].type !== 'blocked' && currentListIdx < list.length) {
+                            newSeats[i] = { ...newSeats[i], text: list[currentListIdx++], type: 'occupied' };
+                        }
+                    }
+                } else {
+                    for (let c = 0; c < cols; c++) {
+                        for (let r = 0; r < rows; r++) {
+                            const idx = r * cols + c;
+                            if (idx < newSeats.length && newSeats[idx].type !== 'blocked' && currentListIdx < list.length) {
+                                newSeats[idx] = { ...newSeats[idx], text: list[currentListIdx++], type: 'occupied' };
+                            }
+                        }
+                    }
+                }
+                setSeats(newSeats);
+            };
+
+            const handleRandomize = () => {
+                let list = parseNames();
+                for (let i = list.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [list[i], list[j]] = [list[j], list[i]];
+                }
+                fillGrid(list);
+            };
+
+            const handleSequential = () => { fillGrid(parseNames()); };
+
+            const handleSeatClick = (idx) => {
+                const newSeats = [...seats];
+                if (mode === 'block') {
+                    const isBlocked = newSeats[idx].type === 'blocked';
+                    newSeats[idx] = {
+                        text: "",
+                        note: "",
+                        type: isBlocked ? 'empty' : 'blocked'
+                    };
+                    setSeats(newSeats);
+                } else {
+                    if (newSeats[idx].type === 'blocked') return;
+                    if (selectedIdx === null) {
+                        setSelectedIdx(idx); 
+                    } else {
+                        const seatA = newSeats[selectedIdx];
+                        const seatB = newSeats[idx];
+                        
+                        const tempA = { text: seatA.text, note: seatA.note, type: seatA.type };
+                        const tempB = { text: seatB.text, note: seatB.note, type: seatB.type };
+
+                        newSeats[selectedIdx] = { ...tempB };
+                        newSeats[idx] = { ...tempA };
+
+                        if (!newSeats[selectedIdx].text) newSeats[selectedIdx].type = 'empty';
+                        if (!newSeats[idx].text) newSeats[idx].type = 'empty';
+                        if (newSeats[selectedIdx].text) newSeats[selectedIdx].type = 'occupied';
+                        if (newSeats[idx].text) newSeats[idx].type = 'occupied';
+
+                        setSeats(newSeats);
+                        setSelectedIdx(null);
+                    }
+                }
+            };
+
+            const handleNoteChange = (idx, value) => {
+                const newSeats = [...seats];
+                newSeats[idx] = { ...newSeats[idx], note: value };
+                setSeats(newSeats);
+            };
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0]; if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const bstr = evt.target.result; const wb = XLSX.read(bstr, { type: 'binary' });
+                        const wsname = wb.SheetNames[0];
+                        const ws = wb.Sheets[wsname];
+                        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                        const names = [];
+                        data.forEach(row => { if(row[0]) names.push(row[0]); });
+                        setNamesStr(names.join('\n'));
+                    } catch (e) { console.error(e); alert("讀取 Excel 失敗"); }
+                };
+                reader.readAsBinaryString(file); e.target.value = null;
+            };
+
+            const saveState = () => {
+                const data = { title, namesStr, ignoreStr, seats, sortDir, rows, cols };
+                const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = "seating_data.json"; a.click();
+            };
+
+            const loadState = (e) => {
+                const file = e.target.files[0]; if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const data = JSON.parse(evt.target.result);
+                    setTitle(data.title || ""); 
+                    setNamesStr(data.namesStr || ""); 
+                    setIgnoreStr(data.ignoreStr || ""); 
+                    setSeats(data.seats || []); 
+                    setSortDir(data.sortDir || "row");
+                    if(data.rows) setRows(data.rows);
+                    if(data.cols) setCols(data.cols);
+                };
+                reader.readText(file);
+                e.target.value = null;
+            };
+
+            const handleExportPDF = async (viewType) => {
+                if (!window.html2canvas || !window.PDFLib) {
+                    alert("核心元件尚未載入完成，請稍候");
+                    return;
+                }
+                setIsExporting(true);
+                
+                const elementId = viewType === 'student' ? 'pdf-export-student' : 'pdf-export-teacher';
+                const element = document.getElementById(elementId);
+                
+                try {
+                    const canvas = await window.html2canvas(element, { 
+                        scale: 2,
+                        backgroundColor: "#ffffff",
+                        logging: false
+                    });
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfDoc = await window.PDFLib.PDFDocument.create();
+                    const page = pdfDoc.addPage([841.89, 595.28]); // A4 Landscape
+                    const pngImage = await pdfDoc.embedPng(imgData);
+                    
+                    page.drawImage(pngImage, {
+                        x: 0, y: 0,
+                        width: 841.89,
+                        height: 595.28,
+                    });
+
+                    const pdfBytes = await pdfDoc.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${title || '座位表'}_${viewType === 'student' ? '學生' : '導師'}視角.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error("PDF Export Error:", error);
+                    alert("匯出 PDF 失敗，請重試");
+                } finally {
+                    setIsExporting(false);
+                }
+            };
+
+            // Render PDF Templates inside the main render to avoid re-creation issues
+            const pdfTemplates = (
+                <div style={{ position: 'fixed', top: '-10000px', left: '-10000px', pointerEvents: 'none' }}>
+                    {/* Student View Template */}
+                    <div id="pdf-export-student" style={{ width: '1123px', height: '794px', padding: '40px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+                        <h1 style={{ fontSize: '32px', fontWeight: 'bold', textAlign: 'center', marginBottom: '20px', color: '#000' }}>{title || '座位表'} (學生視角)</h1>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                            <div style={{ background: '#333', color: 'white', border: '3px solid black', width: '60%', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>黑 板</div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                             <div style={{ border: '3px solid black', width: '150px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>講 台</div>
+                        </div>
+                        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: '8px' }}>
+                            {seats.map((seat, i) => (
+                                <div key={i} style={{ 
+                                    border: seat.type === 'empty' ? '1px dashed #ccc' : '2px solid #000',
+                                    borderRadius: '8px',
+                                    backgroundColor: seat.type === 'blocked' ? '#ddd' : 'white',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    overflow: 'hidden'
+                                }}>
+                                    {seat.type !== 'empty' && seat.type !== 'blocked' && (
+                                        <>
+                                            <div style={{ fontSize: '20px', fontWeight: '900', color: '#000' }}>{seat.text}</div>
+                                            {seat.note && <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>{seat.note}</div>}
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Teacher View Template (Fixed Roster Height & Layout) */}
+                    <div id="pdf-export-teacher" style={{ width: '1123px', height: '794px', padding: '40px', backgroundColor: 'white', display: 'flex', gap: '20px' }}>
+                        <div style={{ width: '250px', borderRight: '2px solid #000', paddingRight: '15px', display: 'flex', flexDirection: 'column' }}>
+                            <h3 style={{ fontSize: '20px', fontWeight: 'bold', borderBottom: '2px solid #000', marginBottom: '10px', color: '#000', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>點名表</span>
+                                <span style={{fontSize:'12px', alignSelf:'end'}}>共 {parseNames().length} 人</span>
+                            </h3>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: '0px', rowGap: '2px' }}>
+                                {parseNames().map((n, i) => (
+                                    <div key={i} style={{ width: '50%', borderBottom: 'none', fontSize: '12px', lineHeight: '1.6', padding: '2px 4px', color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <span style={{display:'inline-block', width:'20px', color:'#555', fontWeight:'bold'}}>{i+1}.</span>
+                                        <span style={{fontWeight:'bold'}}>{n}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <h1 style={{ fontSize: '32px', fontWeight: 'bold', textAlign: 'center', marginBottom: '20px', color: '#000' }}>{title || '座位表'} (導師視角)</h1>
+                            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: '8px', transform: 'rotate(180deg)' }}>
+                                {seats.map((seat, i) => (
+                                    <div key={i} style={{ border: seat.type === 'empty' ? '1px dashed #ccc' : '2px solid #000', borderRadius: '8px', backgroundColor: seat.type === 'blocked' ? '#ddd' : 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', transform: 'rotate(-180deg)' }}>
+                                        {seat.type !== 'empty' && seat.type !== 'blocked' && (
+                                            <>
+                                                <div style={{ fontSize: '20px', fontWeight: '900', color: '#000' }}>{seat.text}</div>
+                                                {seat.note && <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>{seat.note}</div>}
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                                <div style={{ border: '3px solid black', width: '150px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>講 台 (老師位置)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="flex flex-col h-full gap-4 relative overflow-hidden">
+                    {pdfTemplates}
+                    
+                    <div className="w-full nook-phone-header p-3 flex flex-col gap-2 no-print shrink-0 rounded-[20px] border-2 border-white shadow-md z-20 control-panel-top">
+                        <div className="flex flex-wrap justify-between items-center gap-2">
+                             <div className="flex items-center gap-2">
+                                <div className="bg-[#F2D879] p-1.5 rounded-xl text-[#7A5C3E] shadow-sm"><Users size={20} /></div>
+                                <h2 className="text-lg font-bold text-[#7A5C3E]">座位大師 <span className="text-[10px] bg-[#7FD1B9] text-white px-2 py-0.5 rounded-full ml-1">美蓮師監製</span></h2>
+                             </div>
+                             <div className="flex gap-2">
+                                <input type="text" value={title} onChange={e=>setTitle(e.target.value)} className="nook-input text-xs py-1 px-2 w-40" placeholder="標題" />
+                                <div className="flex gap-1">
+                                    <button onClick={()=>handleExportPDF('student')} disabled={isExporting} className="nook-btn bg-[#574E44] text-white px-3 py-1 text-xs shadow-md">
+                                        {isExporting ? <Loader2 size={14} className="animate-spin"/> : <Download size={14}/>} 學生PDF
+                                    </button>
+                                    <button onClick={()=>handleExportPDF('teacher')} disabled={isExporting} className="nook-btn bg-[#8D6E63] text-white px-3 py-1 text-xs shadow-md">
+                                        {isExporting ? <Loader2 size={14} className="animate-spin"/> : <Download size={14}/>} 導師PDF
+                                    </button>
+                                </div>
+                                <button onClick={()=>setCurrentView(currentView==='student'?'teacher':'student')} className={`nook-btn px-3 py-1 text-xs border-2 ${currentView==='student'?'bg-[#F2D879] text-[#7A5C3E] border-[#F2D879]':'bg-[#7FD1B9] text-white border-[#7FD1B9]'}`}>
+                                    {currentView==='student' ? '學生視角' : '導師視角'}
+                                </button>
+                             </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 items-center text-xs">
+                             <div className="flex gap-1 items-center bg-white p-1 rounded-lg border">
+                                <span className="font-bold text-[#574E44] px-1">格局:</span>
+                                <input type="number" min="1" max="10" value={rows} onChange={e=>setRows(Math.max(1, Number(e.target.value)))} className="w-10 text-center border rounded text-[#574E44]" />
+                                <span className="text-[#574E44] font-bold">x</span>
+                                <input type="number" min="1" max="10" value={cols} onChange={e=>setCols(Math.max(1, Number(e.target.value)))} className="w-10 text-center border rounded text-[#574E44]" />
+                             </div>
+                             
+                             <div className="flex gap-1 items-center bg-white p-1 rounded-lg border">
+                                <span className="font-bold text-[#574E44] px-1">模式:</span>
+                                <button onClick={()=>setMode('block')} className={`px-2 py-1 rounded-md transition ${mode==='block'?'bg-[#FF9A8B] text-white':'text-gray-400 hover:bg-gray-100'}`}>🧱 設定障礙</button>
+                                <button onClick={()=>setMode('swap')} className={`px-2 py-1 rounded-md transition ${mode==='swap'?'bg-[#7ACBD5] text-white':'text-gray-400 hover:bg-gray-100'}`}>👆 交換座位</button>
+                             </div>
+                             
+                             <div className="flex gap-1 items-center bg-white p-1 rounded-lg border">
+                                <span className="font-bold text-[#574E44] px-1">排序:</span>
+                                <button onClick={()=>setSortDir('row')} className={`px-2 py-1 rounded-md transition ${sortDir==='row'?'bg-[#7FD1B9] text-white':'text-gray-400'}`}>橫向</button>
+                                <button onClick={()=>setSortDir('col')} className={`px-2 py-1 rounded-md transition ${sortDir==='col'?'bg-[#7FD1B9] text-white':'text-gray-400'}`}>直向</button>
+                             </div>
+
+                             <button onClick={handleRandomize} className="nook-btn bg-[#F2D879] text-[#7A5C3E] py-1 px-3">🎲 隨機</button>
+                             <button onClick={handleSequential} className="nook-btn bg-white border border-[#F2D879] text-[#7A5C3E] py-1 px-3">🔢 依序</button>
+                             <button onClick={()=>setSeats(Array(rows*cols).fill({text:"", note: "", type:"empty"}))} className="nook-btn bg-red-400 text-white py-1 px-3">🔄 清空</button>
+                             
+                             <div className="flex gap-1 ml-auto">
+                                <button onClick={saveState} className="nook-btn bg-[#8D6E63] text-white py-1 px-2"><Save size={12}/></button>
+                                <label className="nook-btn bg-[#A1887F] text-white py-1 px-2 cursor-pointer"><FolderOpen size={12}/><input type="file" accept=".json" onChange={loadState} className="hidden"/></label>
+                                <label className="nook-btn bg-[#7FD1B9] text-white py-1 px-2 cursor-pointer"><Upload size={12}/> Excel<input type="file" accept=".xlsx" onChange={handleFileUpload} className="hidden" /></label>
+                             </div>
+                        </div>
+                        
+                        <details className="text-xs text-[#9CA38F]">
+                            <summary className="cursor-pointer hover:text-[#797365]">編輯名單 ({parseNames().length}人)</summary>
+                            <textarea value={namesStr} onChange={e=>setNamesStr(e.target.value)} className="nook-input w-full h-20 mt-1 text-xs resize-none" placeholder="每行一位學生..." />
+                        </details>
+                    </div>
+
+                    <div className="flex-1 bg-[#574E44] p-2 md:p-4 overflow-hidden rounded-[20px] md:rounded-[30px] print-hide screen-mode flex flex-col shadow-inner relative z-10" ref={containerRef}>
+                        <div className={`paper-preview bg-white w-full h-full p-4 relative transition-transform duration-500 flex flex-col rounded-[15px] items-center justify-center ${currentView==='teacher'?'teacher-view-transform':''}`}>
+                            
+                            {/* 修正 1: 移除 opacity-20，並加入 rotate-180 讓文字轉正 */}
+                            <div className={`flex flex-col items-center mb-2 w-full transition-all duration-300 shrink-0 ${currentView==='teacher'?'rotate-180':''}`}>
+                                <div className="blackboard w-1/2 h-10 md:h-14 mb-1 flex items-center justify-center text-white font-bold tracking-widest text-base md:text-xl font-mono rounded-lg shadow-md bg-[#2F4F4F] border-4 border-[#8B4513]">黑 板</div>
+                                <div className="podium w-20 h-5 md:w-24 md:h-6 flex items-center justify-center font-bold text-[10px] md:text-xs rounded shadow-sm">講台</div>
+                            </div>
+
+                            <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
+                                <div className="grid gap-2 seat-grid-wrapper content-center justify-center" style={{...gridStyle}}>
+                                    {seats.map((seat, i) => (
+                                        <div 
+                                            key={i} 
+                                            onClick={()=>handleSeatClick(i)}
+                                            className={`
+                                                seat-item cursor-pointer select-none
+                                                ${seat.type}
+                                                ${selectedIdx === i ? 'selected' : ''}
+                                                ${seat.type === 'occupied' ? 'seat-swap-anim' : ''}
+                                            `}
+                                        >
+                                            <span className="truncate w-full text-center px-0.5">{seat.type === 'blocked' ? '' : (seat.text || (i+1))}</span>
+                                            {seat.type !== 'blocked' && seat.type !== 'empty' && (
+                                                <input 
+                                                    className="seat-note-input" 
+                                                    value={seat.note || ''} 
+                                                    onChange={(e) => handleNoteChange(i, e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()} 
+                                                    placeholder="備註"
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* 修正 2: 已移除原本在這裡會遮擋視線的 absolute bottom-2 講台標籤 */}
+                        </div>
+                    </div>
+                </div>
+            );
+        };       
+            const PDFMerger = ({ ready }) => {
+            const [files, setFiles] = useState([]); const [processing, setProcessing] = useState(false);
+            const handleMerge = async () => { if (files.length < 2 || !window.PDFLib) return; setProcessing(true); try { const mergedPdf = await window.PDFLib.PDFDocument.create(); for (const file of files) { const fileBuffer = await Utils.readFileAsArrayBuffer(file); const pdf = await window.PDFLib.PDFDocument.load(fileBuffer); const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); copiedPages.forEach((page) => mergedPdf.addPage(page)); } const pdfBytes = await mergedPdf.save(); const blob = new Blob([pdfBytes], { type: 'application/pdf' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `merged_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url); } catch (err) { alert('合併失敗'); } finally { setProcessing(false); } };
+            return (<div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"><DropZone accept=".pdf" multiple={true} onDrop={(fs) => setFiles(prev => [...prev, ...fs.filter(f => f.type === 'application/pdf')])} label="支援多個 PDF 檔案" />{files.length > 0 && (<div className="space-y-3 bg-white p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-[#F2F4E6]"><div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">{files.map((file, idx) => <FileItem key={idx} file={file} onRemove={() => setFiles(files.filter((_, i) => i !== idx))} />)}</div></div>)}<Button onClick={handleMerge} disabled={files.length < 2 || processing} variant="primary" className="w-full text-base md:text-lg" icon={processing ? Loader2 : Layers}>{processing ? '處理中...' : '開始合併 PDF'}</Button></div>);
+        };
+        const PDFSplitter = ({ ready }) => {
+            const [file, setFile] = useState(null); const [processing, setProcessing] = useState(false);
+            const handleSplit = async () => { if (!file || !window.PDFLib || !window.JSZip) return; setProcessing(true); try { const fileBuffer = await Utils.readFileAsArrayBuffer(file); const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer); const pageCount = pdfDoc.getPageCount(); const zip = new window.JSZip(); for (let i = 0; i < pageCount; i++) { const newPdf = await window.PDFLib.PDFDocument.create(); const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]); newPdf.addPage(copiedPage); const pdfBytes = await newPdf.save(); zip.file(`${file.name.replace('.pdf', '')}_p${(i + 1).toString().padStart(3, '0')}.pdf`, pdfBytes); } const zipContent = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(zipContent); const a = document.createElement('a'); a.href = url; a.download = `split_${Date.now()}.zip`; a.click(); } catch (err) { console.error(err); } finally { setProcessing(false); } };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">{!file ? <DropZone accept=".pdf" multiple={false} onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])} label="單一 PDF" /> : <div className="space-y-4"><FileItem file={file} onRemove={() => setFile(null)} /><Button onClick={handleSplit} disabled={processing} variant="blue" className="w-full text-base md:text-lg" icon={processing ? Loader2 : Scissors}>{processing ? '處理中...' : '分割並下載 ZIP'}</Button></div>}</div>);
+        };
+        const PDFPageRemover = ({ ready }) => {
+            const [file, setFile] = useState(null); const [pagesToRemove, setPagesToRemove] = useState(''); const [processing, setProcessing] = useState(false);
+            const handleRemove = async () => { if (!file || !pagesToRemove || !window.PDFLib) return; setProcessing(true); try { const fileBuffer = await Utils.readFileAsArrayBuffer(file); const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer); const newPdf = await window.PDFLib.PDFDocument.create(); const totalPages = pdfDoc.getPageCount(); const removeIndices = new Set(); pagesToRemove.split(',').forEach(part => { const range = part.trim().split('-').map(Number); if (range.length === 1 && !isNaN(range[0])) removeIndices.add(range[0] - 1); else if (range.length === 2) { for (let i = range[0]; i <= range[1]; i++) removeIndices.add(i - 1); }}); const keepIndices = []; for (let i = 0; i < totalPages; i++) { if (!removeIndices.has(i)) keepIndices.push(i); } if (keepIndices.length === 0) throw new Error("不能移除所有頁面"); const copiedPages = await newPdf.copyPages(pdfDoc, keepIndices); copiedPages.forEach(page => newPdf.addPage(page)); const pdfBytes = await newPdf.save(); const blob = new Blob([pdfBytes], { type: 'application/pdf' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `removed_pages_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url); } catch (err) { alert('操作失敗: ' + err.message); } finally { setProcessing(false); } };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">{!file ? <DropZone accept=".pdf" multiple={false} onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])} label="單一 PDF" /> : (<div className="space-y-4"><FileItem file={file} onRemove={() => setFile(null)} /><div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[20px] md:rounded-[30px] border-[3px] md:border-[4px] border-white"><label className="text-sm md:text-base font-bold text-[#797365] flex items-center gap-2"><Trash2 className="w-4 h-4" />要移除的頁碼 (例如: 1, 3-5)</label><input type="text" value={pagesToRemove} onChange={(e) => setPagesToRemove(e.target.value)} className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-none mt-2 md:mt-3 text-[#797365] bg-white focus:ring-4 focus:ring-[#88C9A1]/30 font-bold" placeholder="輸入頁碼..." /></div><Button onClick={handleRemove} disabled={processing} variant="danger" className="w-full text-base md:text-lg" icon={processing ? Loader2 : Trash2}>{processing ? '處理中...' : '移除指定頁面'}</Button></div>)}</div>);
+        };
+        const PDFRotator = ({ ready }) => {
+            const [file, setFile] = useState(null); const [processing, setProcessing] = useState(false);
+            const handleRotate = async () => { if(!file || !window.PDFLib) return; setProcessing(true); try { const fileBuffer = await Utils.readFileAsArrayBuffer(file); const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer); const pages = pdfDoc.getPages(); pages.forEach(page => { const rotation = page.getRotation(); page.setRotation(window.PDFLib.degrees(rotation.angle + 90)); }); const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes], { type: 'application/pdf' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `rotated_${Date.now()}.pdf`; a.click(); } catch(e) { console.error(e); } finally { setProcessing(false); } };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">{!file ? <DropZone accept=".pdf" multiple={false} onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])} label="單一 PDF" /> : (<div className="space-y-4"><FileItem file={file} onRemove={() => setFile(null)} /><Button onClick={handleRotate} disabled={processing} variant="primary" className="w-full text-base md:text-lg" icon={processing ? Loader2 : RotateCw}>{processing ? '處理中...' : '全部向右旋轉 90°'}</Button></div>)}</div>);
+        };
+        const ImageToPDF = ({ ready }) => {
+            const [files, setFiles] = useState([]); const [processing, setProcessing] = useState(false);
+            const handleConvert = async () => {
+                if (files.length === 0 || !window.PDFLib) return;
+                setProcessing(true);
+                try {
+                const pdfDoc = await window.PDFLib.PDFDocument.create();
+                for (const file of files) { const fileBuffer = await Utils.readFileAsArrayBuffer(file); let image; if (file.type === 'image/png') image = await pdfDoc.embedPng(fileBuffer); else if (file.type === 'image/jpeg' || file.type === 'image/jpg') image = await pdfDoc.embedJpg(fileBuffer); else continue; const page = pdfDoc.addPage([image.width, image.height]); page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height }); }
+                const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes], { type: 'application/pdf' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `images_to_pdf_${Date.now()}.pdf`; a.click(); URL.revokeObjectURL(url);
+                } catch (err) { alert("轉換失敗"); } finally { setProcessing(false); }
+            };
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <DropZone accept="image/png, image/jpeg, image/jpg" multiple={true} onDrop={(fs) => setFiles(prev => [...prev, ...fs.filter(f => ['image/png', 'image/jpeg', 'image/jpg'].includes(f.type))])} label="支援 JPG / PNG" />
+                {files.length > 0 && (<div className="space-y-3 bg-white p-6 rounded-[30px] border-[4px] border-[#F2F4E6]"><div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">{files.map((file, idx) => <FileItem key={`img-${idx}`} file={file} onRemove={() => setFiles(files.filter((_, i) => i !== idx))} />)}</div></div>)}
+                <Button onClick={handleConvert} disabled={files.length === 0 || processing} variant="primary" className="w-full text-base md:text-lg" icon={processing ? Loader2 : FileText}>{processing ? '轉換中...' : '轉換為 PDF'}</Button>
+                </div>
+            );
+        };
+        const PDFToImage = ({ ready }) => {
+            const [file, setFile] = useState(null); const [processing, setProcessing] = useState(false);
+            const handleConvert = async () => { if (!file || !window.pdfjsLib || !window.JSZip) return; setProcessing(true); try { const fileBuffer = await Utils.readFileAsArrayBuffer(file); const pdf = await window.pdfjsLib.getDocument(fileBuffer).promise; const zip = new window.JSZip(); const totalPages = pdf.numPages; for (let i = 1; i <= totalPages; i++) { const page = await pdf.getPage(i); const viewport = page.getViewport({ scale: 2.0 }); const canvas = document.createElement('canvas'); const context = canvas.getContext('2d'); canvas.height = viewport.height; canvas.width = viewport.width; await page.render({ canvasContext: context, viewport: viewport }).promise; const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8)); zip.file(`${file.name.replace('.pdf', '')}_p${i.toString().padStart(3, '0')}.jpg`, blob); } const zipContent = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(zipContent); const a = document.createElement('a'); a.href = url; a.download = `${file.name.replace('.pdf', '')}_images.zip`; a.click(); URL.revokeObjectURL(url); } catch (err) { alert("轉換失敗: 加密或格式錯誤"); } finally { setProcessing(false); } };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">{!file ? <DropZone accept=".pdf" multiple={false} onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])} label="單一 PDF" /> : (<div className="space-y-4"><FileItem file={file} onRemove={() => setFile(null)} /><Button onClick={handleConvert} disabled={processing} variant="danger" className="w-full text-base md:text-lg" icon={processing ? Loader2 : ImageIcon}>{processing ? '渲染中...' : '轉換為 JPG (ZIP)'}</Button></div>)}</div>);
+        };
+        const NumToChiTool = ({ ready }) => {
+            const [val, setVal] = useState(''); const [res, setRes] = useState('');
+            return (<div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500"><div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-white"><div className="flex justify-between items-center mb-2"><label className="text-sm md:text-base font-bold text-[#797365] block">輸入數字金額</label><div className="text-[#F4E798] flex items-center gap-1 bg-[#797365]/10 px-2 py-1 rounded-lg"><Gem size={16} /> <span className="text-xs font-bold text-[#797365]">Bells</span></div></div><input type="number" value={val} onChange={e=>setVal(e.target.value)} className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-none bg-white text-[#797365] font-bold focus:ring-4 focus:ring-[#88C9A1]/30" placeholder="例如: 12345"/></div><Button onClick={()=>setRes(Utils.numberToChinese(val))} variant="secondary" className="w-full text-base md:text-lg">轉換為中文大寫</Button>{res && (<div className="bg-[#FFF8DC] p-6 md:p-8 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-[#F4E798] text-center relative overflow-hidden group hover:scale-[1.02] transition-transform"><div className="absolute top-0 left-0 w-full h-3 bg-[#F4E798]/30"></div><p className="text-xs md:text-sm font-bold text-[#9CA38F] mb-2 uppercase tracking-wider">Result</p><p className="text-2xl md:text-3xl font-extrabold text-[#797365] select-all tracking-wide break-all">{res}</p></div>)}</div>);
+        };
+        const WatermarkTool = () => {
+            const [file, setFile] = useState(null); const [preview, setPreview] = useState(null); const [text, setText] = useState("僅供行政使用"); const [processing, setProcessing] = useState(false);
+            useEffect(() => { if (file) Utils.readImageAsDataURL(file).then(setPreview); else setPreview(null); }, [file]);
+            const handleProcess = async () => { if (!file || !preview) return; setProcessing(true); const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const img = await Utils.loadImage(preview); canvas.width = img.width; canvas.height = img.height; ctx.drawImage(img, 0, 0); const fontSize = Math.max(20, Math.floor(img.width / 20)); ctx.font = `bold ${fontSize}px sans-serif`; ctx.fillStyle = 'rgba(200, 200, 200, 0.5)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.translate(canvas.width / 2, canvas.height / 2); ctx.rotate(-45 * Math.PI / 180); ctx.translate(-canvas.width / 2, -canvas.height / 2); const stepX = fontSize * text.length * 1.5; const stepY = fontSize * 4; for (let x = -canvas.width; x < canvas.width * 2; x += stepX) { for (let y = -canvas.height; y < canvas.height * 2; y += stepY) { ctx.fillText(text, x, y); } } canvas.toBlob((blob) => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `watermarked_${file.name}`; a.click(); setProcessing(false); }); };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">{!file ? <DropZone accept="image/*" multiple={false} onDrop={(fs) => fs[0].type.startsWith('image/') && setFile(fs[0])} label="JPG, PNG (圖片浮水印)" /> : <div className="space-y-4"><FileItem file={file} onRemove={() => setFile(null)} /><div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-white"><label className="text-sm md:text-base font-bold text-[#797365] mb-2 block">浮水印文字</label><input type="text" value={text} onChange={(e) => setText(e.target.value)} className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-none text-[#797365] font-bold focus:ring-4 focus:ring-[#88C9A1]/30" placeholder="浮水印文字" /></div><Button onClick={handleProcess} disabled={processing} variant="secondary" className="w-full text-base md:text-lg" icon={processing ? Loader2 : Stamp}>{processing ? '處理中...' : '下載'}</Button></div>}</div>);
+        };
+        const PDFPageNumber = ({ ready }) => {
+            const [file, setFile] = useState(null); const [processing, setProcessing] = useState(false);
+            const handleAdd = async () => { if(!file || !window.PDFLib) return; setProcessing(true); try { const fileBuffer = await Utils.readFileAsArrayBuffer(file); const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer); const pages = pdfDoc.getPages(); const { rgb } = window.PDFLib; pages.forEach((page, idx) => { const { width } = page.getSize(); page.drawText(`${idx + 1}`, { x: width / 2, y: 20, size: 12, color: rgb(0, 0, 0), }); }); const pdfBytes = await pdfDoc.save(); const blob = new Blob([pdfBytes], { type: 'application/pdf' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `pagenum_${Date.now()}.pdf`; a.click(); } catch(e) { console.error(e); } finally { setProcessing(false); } };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">{!file ? <DropZone accept=".pdf" multiple={false} onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])} label="單一 PDF" /> : (<div className="space-y-4"><FileItem file={file} onRemove={() => setFile(null)} /><Button onClick={handleAdd} disabled={processing} variant="secondary" className="w-full text-base md:text-lg" icon={processing ? Loader2 : Hash}>{processing ? '處理中...' : '添加頁碼 (底部置中)'}</Button></div>)}</div>);
+        };
+        const PDFEncrypt = ({ ready }) => {
+            const [file, setFile] = useState(null); const [password, setPassword] = useState(''); const [processing, setProcessing] = useState(false);
+            const handleEncrypt = async () => { if(!file || !password || !window.PDFLib) return; setProcessing(true); try { const fileBuffer = await Utils.readFileAsArrayBuffer(file); const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer); const pdfBytes = await pdfDoc.save({ userPassword: password, ownerPassword: password }); const blob = new Blob([pdfBytes], { type: 'application/pdf' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `encrypted_${Date.now()}.pdf`; a.click(); } catch(e) { console.error(e); } finally { setProcessing(false); } };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">{!file ? <DropZone accept=".pdf" multiple={false} onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])} label="單一 PDF" /> : (<div className="space-y-4"><FileItem file={file} onRemove={() => setFile(null)} /><div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-white"><label className="text-sm md:text-base font-bold text-[#797365] mb-2 flex items-center gap-2"><Lock className="w-4 h-4"/> 設定開啟密碼</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-none mt-2 text-[#797365] bg-white focus:ring-4 focus:ring-[#88C9A1]/30 font-bold" placeholder="輸入密碼..." /></div><Button onClick={handleEncrypt} disabled={processing || !password} variant="danger" className="w-full text-base md:text-lg" icon={processing ? Loader2 : Lock}>{processing ? '處理中...' : '加密 PDF'}</Button></div>)}</div>);
+        };
+        const PasswordGeneratorTool = () => {
+            const [label, setLabel] = useState(""); const [password, setPassword] = useState(""); const [isVisible, setIsVisible] = useState(false); const [timeLeft, setTimeLeft] = useState(0); const [copyFeedback, setCopyFeedback] = useState(""); const timerRef = useRef(null);
+            const chars = "0123456789!@#$%";
+            const generateChar = () => { const array = new Uint8Array(1); let randomValue; do { window.crypto.getRandomValues(array); randomValue = array[0]; } while (randomValue >= 255); return chars[randomValue % chars.length]; };
+            const handleGenerate = () => { let newPwd = ""; for (let i = 0; i < 10; i++) { newPwd += generateChar(); } setPassword(newPwd); setIsVisible(false); setCopyFeedback(""); resetTimer(); };
+            const resetTimer = () => { if (timerRef.current) clearInterval(timerRef.current); setTimeLeft(60); timerRef.current = setInterval(() => { setTimeLeft((prev) => { if (prev <= 1) { clearInterval(timerRef.current); setPassword(""); return 0; } return prev - 1; }); }, 1000); };
+            useEffect(() => { return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, []);
+            const handleCopy = async () => { if (!password) return; try { await navigator.clipboard.writeText(password); setCopyFeedback("已複製！"); setTimeout(() => setCopyFeedback(""), 2000); } catch (err) { setCopyFeedback("複製失敗"); } };
+            const handleClear = () => { setPassword(""); setTimeLeft(0); if (timerRef.current) clearInterval(timerRef.current); };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"><div className="bg-slate-900 p-6 rounded-[30px] border-[4px] border-slate-700 shadow-xl relative overflow-hidden text-slate-200 font-mono"><div className="flex items-center gap-2 mb-6 border-b border-slate-700 pb-4"><Key size={24} className="text-emerald-400" /><h3 className="text-lg font-bold text-emerald-400 tracking-wider">安全密碼產生器_v1.0</h3></div><div className="mb-6"><label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">用途標籤</label><input type="text" value={label} onChange={(e) => setLabel(e.target.value)} className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none transition-all placeholder:text-slate-600" placeholder="例如：Google 主帳號" spellCheck="false"/></div><div className="mb-6 relative group"><label className="block text-xs uppercase tracking-widest text-slate-500 mb-2">產生的密碼</label><div className="relative"><input type="text" value={password ? (isVisible ? password : "•".repeat(10)) : ""} readOnly className="w-full bg-black border-2 border-emerald-500/50 rounded-lg p-4 text-center text-2xl tracking-[0.5em] text-emerald-400 font-bold outline-none shadow-[0_0_15px_rgba(16,185,129,0.2)]" placeholder="••••••••••" autoComplete="off" autoCorrect="off" spellCheck="false"/><button onClick={() => setIsVisible(!isVisible)} disabled={!password} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-400 disabled:opacity-30 transition-colors">{isVisible ? <EyeOff size={20} /> : <Eye size={20} />}</button></div></div><div className="grid grid-cols-2 gap-4 mb-6"><button onClick={handleGenerate} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"><RefreshCw size={18} /> 產生</button><button onClick={handleCopy} disabled={!password} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">{copyFeedback ? <Check size={18} /> : <Copy size={18} />}{copyFeedback || "複製"}</button></div>{password && (<div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-800 pt-4"><div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>{timeLeft}秒後自動清除</div><button onClick={handleClear} className="text-red-400 hover:text-red-300 underline">立即清除</button></div>)}<div className="absolute top-2 right-2 opacity-20"><Lock size={60} /></div></div><p className="text-center text-xs text-[#9CA38F] font-bold">* 使用 Cryptographically Secure PRNG (window.crypto) 生成，確保分佈均勻。</p></div>);
+        };
+        const HoroscopeTool = () => {
+            const [sign, setSign] = useState("aries"); const [result, setResult] = useState(null);
+            const signs = [ { id: "aries", label: "牡羊座" }, { id: "taurus", label: "金牛座" }, { id: "gemini", label: "雙子座" }, { id: "cancer", label: "巨蟹座" }, { id: "leo", label: "獅子座" }, { id: "virgo", label: "處女座" }, { id: "libra", label: "天秤座" }, { id: "scorpio", label: "天蠍座" }, { id: "sagittarius", label: "射手座" }, { id: "capricorn", label: "摩羯座" }, { id: "aquarius", label: "水瓶座" }, { id: "pisces", label: "雙魚座" } ];
+            const luckyItems = ["金礦石", "大頭菜", "旅行券", "星星碎片", "鈴錢袋", "化石", "KK唱片", "特產水果", "家具樹葉", "漂流瓶", "梯子", "撐庫跳桿"];
+            const luckyColors = ["紅色", "天藍色", "金色", "草綠色", "紫色", "亮橘色", "粉色", "米白色", "曜石黑", "檸檬黃"];
+            const templates = [ "今天的財運亨通，敲石頭記得要連續敲滿8下喔！", "人際運勢上升，去和島民們送禮物吧，可能會收到回禮。", "工作效率極高，非常適合進行大規模的島嶼改造工程。", "去海邊散散步吧，撿到的{item}可能會帶來好運。", "穿上{color}的衣服去找刺蝟姊妹，也許會有特別的對話。", "隨身帶著{item}，它是你今天的幸運護身符。", "小心搖樹！雖然可能會掉下{item}，但也可能有黃蜂。", "今天的大頭菜價格走勢成謎，建議多問問豆狸。", "適合出島旅行，穿著{color}的鞋子說不定會遇到稀有島民。", "晚上的夜空很清澈，看見流星記得放下手中的{item}許願。" ];
+            const getDailyFortune = (signId) => {
+                const today = new Date(); const dateStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`; const seedString = dateStr + signId;
+                let hash = 0; for (let i = 0; i < seedString.length; i++) { const char = seedString.charCodeAt(i); hash = ((hash << 5) - hash) + char; hash = hash & hash; } const seed = Math.abs(hash);
+                const itemIndex = seed % luckyItems.length; const colorIndex = (seed >> 1) % luckyColors.length; const templateIndex = (seed >> 2) % templates.length; const stars = (seed % 5) + 1;
+                let message = templates[templateIndex]; message = message.replace("{item}", luckyItems[itemIndex]); message = message.replace("{color}", luckyColors[colorIndex]);
+                return { stars: stars, item: luckyItems[itemIndex], color: luckyColors[colorIndex], message: message };
+            };
+            const handlePredict = () => { const fortune = getDailyFortune(sign); setResult(fortune); };
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-white"><label className="text-sm md:text-base font-bold text-[#797365] mb-2 block">選擇星座</label><select value={sign} onChange={(e) => setSign(e.target.value)} className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-none text-[#797365] font-bold bg-white focus:ring-4 focus:ring-[#88C9A1]/30 appearance-none">{signs.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
+                    <Button onClick={handlePredict} variant="primary" className="w-full text-base md:text-lg" icon={Sun}>占卜今日運勢</Button>
+                    {result && (<div className="bg-[#E0F7FA] p-6 md:p-8 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-[#4DD0E1] text-center relative overflow-hidden animate-pulse"><div className="absolute top-0 left-0 w-full h-3 bg-[#4DD0E1]/30"></div><p className="text-xs md:text-sm font-bold text-[#0097A7] mb-2 uppercase tracking-wider">Katrina's Prediction</p><div className="flex justify-center gap-1 mb-4">{[...Array(5)].map((_, i) => (<span key={i} className={`text-2xl ${i < result.stars ? 'text-[#FFD700]' : 'text-gray-300'}`}>★</span>))}</div><div className="grid grid-cols-2 gap-4 mb-4 text-sm font-bold text-[#00838F]"><div className="bg-white/50 p-2 rounded-xl"><span className="block text-[10px] opacity-70 uppercase">Lucky Item</span>{result.item}</div><div className="bg-white/50 p-2 rounded-xl"><span className="block text-[10px] opacity-70 uppercase">Lucky Color</span>{result.color}</div></div><p className="text-lg md:text-xl font-extrabold text-[#006064] tracking-wide leading-relaxed">{result.message}</p></div>)}
+                </div>
+            );
+        };
+        const RandomPickerTool = () => {
+            const [input, setInput] = useState(""); const [result, setResult] = useState("");
+            const handleDraw = () => { const lines = input.split('\n').filter(line => line.trim() !== ''); if (lines.length === 0) return; const random = Math.floor(Math.random() * lines.length); setResult(lines[random]); };
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-white"><label className="text-sm md:text-base font-bold text-[#797365] mb-2 block">輸入名單 (每行一個)</label><textarea value={input} onChange={(e) => setInput(e.target.value)} className="w-full h-32 p-3 md:p-4 rounded-xl md:rounded-2xl border-none text-[#797365] font-bold bg-white focus:ring-4 focus:ring-[#88C9A1]/30 resize-none" placeholder="例如：&#10;西施惠&#10;豆狸&#10;粒狸"/></div>
+                    <Button onClick={handleDraw} disabled={!input.trim()} variant="secondary" className="w-full text-base md:text-lg" icon={Dice5}>開始抽籤</Button>
+                    {result && (<div className="bg-[#FFF9C4] p-6 md:p-8 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-[#FFF176] text-center relative overflow-hidden"><div className="absolute top-0 left-0 w-full h-3 bg-[#FFF176]/30"></div><p className="text-xs md:text-sm font-bold text-[#FBC02D] mb-2 uppercase tracking-wider">Winner</p><p className="text-3xl md:text-4xl font-extrabold text-[#F57F17] tracking-wide break-words">{result}</p></div>)}
+                </div>
+            );
+        };
+        const CountdownTool = () => {
+            const [inputMin, setInputMin] = useState(1); const [inputSec, setInputSec] = useState(0); const [timeLeft, setTimeLeft] = useState(60); const [isActive, setIsActive] = useState(false); const [isShaking, setIsShaking] = useState(false);
+            const totalInputSeconds = inputMin * 60 + inputSec;
+            useEffect(() => { let interval = null; if (isActive && timeLeft > 0) { interval = setInterval(() => { setTimeLeft(timeLeft => { if (timeLeft - 1 === 0) { playAlarm(); setIsShaking(true); setTimeout(() => setIsShaking(false), 3000); return 0; } return timeLeft - 1; }); }, 1000); } else if (timeLeft === 0) { setIsActive(false); } return () => clearInterval(interval); }, [isActive, timeLeft]);
+            const formatTime = (time) => { const m = Math.floor(time / 60).toString().padStart(2, '0'); const s = (time % 60).toString().padStart(2, '0'); return `${m}:${s}`; };
+            const handlePreset = (totalSec) => { setIsActive(false); const m = Math.floor(totalSec / 60); const s = totalSec % 60; setInputMin(m); setInputSec(s); setTimeLeft(totalSec); };
+            const handleReset = () => { setIsActive(false); setTimeLeft(totalInputSeconds); setIsShaking(false); };
+            const presets = [ { label: "30秒", val: 30 }, { label: "1分", val: 60 }, { label: "3分", val: 180 }, { label: "5分", val: 300 }, { label: "10分", val: 600 }, { label: "15分", val: 900 }, { label: "30分", val: 1800 }, { label: "50分", val: 3000 }, ];
+            return (<div className={`space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ${isShaking ? 'animate-shake' : ''}`}><div className="bg-white p-6 md:p-10 rounded-[30px] md:rounded-[40px] border-[4px] md:border-[6px] border-[#F2F4E6] text-center"><div className="text-5xl md:text-7xl font-black text-[#797365] font-mono tracking-tighter">{formatTime(timeLeft)}</div></div><div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-white"><label className="text-sm md:text-base font-bold text-[#797365] mb-2 block">設定時間</label><div className="flex gap-2 items-center"><div className="flex-1 relative"><input type="number" min="0" value={inputMin} onChange={(e) => { const val = Math.max(0, parseInt(e.target.value) || 0); setInputMin(val); if (!isActive) setTimeLeft(val * 60 + inputSec); }} className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-none text-[#797365] font-bold bg-white focus:ring-4 focus:ring-[#88C9A1]/30 text-center text-lg" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9CA38F] font-bold">分</span></div><span className="text-[#9CA38F] font-bold">:</span><div className="flex-1 relative"><input type="number" min="0" max="59" value={inputSec} onChange={(e) => { const val = Math.max(0, Math.min(59, parseInt(e.target.value) || 0)); setInputSec(val); if (!isActive) setTimeLeft(inputMin * 60 + val); }} className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-none text-[#797365] font-bold bg-white focus:ring-4 focus:ring-[#88C9A1]/30 text-center text-lg" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9CA38F] font-bold">秒</span></div></div></div><div className="grid grid-cols-4 gap-2">{presets.map(p => (<button key={p.label} onClick={() => handlePreset(p.val)} className="bg-white hover:bg-[#F2F4E6] border-2 border-[#E0E4CC] text-[#797365] font-bold py-2 rounded-xl text-xs md:text-sm transition-colors">{p.label}</button>))}</div><div className="grid grid-cols-2 gap-4"><Button onClick={() => setIsActive(!isActive)} variant={isActive ? "danger" : "primary"} className="w-full text-base md:text-lg" icon={isActive ? null : Timer}>{isActive ? "暫停" : "開始"}</Button><Button onClick={handleReset} variant="outline" className="w-full text-base md:text-lg">重置</Button></div></div>);
+        };
+        const PomodoroTool = () => {
+            const [mode, setMode] = useState('focus'); const [timeLeft, setTimeLeft] = useState(25 * 60); const [isActive, setIsActive] = useState(false); const [isShaking, setIsShaking] = useState(false);
+            useEffect(() => { let interval = null; if (isActive && timeLeft > 0) { interval = setInterval(() => { setTimeLeft(timeLeft => { if (timeLeft - 1 === 0) { playAlarm(); setIsShaking(true); setTimeout(() => setIsShaking(false), 3000); setIsActive(false); if(mode === 'focus') { setMode('break'); return 5 * 60; } else { setMode('focus'); return 25 * 60; } } return timeLeft - 1; }); }, 1000); } return () => clearInterval(interval); }, [isActive, timeLeft, mode]);
+            const formatTime = (time) => { const m = Math.floor(time / 60).toString().padStart(2, '0'); const s = (time % 60).toString().padStart(2, '0'); return `${m}:${s}`; };
+            const toggleTimer = () => setIsActive(!isActive); const resetTimer = () => { setIsActive(false); setTimeLeft(mode === 'focus' ? 25 * 60 : 5 * 60); setIsShaking(false); };
+            return (
+                <div className={`space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ${isShaking ? 'animate-shake' : ''}`}><div className={`p-6 md:p-8 rounded-[30px] md:rounded-[40px] border-[4px] md:border-[6px] border-white text-center transition-colors duration-500 ${mode === 'focus' ? 'bg-[#FFCCBC]' : 'bg-[#C8E6C9]'}`}><div className="text-xs md:text-sm font-bold uppercase tracking-widest mb-2 text-white/80">{mode === 'focus' ? 'FOCUS TIME (工作)' : 'BREAK TIME (休息)'}</div><div className="text-5xl md:text-7xl font-black text-white font-mono tracking-tighter drop-shadow-sm">{formatTime(timeLeft)}</div></div><div className="grid grid-cols-2 gap-4"><Button onClick={toggleTimer} variant="primary" className="w-full text-base md:text-lg" icon={isActive ? null : AlarmClock}>{isActive ? "暫停" : "開始專注"}</Button><Button onClick={resetTimer} variant="outline" className="w-full text-base md:text-lg">重置</Button></div><div className="bg-white/50 p-4 rounded-2xl text-center text-xs font-bold text-[#797365]/60">{mode === 'focus' ? '專注 25 分鐘，像狸克一樣勤奮工作！' : '休息 5 分鐘，喝杯咖啡吧！'}</div></div>
+            );
+        };
+        const NotepadTool = () => {
+            const [note, setNote] = useState(() => { try { return localStorage.getItem('ac_notepad') || ''; } catch { return ''; } });
+            const handleChange = (e) => { const val = e.target.value; setNote(val); localStorage.setItem('ac_notepad', val); };
+            return (<div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500"><div className="bg-[#FFF9C4] p-1 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-[#FBC02D] shadow-sm relative"><div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#FBC02D]/20 w-32 h-6 rounded-full blur-sm"></div><textarea value={note} onChange={handleChange} className="w-full h-96 p-6 rounded-[20px] md:rounded-[26px] border-none bg-[#FFF9C4] text-[#797365] font-bold text-lg focus:ring-0 resize-none leading-relaxed custom-scrollbar placeholder:text-[#FBC02D]/50" placeholder="今天想記下什麼呢？島上的大頭菜價格？還是鄰居的生日？" /></div><div className="text-right text-xs text-[#9CA38F] font-bold">內容會自動儲存在瀏覽器中</div></div>);
+        };
+        const TodoListTool = () => {
+            const [tasks, setTasks] = useState(() => { try { return JSON.parse(localStorage.getItem('ac_todos') || '[]'); } catch { return []; } });
+            const [input, setInput] = useState('');
+            useEffect(() => { localStorage.setItem('ac_todos', JSON.stringify(tasks)); }, [tasks]);
+            const addTask = () => { if (!input.trim()) return; setTasks([...tasks, { id: Date.now(), text: input, done: false }]); setInput(''); };
+            const toggleTask = (id) => { setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)); };
+            const deleteTask = (id) => { setTasks(tasks.filter(t => t.id !== id)); };
+            const handleKeyDown = (e) => { if (e.key === 'Enter') addTask(); };
+            return (<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"><div className="flex gap-2"><input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} className="flex-1 p-4 rounded-2xl border-[3px] border-white bg-[#F8F9F0] text-[#797365] font-bold focus:ring-4 focus:ring-[#88C9A1]/30 outline-none" placeholder="新增待辦事項..." /><Button onClick={addTask} variant="primary" className="px-6" icon={null}>+</Button></div><div className="space-y-3">{tasks.length === 0 && (<div className="text-center py-10 text-[#9CA38F] font-bold opacity-50">目前沒有待辦事項，去抓蟲或是釣魚吧！</div>)}{tasks.map(task => (<div key={task.id} className={`flex items-center justify-between p-4 rounded-2xl border-[3px] transition-all ${task.done ? 'bg-[#E0E4CC]/50 border-transparent opacity-60' : 'bg-white border-[#F2F4E6]'}`}><div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => toggleTask(task.id)}><div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${task.done ? 'bg-[#88C9A1] border-[#88C9A1] text-white' : 'border-[#E0E4CC] text-transparent'}`}><Icon size={16}><polyline points="20 6 9 17 4 12"/></Icon></div><span className={`font-bold text-lg ${task.done ? 'line-through text-[#9CA38F]' : 'text-[#797365]'}`}>{task.text}</span></div><button onClick={() => deleteTask(task.id)} className="p-2 text-[#FF9A8B] hover:bg-[#FFF5F5] rounded-full transition-colors"><Trash2 size={20} /></button></div>))}</div></div>);
+        };
+        const JokeTool = () => {
+            const [jokeData, setJokeData] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [history, setHistory] = useState([]);
+
+            const hardcodedJokes = [
+  { text: "要成功要做到五個字「特別能吃苦」，而我想我快成功了", sub: "因為我已經做到五分之四...「特別能吃」" },
+  { text: "炎柱會吃便當，那龍柱會？", sub: "回頭......浪子回頭" },
+  { text: "有隻麋鹿在森林裡迷路了，於是他打電話給長頸鹿：「ㄟㄟ！我迷路啦！」", sub: "長頸鹿：「喔～拎北長頸鹿啦！」" },
+  { text: "一般的狗都汪汪叫，那山上的狗怎麼叫？", sub: "汪汪的啦" },
+  { text: "人在什麼時候會感到害怕？", sub: "亥時。亥時（還是）會害怕..." },
+  { text: "哪個藝人不吃午餐？", sub: "中島美嘉" },
+  { text: "什麼果汁名字最長？", sub: "屬牛虎兔龍蛇馬羊猴雞 狗豬" },
+  { text: "小鹿斑比的哥哥是？", sub: "大鹿尋奇" },
+  { text: "學海無涯", sub: "回頭是岸" },
+  { text: "葡萄點名 . . . . .", sub: "葡萄柚" },
+  { text: "小馬的哥哥叫什麼？", sub: "歐巴馬" },
+  { text: "請問要怎麼變成一個暖男？", sub: "火化" },
+  { text: "牆壁去爬山，走到腳痠了，誰會揹他？", sub: "源之助。因為卑鄙源之助（背壁源之助）" },
+  { text: "在哪裡跌倒", sub: "就在那裡哭" },
+  { text: "空中大學的學生，上完課後要幹嘛？", sub: "進行空中作業" },
+  { text: "出門前我對桌上的隱形眼鏡說", sub: "我根本沒把妳放在眼裡！" },
+  { text: "紅豆、綠豆、黃豆，哪一種豆子最貴？", sub: "紅豆。紅豆粉粿（悔過）" },
+  { text: "很熱的島是什麼島？", sub: "正中午（台語：透中晝）" },
+  { text: "為什麼超人要穿緊身衣？", sub: "因為救人要緊" },
+  { text: "開封的優格可以保存幾天？", sub: "開封優格保七天（包青天）" },
+  { text: "我：醫生，我手術後要多久才能拉小提琴？醫生：一個月。", sub: "我：謝謝你，我本來不會拉的！" },
+  { text: "為什麼會有起床氣？", sub: "因為我賴床，床不回，我就生氣了" },
+  { text: "皮卡丘要去跟傑尼龜借錢。皮卡丘：「皮卡皮卡皮卡（傑尼龜借我一些錢）」", sub: "傑尼龜：「不要（傑尼傑尼）」" },
+  { text: "一歲的蜜蜂到了一百歲變成甚麼？", sub: "高齡蜂" },
+  { text: "哪位總統最愛吃零食？", sub: "袁世凱。因為他是臨時（零食）大總統" },
+  { text: "老王姓什麼？", sub: "法。法老王" },
+  { text: "阿杏摔個四腳朝天，變什麼？", sub: "阿呆" },
+  { text: "一個成功的男人背後都有什麼？", sub: "一根脊椎" },
+  { text: "為什麼母雞要一直抖？", sub: "其實我也母雞抖（粵語：不知道）" },
+  { text: "有天小明打電話給電話客服。客服：「很高興能為您服務。」小明：「你高興的太早了。」", sub: "於是小明就把電話掛掉了。" },
+  { text: "小明為什麼每次跑步比賽都輸？", sub: "因為他穿慢跑鞋" },
+  { text: "曹操字孟德，劉備字玄德，那伍佰呢？", sub: "五百字心得" },
+  { text: "冰塊最想做什麼事？", sub: "退伍，因為他當冰（兵）當很久了" },
+  { text: "熊剪了指甲變成？", sub: "能" },
+  { text: "高麗菜死掉會變成什麼？", sub: "高利貸...高麗Die" },
+  { text: "為什麼螃蟹要橫著走？", sub: "因為有鉗就是任性" },
+  { text: "什麼刀最長？", sub: "屠龍刀，Too Long…." },
+  { text: "壞事一定要在中午做，為什麼？", sub: "因為～早晚會有報應" },
+  { text: "鯊魚吃下綠豆變成？", sub: "綠豆沙" },
+  { text: "達文西密碼的上面是什麼？", sub: "達文西帳號" },
+  { text: "恐怖分子樓下住誰？", sub: "恐怖分母" },
+  { text: "為什麼皇帝害怕去醫院?", sub: "因為對症下藥（對朕下藥）" },
+  { text: "什麼皇帝最漂亮?", sub: "秦始皇，因為他暴政（爆正）" },
+  { text: "狗的英文叫 dog，那臘腸狗的英文怎麼拚？", sub: "doooooooog" },
+  { text: "為什麼看不到李白寫的詩?", sub: "字太白" },
+  { text: "小白＋小白=?", sub: "小白兔（two）" },
+  { text: "誰家沒有電話?", sub: "天衣，因為天衣無縫（phone）" },
+  { text: "誰最不孝順?", sub: "面速力，因為面速力達（打）母" },
+  { text: "要把杯子變大，要念什麼咒語?", sub: "大悲（杯）咒" },
+  { text: "為什麼飛機飛這麼高都不會撞到星星呢?", sub: "因為星星會〝閃〞" },
+  { text: "我跟你說一件事實……", sub: "兩件80" },
+  { text: "高速公路北上給汽車走，南下給誰走?", sub: "給騎老虎的走（騎虎南下）" },
+  { text: "為什麼哈利波特不吃冰?", sub: "因為魔法少年賈修（呷燒）（台語）" },
+  { text: "豹的女朋友是誰?", sub: "龜，因為抱（豹）得美人歸（龜）" },
+  { text: "馬英九的家猜一首歌?", sub: "小酒窩（九窩）" },
+  { text: "哪一種花最沒力?", sub: "茉莉花，因為好一朵美麗（沒力）的茉莉花～～" },
+  { text: "誰的老婆身體最不好?", sub: "酷酷哥，因為老婆叫酷酷嫂（臺語：咳嗽）" },
+  { text: "為什麼老人不在晚上的時候出去?", sub: "因為月下（嚇）老人" },
+  { text: "有誰知道天使姓什麼嗎?", sub: "馬。因為馬英九（馬angel）" },
+  { text: "當兵時所吃的鹽是細鹽還是粗鹽?", sub: "粗鹽。因為軍無細鹽（君無戲言）" },
+  { text: "有個潮男走在路上，路人看着他，稱讚道：「哇！你超會搭！」", sub: "潮男就燒焦了。（搭=焦）" },
+  { text: "通常多少人我們會稱他為一個團體呢?", sub: "20個人。因為團體=twenty" },
+  { text: "請問三國時代為什麼最後魏國會勝利?", sub: "因為天下第一味（魏）" },
+  { text: "皮卡丘站起來？", sub: "皮卡兵" },
+  { text: "皮卡丘爬山？", sub: "皮卡岳" },
+  { text: "皮卡丘左右跳呢？", sub: "皮卡乒乓乒乓" },
+  { text: "為什麼很少看到蜜蜂的便便?", sub: "因為牠便蜜" },
+  { text: "五月花和百合花哪個沒生過小孩?", sub: "五月花。因為五月花衛生紙（未生子）" },
+  { text: "一對連體嬰的姐妹，一個叫瑪麗，另一個叫什麼?", sub: "夢露。因為瑪麗蓮（連）夢露" },
+  { text: "什麼情況下人會有四隻眼睛?", sub: "兩個人的時候" },
+  { text: "為什麼美人魚最專情?", sub: "因為她不會劈腿" },
+  { text: "青春痘長在哪裡最不用擔心?", sub: "別人臉上" },
+  { text: "哪個人跑得最快?", sub: "曹操，因為說曹操曹操就到" },
+  { text: "什麼樣的人不能到加油站上班?", sub: "油腔滑調的人" },
+  { text: "氧氣和二氧化碳，哪一個比較美?", sub: "氧氣。因為氧氣會助燃，助燃（自然）就是美" },
+  { text: "一隻公雞加一隻母雞，猜三個字?", sub: "兩隻雞" },
+  { text: "什麼事是林先生和林太太每天睡覺都要做的事?", sub: "閉上眼睛" },
+  { text: "哪個村不會下雨?", sub: "地球村美語" },
+  { text: "川普跌倒了變什麼?", sub: "三普" },
+  { text: "木魚掉到水裡變什麼?", sub: "虱目魚（濕木魚）" },
+  { text: "白襯衫容易發黃，一般的洗衣精很難洗乾淨，不少人為此感到頭痛，其實，不妨在洗的時候…", sub: "吃顆頭痛藥，頭就不會那麼痛了" },
+  { text: "有一對情侶吵架，女生很生氣的奪門而出，男生馬上快速的追出去…", sub: "把門奪回來…." },
+  { text: "怎樣使麻雀安靜下來?", sub: "壓它一下。因為，壓（鴉）雀無聲" },
+  { text: "迪士尼卡通的辛巴姓什麼?", sub: "姓王。因為 獅子 王辛巴" },
+  { text: "請問書跟筆誰是壞人?", sub: "書。因為害人之心book有" },
+  { text: "哪種職業最不容易受傷?", sub: "零售商（零受傷）" },
+  { text: "哪一種食物最常被拿來做攻擊的武器呢?", sub: "人蔘。因為〝人身攻擊〞" },
+  { text: "有一天Y跟X走在路上，突然看到U哭得很傷心，Y就走過去問U說：", sub: "uniqlo U你哭囉?" },
+  { text: "問：你有《時間簡史》嗎?", sub: "神經病，我有時間也不撿屎！" },
+  { text: "你從醫院回來了啊，沒什麼事吧？醫生怎麼說?", sub: "Doctor" },
+  { text: "一塊三分熟的牛排和一塊五分熟的牛排在大街上遇到了，為什麼他們沒打招呼呢?", sub: "因為……他們都不熟…" },
+  { text: "醫生問小明：如果把你一邊耳朵割掉你會怎麼樣？小明：我會聽不見。醫生又問：那再割掉另一個耳朵呢？", sub: "小明：我會看不見（因為我有戴眼鏡）" },
+  { text: "有位女孩跳河後因為羽絨服太厚，漂在了河上被獲救。這難道就是傳說中的：", sub: "大難不死必有厚服！！！！！" },
+  { text: "某公司老板去旅行，經過一座山時，導遊介紹到：「這山下有個泉，屈原泉。」老板問：「什麼泉？」導遊答：「屈－原－泉！」", sub: "老板怒道：「就你會拼音，我問你什麼泉！」" },
+  { text: "有一天紅豆餅出車禍了，他臨死前說的最後一句話是：", sub: "「啊！原來我是包奶油的！」" },
+  { text: "劉備和張飛一起騎馬，眼看著張飛要沖出懸崖了。劉備：張飛！你快勒馬！", sub: "張飛回頭：我很快樂！然後他就掉下去了。" },
+  { text: "千萬不要和風打架，就算你武功高，風沒傷到你", sub: "你傷風了，也會感冒。" },
+  { text: "有一對玉米相愛了，決定結婚。那天一個玉米找不到另一個，問身旁的爆米花：「你看到我們家玉米了嗎？」", sub: "爆米花說：「親愛的，人家穿婚紗了嘛~」" },
+  { text: "小鵝問媽媽：「為什麼我要叫爸爸〝阿瑪〞？」", sub: "「因為我是你的鵝娘呀！」" },
+  { text: "小蛇很慌張地問大蛇哥哥：「哥哥，我們有沒有毒？」大蛇說：「你問這幹嘛？」", sub: "小蛇說：「我剛才不小心把自己舌頭咬到了。」" },
+  { text: "少女：請問禪師，現在社會動亂，我一個弱女子應當如何保護自己？禪師二話不說，倒了一杯水，立即潑到少女臉上。", sub: "少女：難道是要我保持冷靜？禪師：妳素顏就可以了。" },
+                { text: "有一天，0 跟 8 在街上遇見，0 不屑地對 8 說：胖就胖，還繫什麼腰帶！", sub: "" },
+                { text: "綠豆哪裡人？", sub: "嘉義人（加薏仁）。" },
+                { text: "小明：爸爸，我想要一隻狗。爸爸：好啊，我們去寵物店買。", sub: "小明：可是我想要一隻熱狗。" },
+                { text: "有一天，皮卡丘走路跌倒了，變成了什麼？", sub: "皮卡兵（乒）。" },
+                { text: "猴子最討厭什麼線？", sub: "平行線，因為沒有相交（香蕉）。" },
+                { text: "為什麼小鳥飛到南方就不飛了？", sub: "因為牠的一隻翅膀抽筋了（很冷）。" },
+                { text: "有一天，紅豆餅出車禍了，他吐出了什麼？", sub: "紅豆餡（血）。" },
+                { text: "愚公移山的時候唱什麼歌？", sub: "移山移山亮晶晶。" },
+                { text: "為什麼哈利波特不吃冰？", sub: "因為他怕魔法變沒了（魔髮變沒了）。" },
+                { text: "有一個人叫小蔡，然後他就被端走了。", sub: "" },
+                { text: "巫婆死掉變什麼？", sub: "Switch" },
+                { text: "卓別林死掉變什麼？", sub: "Strawberry" },
+                { text: "企鵝死掉變什麼？", sub: "鵝（他沒氣ㄌ）" },
+                { text: "圓形、長方形、正方形、三角形相約出去誰遲到最久？", sub: "三角形（全等三角形）" },
+                { text: "狗會汪貓會喵雞呢？", sub: "雞會留給準備好的人" },
+                { text: "哪個殺手只會講英文？", sub: "銀翼殺手" },
+                { text: "有天貝殼回老家，跟他媽講什麼？", sub: "I'm back" },
+                { text: "胡迪死了要唱什麼？", sub: "盛夏光年" },
+                { text: "楊過最愛吃什麼？", sub: "小籠包" },
+                { text: "達文西密碼上面是什麼？", sub: "達文西帳號" },
+                { text: "為什麼非洲沒有藥局？", sub: "因為空腹不能吃藥" },
+                { text: "誰殺了便當？", sub: "值日生（抬便當）" },
+                { text: "張雨生家的木頭哪來的？", sub: "雨生鋸來的" },
+                { text: "有一天幹部們一起出去玩", sub: "幹部揪" },
+                { text: "為什麼邊緣人不剪頭髮？", sub: "因為沒人要理他" },
+                { text: "船長負責開船，水手呢？", sub: "水手關燈" },
+                { text: "什麼飲料最好玩？", sub: "喝剩的飲料" },
+                { text: "媽媽跟小陳說不要指月亮，結果小東回什麼？", sub: "蛤（因為小陳耳朵被割掉變小東）" },
+                { text: "在樹上饒舌", sub: "桑（又又又）" },
+                { text: "最浪漫的鳥是？", sub: "候鳥，因為他會壁咚" },
+                { text: "哪個牌子車最沒種？", sub: "你上（Nissan）" },
+                { text: "這次考試很簡單，但小明怎麼還是覺得很硬？", sub: "隔壁小美裸考" },
+                { text: "小鹿叫班比，大鹿呢？", sub: "尋奇（大陸尋奇）" },
+                { text: "警察爆氣變什麼？", sub: "警報器" },
+                { text: "胃最多能塞幾道菜？", sub: "九道，因為胃十道逆流" },
+                { text: "翁山蘇姬他哥是誰？", sub: "蘇姬大哥啦（司機大哥）" },
+                { text: "剪刀有什麼就能打贏石頭？", sub: "聯絡簿（聯絡布）" },
+                { text: "鐵達尼號傑克應該跟螺絲說什麼？", sub: "全都怪我，不該沉沒時沉沒" },
+                { text: "一個中子走進酒吧並說來一瓶海尼根多少錢？", sub: "酒保: For you? No charge. (免費/無電荷)" },
+                { text: "農夫養的雞都不生蛋，物理學家計算後說：我想到辦法了！", sub: "不過這辦法只適用在真空中的球體母雞。" },
+                { text: "海森堡開車被警察攔下來問「你知道你開多快嗎？」", sub: "海森堡：不知道，但我知道我在哪裡。（測不準原理）" },
+                { text: "Why is Heisenberg in the joke above?", sub: "We're not certain." },
+                { text: "一個物理學家看到有人要跳樓大叫說：Dont jump!", sub: "You have so much potential! (潛力/位能)" },
+                { text: "什麼時候會不遵守虎克定律？", sub: "When spring break. (春假/彈簧斷掉)" },
+                { text: "Jump off the roof,", sub: "that'll teach you about gravity!" },
+                { text: "Don't be a a'(t). (變加速度 jerk)", sub: "別當個混蛋 (Don't be a jerk)" },
+                { text: "床與螺線管有什麼共通點？", sub: "都符合冷次定律（想要離開時會產生反抗的力）" },
+                { text: "籃球為什麼會往下掉？", sub: "因為有籃球場（Field/場）" },
+                { text: "What did Donald Duck say in his quantum physics class?", sub: "Quark! Quark! Quark! (夸克)" },
+                { text: "工程師、物理學家和數學家在愛爾蘭看到一隻黑羊。", sub: "工程師：愛爾蘭羊是黑的。物理學家：有些羊是黑的。數學家：至少有一隻羊的一側是黑的。" }
+            ];
+
+            const handleJoke = () => {
+                setLoading(true);
+                setTimeout(() => {
+                     let random;
+                     let attempts = 0;
+                     do {
+                         random = Math.floor(Math.random() * hardcodedJokes.length);
+                         attempts++;
+                     } while (history.includes(random) && attempts < 50);
+
+                     setHistory(prev => {
+                         const newHistory = [...prev, random];
+                         if (newHistory.length > 10) newHistory.shift();
+                         return newHistory;
+                     });
+
+                     setJokeData(hardcodedJokes[random]);
+                     setLoading(false);
+                }, 600);
+            };
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-[#E0F7FA] p-6 md:p-8 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-[#4DD0E1] text-center relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-3 bg-[#4DD0E1]/30"></div>
+                        <p className="text-xs md:text-sm font-bold text-[#0097A7] mb-2 uppercase tracking-wider">Cold Joke Generator 3000</p>
+                        <div className="min-h-[80px] flex flex-col items-center justify-center">
+                            {loading ? (
+                                <span className="animate-pulse text-[#006064] font-bold">連線至笑話資料庫中...</span>
+                            ) : (
+                                jokeData ? (
+                                    <>
+                                        <p className="text-lg md:text-xl font-extrabold text-[#006064] tracking-wide leading-relaxed mb-4">
+                                            {jokeData.text}
+                                        </p>
+                                        {jokeData.sub && (
+                                            <p className="text-base md:text-lg font-bold text-[#00838F] bg-white/50 px-4 py-2 rounded-xl inline-block mt-2">
+                                                {jokeData.sub}
+                                            </p>
+                                        )}
+                                    </>
+                                ) : (
+                                    <p className="text-lg md:text-xl font-extrabold text-[#006064] opacity-50">
+                                        點擊下方按鈕，來點冷笑話吧！
+                                    </p>
+                                )
+                            )}
+                        </div>
+                    </div>
+                    <Button onClick={handleJoke} disabled={loading} variant="blue" className="w-full text-base md:text-lg" icon={Laugh}>{loading ? "下載笑話中..." : "講個笑話"}</Button>
+                    <p className="text-center text-[10px] text-gray-400 font-bold">* 內建高達 60+ 則精選冷笑話資料庫</p>
+                </div>
+            );
+        };
+        const GradeAnalysisTool = () => {
+            const [classes, setClasses] = useState([]);
+            const [newClassName, setNewClassName] = useState("");
+            const [inputData, setInputData] = useState("");
+            const [isExporting, setIsExporting] = useState(false);
+            const chartRefs = useRef({});
+            const classRefs = useRef({});
+
+            useEffect(() => {
+                classes.forEach((cls) => {
+                    const ctx = document.getElementById(`chart-${cls.id}`);
+                    if (ctx) {
+                        if (chartRefs.current[cls.id]) chartRefs.current[cls.id].destroy();
+                        
+                        const buckets = Array(11).fill(0);
+                        const labels = ["0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99", "100"];
+                        cls.scores.forEach(s => { 
+                            if (s.score === 100) buckets[10]++; 
+                            else { 
+                                const idx = Math.floor(s.score / 10); 
+                                if(idx >=0 && idx < 10) buckets[idx]++; 
+                            } 
+                        });
+
+                        const stats = getStats(cls.scores);
+
+                        chartRefs.current[cls.id] = new Chart(ctx, { 
+                            type: 'bar', 
+                            data: { 
+                                labels: labels, 
+                                datasets: [{ 
+                                    label: '人數', 
+                                    data: buckets, 
+                                    backgroundColor: '#88C9A1', 
+                                    borderColor: '#E0F2F1', 
+                                    borderWidth: 1, 
+                                    borderRadius: 4,
+                                    barPercentage: 0.8,
+                                }] 
+                            }, 
+                            options: { 
+                                responsive: true, 
+                                maintainAspectRatio: false,
+                                layout: {
+                                    padding: {
+                                        top: 30 // ★這裡增加了頂部空間，防止文字被切掉
+                                    }
+                                },
+                                plugins: { 
+                                    legend: { display: false },
+                                    tooltip: {
+                                        callbacks: {
+                                            title: (items) => `分數區間: ${items[0].label}`,
+                                            label: (item) => `${item.raw} 人`
+                                        }
+                                    },
+                                    averageLine: {
+                                        average: stats.avg 
+                                    }
+                                }, 
+                                scales: { 
+                                    y: { 
+                                        beginAtZero: true, 
+                                        ticks: { precision: 0 },
+                                        title: {
+                                            display: true,
+                                            text: '人數 (人)',
+                                            font: { weight: 'bold' }
+                                        }
+                                    },
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: '分數區間',
+                                            font: { weight: 'bold' }
+                                        }
+                                    }
+                                } 
+                            },
+                            plugins: [{
+                                id: 'averageLine',
+                                afterDatasetsDraw(chart, args, options) {
+                                    const { ctx, chartArea: { top, bottom, width }, scales: { x } } = chart;
+                                    const averageScore = options.average;
+                                    if (!averageScore) return;
+
+                                    let xPos;
+                                    if (averageScore >= 100) {
+                                        xPos = x.getPixelForValue(10);
+                                    } else {
+                                        const index = Math.floor(averageScore / 10);
+                                        const remainder = averageScore % 10;
+                                        const startPixel = x.getPixelForValue(index);
+                                        const endPixel = x.getPixelForValue(index + 1) || x.getPixelForValue(index) + (width / 11);
+                                        xPos = startPixel + (endPixel - startPixel) * (remainder / 10);
+                                    }
+
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.moveTo(xPos, top);
+                                    ctx.lineTo(xPos, bottom);
+                                    ctx.lineWidth = 3;
+                                    ctx.strokeStyle = '#FF5252';
+                                    ctx.setLineDash([5, 5]);
+                                    ctx.stroke();
+
+                                    // 繪製文字標籤
+                                    ctx.fillStyle = '#FF5252';
+                                    ctx.font = 'bold 12px sans-serif';
+                                    ctx.textAlign = 'center';
+                                    ctx.fillText(`Avg: ${averageScore}`, xPos, top - 10); // 文字位置上移到 padding 區
+                                    ctx.restore();
+                                }
+                            }]
+                        });
+                    }
+                });
+                return () => { Object.values(chartRefs.current).forEach(c => c.destroy()); chartRefs.current = {}; };
+            }, [classes]);
+
+            const handleAddClass = () => {
+                if (!newClassName.trim()) { alert("請輸入班級名稱"); return; }
+                const lines = inputData.split('\n').filter(l => l.trim());
+                const scores = [];
+                lines.forEach(line => {
+                    const match = line.match(/(\d+)/);
+                    if (match) {
+                        const score = parseInt(match[0]);
+                        if (score >= 0 && score <= 100) { const name = line.replace(match[0], '').trim() || `學生${scores.length + 1}`; scores.push({ name, score }); }
+                    }
+                });
+                if (scores.length === 0) { alert("無法解析成績數據。請確認格式為：姓名 成績 (或僅成績)"); return; }
+                setClasses([...classes, { id: Date.now() + Math.random(), name: newClassName, scores }]); setNewClassName(""); setInputData("");
+            };
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const bstr = evt.target.result; const wb = XLSX.read(bstr, { type: 'binary' });
+                        const newClasses = [];
+                        wb.SheetNames.forEach(wsname => {
+                            const ws = wb.Sheets[wsname];
+                            const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                            const scores = [];
+                            data.forEach(row => {
+                                const scoreIdx = row.findIndex(cell => typeof cell === 'number');
+                                if (scoreIdx !== -1) { 
+                                    const score = row[scoreIdx]; 
+                                    const name = row[scoreIdx - 1] || `學生${scores.length + 1}`; 
+                                    if (score >= 0 && score <= 100) scores.push({ name, score }); 
+                                }
+                            });
+                            if (scores.length > 0) {
+                                newClasses.push({ id: Date.now() + Math.random(), name: wsname, scores });
+                            }
+                        });
+                        if (newClasses.length > 0) { setClasses(prev => [...prev, ...newClasses]); } 
+                        else { alert("無法從 Excel 中讀取成績，請確認檔案格式。"); }
+                    } catch (e) { console.error(e); alert("讀取 Excel 失敗"); }
+                };
+                reader.readAsBinaryString(file); e.target.value = null;
+            };
+
+            const getStats = (scores) => {
+                const vals = scores.map(s => s.score); 
+                const sum = vals.reduce((a, b) => a + b, 0);
+                const count = vals.length;
+                const avg = count > 0 ? (sum / count) : 0;
+                const max = count > 0 ? Math.max(...vals) : 0;
+                const min = count > 0 ? Math.min(...vals) : 0;
+                
+                const squareDiffs = vals.map(value => Math.pow(value - avg, 2));
+                const avgSquareDiff = count > 0 ? squareDiffs.reduce((a, b) => a + b, 0) / count : 0;
+                const stdDev = Math.sqrt(avgSquareDiff);
+
+                const passed = vals.filter(v => v >= 60).length;
+
+                return { 
+                    count, 
+                    avg: avg.toFixed(1), 
+                    max, 
+                    min, 
+                    stdDev: stdDev.toFixed(1),
+                    passed,
+                    passRate: count > 0 ? Math.round((passed / count) * 100) : 0
+                };
+            };
+
+            const getClassBuckets = (scores) => {
+                const buckets = Array(11).fill(0);
+                scores.forEach(s => {
+                    if (s.score === 100) buckets[10]++;
+                    else {
+                        const idx = Math.floor(s.score / 10);
+                        if (idx >= 0 && idx < 10) buckets[idx]++;
+                    }
+                });
+                return buckets;
+            };
+
+            const handleExportPDF = async () => {
+                if (classes.length === 0 || !window.PDFLib || !window.html2canvas) return;
+                setIsExporting(true);
+                try {
+                    const pdfDoc = await window.PDFLib.PDFDocument.create();
+                    
+                    for (const cls of classes) {
+                        const element = classRefs.current[cls.id];
+                        if (!element) continue;
+
+                        const originalStyle = element.style.cssText;
+                        element.style.boxShadow = 'none';
+                        element.style.borderRadius = '0';
+                        element.style.border = 'none';
+                        
+                        const canvas = await window.html2canvas(element, { 
+                            scale: 2, 
+                            backgroundColor: "#ffffff",
+                            useCORS: true,
+                            logging: false
+                        });
+                        
+                        element.style.cssText = originalStyle;
+
+                        const imgData = canvas.toDataURL('image/png');
+                        const img = await pdfDoc.embedPng(imgData);
+                        
+                        const page = pdfDoc.addPage([595.28, 841.89]);
+                        const { width, height } = img.scaleToFit(550, 800);
+                        
+                        page.drawImage(img, {
+                            x: (595.28 - width) / 2,
+                            y: 841.89 - height - 40, 
+                            width,
+                            height,
+                        });
+                    }
+
+                    const pdfBytes = await pdfDoc.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `班級成績分析報告_${new Date().toISOString().slice(0,10)}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    console.error(err);
+                    alert("PDF 匯出失敗，請重試");
+                } finally {
+                    setIsExporting(false);
+                }
+            };
+
+            const bucketLabels = ["0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90-99", "100"];
+
+            return (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-[#F8F9F0] p-6 rounded-[30px] border-[4px] border-white shadow-sm">
+                        <h3 className="text-lg font-bold text-[#797365] mb-4 flex items-center gap-2"><Upload size={20}/> 新增班級成績</h3>
+                        <div className="space-y-4">
+                            <input type="text" value={newClassName} onChange={e => setNewClassName(e.target.value)} className="w-full p-3 rounded-xl border-none font-bold text-[#797365]" placeholder="班級名稱 (例如: 三年二班)" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <textarea value={inputData} onChange={e => setInputData(e.target.value)} className="w-full h-32 p-3 rounded-xl border-none font-bold text-[#797365] resize-none" placeholder="直接貼上成績 (格式: 王小明 90 或 僅 90)" />
+                                <div className="flex flex-col justify-center gap-3">
+                                    <Button onClick={handleAddClass} variant="primary" className="w-full" icon={null}>確認新增</Button>
+                                    <div className="relative">
+                                        <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                        <div className="bg-white border-2 border-dashed border-[#E0E4CC] text-[#9CA38F] font-bold py-3 rounded-xl text-center hover:bg-[#F2F4E6] transition-colors">或上傳 Excel 檔案 (支援多分頁)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {classes.length > 0 && (
+                        <>
+                            <div className="flex justify-end">
+                                <Button onClick={handleExportPDF} disabled={isExporting} variant="secondary" className="shadow-lg" icon={isExporting ? Loader2 : Download}>
+                                    {isExporting ? "報告生成中..." : "匯出全校分析報告 (PDF)"}
+                                </Button>
+                            </div>
+
+                            <div className="bg-white p-6 rounded-[30px] border-[4px] border-[#E0E4CC] shadow-sm mb-6 overflow-hidden">
+                                <h3 className="text-xl font-extrabold text-[#797365] mb-4">全校成績分佈總表</h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-center text-gray-600 border-collapse">
+                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b-2 border-gray-100">
+                                            <tr>
+                                                <th className="px-4 py-3 font-extrabold text-left min-w-[100px]">分數區間</th>
+                                                {classes.map(cls => (
+                                                    <th key={cls.id} className="px-4 py-3 min-w-[80px] text-[#00695C]">{cls.name}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {bucketLabels.map((label, idx) => (
+                                                <tr key={label} className="hover:bg-[#F2F4E6]/50 transition-colors">
+                                                    <td className="px-4 py-2 font-bold text-left text-[#9CA38F]">{label}</td>
+                                                    {classes.map(cls => {
+                                                        const buckets = getClassBuckets(cls.scores);
+                                                        return <td key={cls.id} className="px-4 py-2 font-bold">{buckets[idx] || '-'}</td>;
+                                                    })}
+                                                </tr>
+                                            ))}
+                                            <tr className="bg-[#E0F2F1] text-[#00695C]">
+                                                <td className="px-4 py-3 font-black text-left">總人數</td>
+                                                {classes.map(cls => <td key={cls.id} className="px-4 py-3 font-black">{getStats(cls.scores).count}</td>)}
+                                            </tr>
+                                            <tr className="bg-[#FFF3E0] text-[#E65100]">
+                                                <td className="px-4 py-3 font-black text-left">平均分</td>
+                                                {classes.map(cls => <td key={cls.id} className="px-4 py-3 font-black">{getStats(cls.scores).avg}</td>)}
+                                            </tr>
+                                            <tr className="bg-[#F3E5F5] text-[#7B1FA2]">
+                                                <td className="px-4 py-3 font-black text-left">及格率</td>
+                                                {classes.map(cls => <td key={cls.id} className="px-4 py-3 font-black">{getStats(cls.scores).passRate}%</td>)}
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    <div className="space-y-6">
+                        {classes.map(cls => { 
+                            const stats = getStats(cls.scores); 
+                            return (
+                                <div key={cls.id} ref={el => classRefs.current[cls.id] = el} className="bg-white p-6 md:p-10 rounded-[30px] border-[4px] border-[#E0E4CC] shadow-sm page-break-item">
+                                    <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-[#F2F4E6]">
+                                        <h3 className="text-2xl font-extrabold text-[#797365] flex items-center gap-2">
+                                            <School size={28} className="text-[#88C9A1]" />
+                                            {cls.name}
+                                        </h3>
+                                        <button onClick={() => setClasses(classes.filter(c => c.id !== cls.id))} className="text-[#FF9A8B] hover:bg-[#FFF5F5] p-2 rounded-full no-print">
+                                            <X size={24}/>
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                                        <div className="bg-[#E0F2F1] p-4 rounded-2xl text-center">
+                                            <div className="text-xs font-bold text-[#00695C] opacity-70 uppercase mb-1">平均分</div>
+                                            <div className="text-3xl font-black text-[#00695C]">{stats.avg}</div>
+                                        </div>
+                                        <div className="bg-[#FFEBEE] p-4 rounded-2xl text-center">
+                                            <div className="text-xs font-bold text-[#C62828] opacity-70 uppercase mb-1">標準差</div>
+                                            <div className="text-3xl font-black text-[#C62828]">{stats.stdDev}</div>
+                                        </div>
+                                        <div className="bg-[#FFF3E0] p-4 rounded-2xl text-center">
+                                            <div className="text-xs font-bold text-[#E65100] opacity-70 uppercase mb-1">最高分</div>
+                                            <div className="text-3xl font-black text-[#E65100]">{stats.max}</div>
+                                        </div>
+                                        <div className="bg-[#E3F2FD] p-4 rounded-2xl text-center">
+                                            <div className="text-xs font-bold text-[#1565C0] opacity-70 uppercase mb-1">最低分</div>
+                                            <div className="text-3xl font-black text-[#1565C0]">{stats.min}</div>
+                                        </div>
+                                        <div className="bg-[#F3E5F5] p-4 rounded-2xl text-center">
+                                            <div className="text-xs font-bold text-[#7B1FA2] opacity-70 uppercase mb-1">及格/總人數</div>
+                                            <div className="text-2xl font-black text-[#7B1FA2]">{stats.passed}<span className="text-sm opacity-50">/{stats.count}</span></div>
+                                        </div>
+                                        <div className="bg-[#E8F5E9] p-4 rounded-2xl text-center">
+                                            <div className="text-xs font-bold text-[#2E7D32] opacity-70 uppercase mb-1">及格率</div>
+                                            <div className="text-3xl font-black text-[#2E7D32]">{stats.passRate}<span className="text-sm">%</span></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full bg-[#FAFAFA] p-4 rounded-2xl border-2 border-[#F2F4E6] h-[350px]">
+                                        <canvas id={`chart-${cls.id}`}></canvas>
+                                    </div>
+
+                                    <div className="mt-6 text-center text-xs text-[#9CA38F] font-bold border-t border-[#F2F4E6] pt-4">
+                                        分析報告生成時間: {new Date().toLocaleString('zh-TW')}
+                                    </div>
+                                </div>
+                            ); 
+                        })}
+                    </div>
+                </div>
+            );
+        };
+        const GroupMakerTool = () => {
+            const [namesStr, setNamesStr] = useState("");
+            const [groupSize, setGroupSize] = useState(4);
+            const [groups, setGroups] = useState([]);
+            const [isExporting, setIsExporting] = useState(false);
+            const chartRef = useRef(null);
+
+            const handleGenerate = () => {
+                const names = namesStr.split(/[\n,]+/).map(n => n.trim()).filter(n => n);
+                // Shuffle
+                for (let i = names.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [names[i], names[j]] = [names[j], names[i]];
+                }
+                
+                const newGroups = [];
+                for (let i = 0; i < names.length; i += groupSize) {
+                    newGroups.push(names.slice(i, i + groupSize));
+                }
+                setGroups(newGroups);
+            };
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const bstr = evt.target.result; const wb = XLSX.read(bstr, { type: 'binary' });
+                        const wsname = wb.SheetNames[0];
+                        const ws = wb.Sheets[wsname];
+                        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                        const names = [];
+                        data.forEach(row => { if(row[0]) names.push(row[0]); });
+                        setNamesStr(names.join('\n'));
+                    } catch (e) { console.error(e); alert("讀取 Excel 失敗"); }
+                };
+                reader.readAsBinaryString(file); e.target.value = null;
+            };
+
+            const handleExportPDF = async () => {
+                if (!chartRef.current || !window.html2canvas || !window.PDFLib) return;
+                setIsExporting(true);
+                try {
+                    const canvas = await window.html2canvas(chartRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfDoc = await window.PDFLib.PDFDocument.create();
+                    const pngImage = await pdfDoc.embedPng(imgData);
+                    const pngDims = pngImage.scale(1);
+                    const page = pdfDoc.addPage([pngDims.width + 100, pngDims.height + 100]);
+                    page.drawImage(pngImage, { x: 50, y: 50, width: pngDims.width, height: pngDims.height, });
+                    const pdfBytes = await pdfDoc.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `grouping_chart_${Date.now()}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) { console.error(err); alert("匯出 PDF 失敗"); } finally { setIsExporting(false); }
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-[#F8F9F0] p-4 rounded-[24px] border-[3px] border-white">
+                            <label className="text-sm font-bold text-[#797365] mb-2 block">名單 (每行一個)</label>
+                            <textarea value={namesStr} onChange={(e) => setNamesStr(e.target.value)} className="w-full h-32 p-3 rounded-xl border-none text-[#797365] font-bold bg-white focus:ring-4 focus:ring-[#88C9A1]/30 resize-none" placeholder="例如：&#10;小明&#10;小華&#10;小美"/>
+                            <div className="mt-2 relative">
+                                <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                <div className="bg-white border-2 border-dashed border-[#E0E4CC] text-[#9CA38F] font-bold py-2 rounded-xl text-center hover:bg-[#F2F4E6] transition-colors text-sm">或匯入 Excel (讀取第一欄)</div>
+                            </div>
+                        </div>
+                        <div className="bg-[#F8F9F0] p-4 rounded-[24px] border-[3px] border-white flex flex-col justify-center gap-4">
+                            <div>
+                                <label className="text-sm font-bold text-[#797365] mb-2 block">每組人數</label>
+                                <input type="number" value={groupSize} onChange={e=>setGroupSize(Number(e.target.value))} className="w-full p-3 rounded-xl border-none bg-white text-[#797365] font-bold"/>
+                            </div>
+                            <div className="bg-[#FFF9C4] p-3 rounded-xl border-2 border-[#FBC02D] text-xs font-bold text-[#797365] opacity-80">
+                                小提示：若人數無法整除，最後一組人數會較少。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <Button onClick={handleGenerate} variant="primary" className="w-full text-lg" icon={Grid}>生成隨機分組</Button>
+
+                    {groups.length > 0 && (
+                        <div className="bg-white p-4 rounded-[24px] border-[4px] border-[#E0E4CC] overflow-auto">
+                             <div className="flex justify-end items-center mb-4">
+                                <Button onClick={handleExportPDF} disabled={isExporting} variant="secondary" className="px-4 py-2 text-sm" icon={Download}>{isExporting ? "匯出中..." : "匯出分組表 PDF"}</Button>
+                            </div>
+                            <div ref={chartRef} className="bg-white p-8 min-w-[600px] grid grid-cols-2 md:grid-cols-3 gap-8">
+                                {groups.map((group, idx) => (
+                                    <div key={idx} className="flex flex-col items-center">
+                                        <div className="mb-2 text-[#8B4513] font-bold tracking-widest text-sm uppercase">Table {idx + 1}</div>
+                                        <div className="w-full aspect-square wood-pattern-light rounded-[20px] shadow-lg border-[4px] border-[#8B4513] relative flex items-center justify-center p-4">
+                                            <div className="text-center">
+                                                {group.map((name, i) => (
+                                                    <div key={i} className="text-[#8B4513] font-bold text-lg leading-relaxed drop-shadow-md">{name}</div>
+                                                ))}
+                                            </div>
+                                            {/* Table details */}
+                                            <div className="absolute top-2 right-2 w-2 h-2 bg-[#8B4513] rounded-full opacity-30"></div>
+                                            <div className="absolute top-2 left-2 w-2 h-2 bg-[#8B4513] rounded-full opacity-30"></div>
+                                            <div className="absolute bottom-2 right-2 w-2 h-2 bg-[#8B4513] rounded-full opacity-30"></div>
+                                            <div className="absolute bottom-2 left-2 w-2 h-2 bg-[#8B4513] rounded-full opacity-30"></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        const Game2048Tool = () => {
+            const containerRef = useRef(null);
+            const tileContainerRef = useRef(null);
+            const scoreRef = useRef(null);
+            const bestScoreRef = useRef(null);
+            const gameOverOverlayRef = useRef(null);
+            const houseNameRef = useRef(null);
+            const houseNextRef = useRef(null);
+            const houseProgressRef = useRef(null);
+            const houseDisplayRef = useRef(null);
+
+            // Using refs for game state to avoid re-render loops with DOM manipulation
+            const gameState = useRef({
+                board: [],
+                score: 0,
+                bestScore: localStorage.getItem('nook2048_best') || 0,
+                won: false,
+                currentHouseLevel: -1
+            });
+
+            const SIZE = 4;
+            
+            const HOUSE_LEVELS = [
+                { score: 0, name: '流浪帳篷', emoji: '⛺', img: 'https://dodo.ac/np/images/thumb/5/52/Tent_(white)_NH_Icon.png/150px-Tent_(white)_NH_Icon.png' },
+                { score: 500, name: '簡樸平房', emoji: '🏠', img: 'https://dodo.ac/np/images/thumb/e/e6/House_Icon_NH.png/150px-House_Icon_NH.png' },
+                { score: 1500, name: '擴建木屋', emoji: '🏡', img: 'https://dodo.ac/np/images/thumb/5/57/Tom_Nook_NH.png/150px-Tom_Nook_NH.png' },
+                { score: 3000, name: '便利商店', emoji: '🏪', img: 'https://dodo.ac/np/images/thumb/6/66/Nook%27s_Cranny_NH_Icon.png/150px-Nook%27s_Cranny_NH_Icon.png' },
+                { score: 5000, name: '服飾旗艦', emoji: '👗', img: 'https://dodo.ac/np/images/thumb/b/b8/Able_Sisters_NH_Icon.png/150px-Able_Sisters_NH_Icon.png' },
+                { score: 10000, name: '國立博物館', emoji: '🏛️', img: 'https://dodo.ac/np/images/thumb/5/5e/Museum_NH_Icon.png/150px-Museum_NH_Icon.png' },
+                { score: 20000, name: '市政廳大樓', emoji: '🏫', img: 'https://dodo.ac/np/images/thumb/4/4c/Resident_Services_NH_Icon.png/150px-Resident_Services_NH_Icon.png' },
+                { score: 50000, name: '狸克摩天樓', emoji: '🏙️', img: 'https://dodo.ac/np/images/thumb/2/23/Nook_Miles_Ticket_NH_Icon.png/150px-Nook_Miles_Ticket_NH_Icon.png' }
+            ];
+
+            const ITEM_MAP = {
+                2:    { emoji: '🪵', name: '樹枝', img: 'https://dodo.ac/np/images/thumb/7/73/Tree_Branch_NH_Icon.png/150px-Tree_Branch_NH_Icon.png' },
+                4:    { emoji: '🪨', name: '石頭', img: 'https://dodo.ac/np/images/thumb/d/d4/Stone_NH_Icon.png/150px-Stone_NH_Icon.png' },
+                8:    { emoji: '⛏️', name: '鐵礦', img: 'https://dodo.ac/np/images/thumb/8/8b/Iron_Nugget_NH_Icon.png/150px-Iron_Nugget_NH_Icon.png' },
+                16:   { emoji: '🟡', name: '金礦', img: 'https://dodo.ac/np/images/thumb/a/af/Gold_Nugget_NH_Icon.png/150px-Gold_Nugget_NH_Icon.png' },
+                32:   { emoji: '🌿', name: '家具', img: 'https://dodo.ac/np/images/e/e6/Leaf_NH_Icon.png' },
+                64:   { emoji: '🦴', name: '化石', img: 'https://dodo.ac/np/images/9/91/Fossil_NH_Icon.png' },
+                128:  { emoji: '💰', name: '鈴錢', img: 'https://dodo.ac/np/images/7/7c/Bell_Bag_NH_Icon.png' },
+                256:  { emoji: '✈️', name: '機票', img: 'https://dodo.ac/np/images/2/23/Nook_Miles_Ticket_NH_Icon.png' },
+                512:  { emoji: '⛺', name: '帳篷', img: 'https://dodo.ac/np/images/thumb/5/52/Tent_(white)_NH_Icon.png/150px-Tent_(white)_NH_Icon.png' },
+                1024: { emoji: '🦝', name: '狸克', img: 'https://dodo.ac/np/images/thumb/5/57/Tom_Nook_NH.png/150px-Tom_Nook_NH.png' },
+                2048: { emoji: '🏝️', name: '島嶼', img: 'https://dodo.ac/np/images/thumb/e/ef/Map_NH_Icon.png/150px-Map_NH_Icon.png' },
+                4096: { emoji: '👑', name: '傳說', img: '' }
+            };
+
+            const getTilePosition = (r, c) => {
+                if (!containerRef.current) return { x: 0, y: 0, size: 0 };
+                const totalW = containerRef.current.clientWidth;
+                const padding = 10;
+                const gap = 10;
+                const cellSize = (totalW - (padding * 2) - (gap * (SIZE - 1))) / SIZE;
+                const x = padding + c * (cellSize + gap);
+                const y = padding + r * (cellSize + gap);
+                return { x, y, size: cellSize };
+            };
+
+            const createTileElement = (r, c, value, isNew = false, isMerged = false) => {
+                const tile = document.createElement('div');
+                const pos = getTilePosition(r, c);
+                const item = ITEM_MAP[value] || { emoji: '❓', name: value, img: '' };
+
+                tile.classList.add('game-2048-tile');
+                tile.classList.add(`tile-${value <= 2048 ? value : 'super'}`);
+                if (isNew) tile.classList.add('game-2048-tile-new');
+                if (isMerged) tile.classList.add('game-2048-tile-merged');
+
+                tile.style.width = `${pos.size}px`;
+                tile.style.height = `${pos.size}px`;
+                tile.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+                tile.style.left = '0px'; tile.style.top = '0px';
+
+                const imgHtml = item.img ? 
+                    `<img src="${item.img}" onerror="this.parentElement.innerHTML='<span>${item.emoji}</span>'" draggable="false" style="width: 80%; height: 80%; object-fit: contain;">` : 
+                    `<span style="font-size: 32px;">${item.emoji}</span>`;
+
+                tile.innerHTML = `<div class="tile-icon" style="width: 100%; height: 80%; display: flex; justify-content: center; align-items: center;">${imgHtml}</div><div class="tile-text" style="font-size: 10px; font-weight: 900; margin-top: -5px; color: #584C3F;">${item.name}</div>`;
+                return tile;
+            };
+
+            const renderBoard = () => {
+                if (!tileContainerRef.current) return;
+                tileContainerRef.current.innerHTML = '';
+                const { board } = gameState.current;
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (board[r][c] !== 0) {
+                            tileContainerRef.current.appendChild(createTileElement(r, c, board[r][c]));
+                        }
+                    }
+                }
+            };
+
+            const updateHouse = (currentScore) => {
+                let levelIndex = HOUSE_LEVELS.length - 1;
+                for (let i = 0; i < HOUSE_LEVELS.length; i++) {
+                    if (currentScore < HOUSE_LEVELS[i].score) {
+                        levelIndex = i - 1;
+                        break;
+                    }
+                }
+                if (levelIndex < 0) levelIndex = 0;
+
+                const levelData = HOUSE_LEVELS[levelIndex];
+                const nextLevelData = HOUSE_LEVELS[levelIndex + 1];
+
+                if (levelIndex !== gameState.current.currentHouseLevel) {
+                    gameState.current.currentHouseLevel = levelIndex;
+                    if (houseNameRef.current) houseNameRef.current.innerText = levelData.name;
+                    
+                    if (houseDisplayRef.current) {
+                        const imgHtml = levelData.img ? 
+                            `<img src="${levelData.img}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%; height:100%; object-fit:contain;">
+                            <div class="house-display-box" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;"><span class="house-emoji-large">${levelData.emoji}</span></div>` 
+                            : 
+                            `<div class="house-display-box" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><span class="house-emoji-large">${levelData.emoji}</span></div>`;
+                        
+                        houseDisplayRef.current.innerHTML = imgHtml;
+                        houseDisplayRef.current.classList.remove('level-up-anim');
+                        void houseDisplayRef.current.offsetWidth;
+                        houseDisplayRef.current.classList.add('level-up-anim');
+                    }
+                }
+
+                if (houseProgressRef.current && houseNextRef.current) {
+                    if (nextLevelData) {
+                        const range = nextLevelData.score - levelData.score;
+                        const progress = currentScore - levelData.score;
+                        const percent = Math.min(100, Math.max(0, (progress / range) * 100));
+                        
+                        houseProgressRef.current.style.width = `${percent}%`;
+                        houseNextRef.current.innerText = `距離升級還需 ${nextLevelData.score - currentScore} 分`;
+                    } else {
+                        houseProgressRef.current.style.width = '100%';
+                        houseNextRef.current.innerText = '已達到最高等級！';
+                    }
+                }
+            };
+
+            const updateScore = (add) => {
+                gameState.current.score += add;
+                if (scoreRef.current) scoreRef.current.innerText = gameState.current.score;
+                
+                if (gameState.current.score > gameState.current.bestScore) {
+                    gameState.current.bestScore = gameState.current.score;
+                    if (bestScoreRef.current) bestScoreRef.current.innerText = gameState.current.bestScore;
+                    localStorage.setItem('nook2048_best', gameState.current.bestScore);
+                }
+                updateHouse(gameState.current.score);
+            };
+
+            const addRandomTile = () => {
+                let available = [];
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (gameState.current.board[r][c] === 0) available.push({r, c});
+                    }
+                }
+                if (available.length > 0) {
+                    let spot = available[Math.floor(Math.random() * available.length)];
+                    gameState.current.board[spot.r][spot.c] = Math.random() < 0.9 ? 2 : 4;
+                }
+            };
+
+            const checkGameOver = () => {
+                const { board } = gameState.current;
+                for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (board[r][c] === 0) return;
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        let val = board[r][c];
+                        if (c < SIZE - 1 && board[r][c+1] === val) return;
+                        if (r < SIZE - 1 && board[r+1][c] === val) return;
+                    }
+                }
+                if (gameOverOverlayRef.current) gameOverOverlayRef.current.style.display = 'flex';
+            };
+
+            const rotateLeft = (matrix) => {
+                let result = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        result[SIZE - 1 - c][r] = matrix[r][c];
+                    }
+                }
+                return result;
+            };
+
+            const move = (direction) => {
+                if (gameOverOverlayRef.current && gameOverOverlayRef.current.style.display === 'flex') return;
+
+                let board = gameState.current.board;
+                let tempBoard = JSON.parse(JSON.stringify(board));
+                let originalBoardStr = JSON.stringify(board);
+
+                if (direction === 1) tempBoard = rotateLeft(tempBoard); 
+                if (direction === 2) tempBoard = rotateLeft(rotateLeft(tempBoard));
+                if (direction === 3) tempBoard = rotateLeft(rotateLeft(rotateLeft(tempBoard))); 
+
+                let scoreAdd = 0;
+                for (let i = 0; i < SIZE; i++) {
+                    let row = tempBoard[i];
+                    let newRow = row.filter(val => val !== 0);
+                    for (let j = 0; j < newRow.length - 1; j++) {
+                        if (newRow[j] === newRow[j+1]) {
+                            newRow[j] *= 2;
+                            scoreAdd += newRow[j];
+                            newRow[j+1] = 0;
+                            if (newRow[j] === 2048 && !gameState.current.won) {
+                                gameState.current.won = true;
+                                alert("恭喜！你已經開發出了無人島！(可以繼續遊玩)");
+                            }
+                        }
+                    }
+                    newRow = newRow.filter(val => val !== 0);
+                    while (newRow.length < SIZE) newRow.push(0);
+                    tempBoard[i] = newRow;
+                }
+
+                if (direction === 1) tempBoard = rotateLeft(rotateLeft(rotateLeft(tempBoard)));
+                if (direction === 2) tempBoard = rotateLeft(rotateLeft(tempBoard));
+                if (direction === 3) tempBoard = rotateLeft(tempBoard);
+
+                gameState.current.board = tempBoard;
+
+                if (JSON.stringify(gameState.current.board) !== originalBoardStr) {
+                    updateScore(scoreAdd);
+                    addRandomTile();
+                    renderBoard();
+                    checkGameOver();
+                }
+            };
+
+            const restartGame = () => {
+                gameState.current.board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+                gameState.current.score = 0;
+                gameState.current.won = false;
+                gameState.current.currentHouseLevel = -1;
+                
+                if (scoreRef.current) scoreRef.current.innerText = 0;
+                if (gameOverOverlayRef.current) gameOverOverlayRef.current.style.display = 'none';
+                
+                updateScore(0);
+                addRandomTile();
+                addRandomTile();
+                renderBoard();
+            };
+
+            useEffect(() => {
+                if (bestScoreRef.current) bestScoreRef.current.innerText = gameState.current.bestScore;
+                restartGame();
+                
+                const handleKeyDown = (e) => {
+                    if ([37, 38, 39, 40].includes(e.keyCode)) e.preventDefault();
+                    switch(e.keyCode) {
+                        case 37: move(0); break; // Left
+                        case 38: move(1); break; // Up
+                        case 39: move(2); break; // Right
+                        case 40: move(3); break; // Down
+                    }
+                };
+
+                // Touch handling
+                let touchStartX = 0;
+                let touchStartY = 0;
+                const handleTouchStart = (e) => {
+                    touchStartX = e.touches[0].clientX; 
+                    touchStartY = e.touches[0].clientY;
+                };
+                const handleTouchEnd = (e) => {
+                    if (!touchStartX || !touchStartY) return;
+                    let touchEndX = e.changedTouches[0].clientX; 
+                    let touchEndY = e.changedTouches[0].clientY;
+                    let dx = touchEndX - touchStartX; 
+                    let dy = touchEndY - touchStartY;
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) > 30) {
+                        if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 2 : 0); 
+                        else move(dy > 0 ? 3 : 1);
+                    }
+                };
+
+                document.addEventListener('keydown', handleKeyDown);
+                // Attach touch listeners to the container if available, else window
+                const target = containerRef.current || window;
+                target.addEventListener('touchstart', handleTouchStart, {passive: false});
+                target.addEventListener('touchend', handleTouchEnd, {passive: false});
+
+                const handleResize = () => renderBoard();
+                window.addEventListener('resize', handleResize);
+
+                return () => {
+                    document.removeEventListener('keydown', handleKeyDown);
+                    target.removeEventListener('touchstart', handleTouchStart);
+                    target.removeEventListener('touchend', handleTouchEnd);
+                    window.removeEventListener('resize', handleResize);
+                };
+            }, []);
+
+            return (
+                <div className="flex flex-col items-center w-full">
+                    <div className="w-full max-w-[340px] flex justify-between items-center mb-5">
+                        <div>
+                            <h1 className="text-3xl font-black text-[#584C3F] drop-shadow-sm m-0">Nook 2048</h1>
+                            <p className="text-xs text-gray-400 font-bold m-0">無人島開發計畫</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="bg-white px-3 py-1 rounded-xl text-center min-w-[60px] shadow-[0_4px_0_#E0DBC5] border-2 border-[#584C3F]">
+                                <div className="text-[9px] text-gray-400 font-bold uppercase">SCORE</div>
+                                <div className="text-base font-black text-[#584C3F]" ref={scoreRef}>0</div>
+                            </div>
+                            <div className="bg-white px-3 py-1 rounded-xl text-center min-w-[60px] shadow-[0_4px_0_#E0DBC5] border-2 border-[#584C3F]">
+                                <div className="text-[9px] text-gray-400 font-bold uppercase">BEST</div>
+                                <div className="text-base font-black text-[#584C3F]" ref={bestScoreRef}>0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap justify-center gap-5 w-full">
+                        {/* Game Board */}
+                        <div className="flex flex-col items-center">
+                            <div className="game-2048-container" ref={containerRef}>
+                                <div className="game-2048-grid">
+                                    {[...Array(16)].map((_, i) => <div key={i} className="game-2048-cell"></div>)}
+                                </div>
+                                <div className="tile-container" ref={tileContainerRef}></div>
+                                <div className="game-over-overlay" ref={gameOverOverlayRef} style={{display: 'none'}}>
+                                    <h2 className="text-2xl text-[#584C3F] font-bold mb-2">Game Over!</h2>
+                                    <p className="text-sm text-gray-500 mb-4 text-center font-bold">島嶼開發資金不足...</p>
+                                    <button className="btn btn-restart bg-[#FF8A80] text-white px-6 py-2 rounded-full font-bold shadow-[0_4px_0_#D16B63] active:shadow-none active:translate-y-1 transition-all" onClick={restartGame}>重新貸款</button>
+                                </div>
+                            </div>
+                            <div className="mt-5 flex gap-5">
+                                <button className="btn btn-restart bg-[#8DD6BF] text-white px-6 py-2 rounded-full font-bold shadow-[0_4px_0_#6FB5A1] active:shadow-none active:translate-y-1 transition-all" onClick={restartGame}>重新開始</button>
+                            </div>
+                            <div className="mt-4 text-xs text-gray-400 text-center font-bold">
+                                使用方向鍵或滑動螢幕來合併物品<br/>目標：建設繁榮的都會區
+                            </div>
+                        </div>
+
+                        {/* House Panel */}
+                        <div className="house-panel">
+                            <div className="house-title">資產評估中心</div>
+                            <div className="house-display" ref={houseDisplayRef}>
+                                <span className="house-emoji-large">⛺</span>
+                            </div>
+                            <div className="house-level-name" ref={houseNameRef}>流浪帳篷</div>
+                            
+                            <div className="progress-container">
+                                <div className="progress-bar" ref={houseProgressRef}></div>
+                            </div>
+                            <div className="house-next-info" ref={houseNextRef}>下個等級：500 分</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App ---
+        // --- Main App ---
+        function AdminDocHub() {
+            // 天氣組件邏輯
+            const [weather, setWeather] = useState(null);
+            const [weatherLoading, setWeatherLoading] = useState(true);
+
+            useEffect(() => {
+                const fetchWeather = async () => {
+                    try {
+                        const locationRes = await fetch('https://ipapi.co/json/');
+                        const locationData = await locationRes.json();
+                        
+                        const weatherRes = await fetch(
+                            `https://api.open-meteo.com/v1/forecast?latitude=${locationData.latitude}&longitude=${locationData.longitude}&current=temperature_2m,weathercode,windspeed_10m&timezone=auto`
+                        );
+                        const weatherData = await weatherRes.json();
+                        
+                        const weatherMap = {
+                            0: { name: '晴天', emoji: '☀️', acIcon: '☀️', color: '#FFD54F' },
+                            1: { name: '晴朗', emoji: '🌤️', acIcon: '🌤️', color: '#FFF59D' },
+                            2: { name: '多雲', emoji: '⛅', acIcon: '☁️', color: '#B0BEC5' },
+                            3: { name: '陰天', emoji: '☁️', acIcon: '☁️', color: '#90A4AE' },
+                            45: { name: '起霧', emoji: '🌫️', acIcon: '🌫️', color: '#CFD8DC' },
+                            48: { name: '起霧', emoji: '🌫️', acIcon: '🌫️', color: '#CFD8DC' },
+                            51: { name: '小雨', emoji: '🌦️', acIcon: '🌧️', color: '#81D4FA' },
+                            53: { name: '雨天', emoji: '🌧️', acIcon: '🌧️', color: '#4FC3F7' },
+                            61: { name: '雨天', emoji: '🌧️', acIcon: '🌧️', color: '#4FC3F7' },
+                            63: { name: '大雨', emoji: '⛈️', acIcon: '⛈️', color: '#29B6F6' },
+                            71: { name: '下雪', emoji: '🌨️', acIcon: '❄️', color: '#B3E5FC' },
+                            95: { name: '雷雨', emoji: '⛈️', acIcon: '⚡', color: '#7B1FA2' }
+                        };
+                        
+                        const code = weatherData.current.weathercode;
+                        const weatherInfo = weatherMap[code] || weatherMap[0];
+                        
+                        setWeather({
+                            temp: Math.round(weatherData.current.temperature_2m),
+                            condition: weatherInfo.name,
+                            emoji: weatherInfo.emoji,
+                            icon: weatherInfo.acIcon,
+                            color: weatherInfo.color,
+                            windSpeed: Math.round(weatherData.current.windspeed_10m),
+                            city: locationData.city || locationData.region
+                        });
+                    } catch (error) {
+                        console.error('Weather fetch failed:', error);
+                        setWeather({
+                            temp: '--',
+                            condition: '無法取得',
+                            emoji: '🌍',
+                            icon: '🌍',
+                            color: '#9CA38F',
+                            city: '無人島'
+                        });
+                    } finally {
+                        setWeatherLoading(false);
+                    }
+                };
+                
+                fetchWeather();
+            }, []);
+
+            // 天氣顯示組件 (動森風格 V2 - 寬版)
+            const WeatherWidget = () => {
+                const [currentTime, setCurrentTime] = useState(new Date());
+
+                useEffect(() => {
+                    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                    return () => clearInterval(timer);
+                }, []);
+
+                const formatDate = (date) => {
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    const weekDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
+                    return `${month}月${day}日 (${weekDay})`;
+                };
+                
+                const formatTime = (date) => {
+                    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                };
+
+                if (weatherLoading) {
+                    return (
+                        <div className="bg-white/60 backdrop-blur-md px-6 py-3 rounded-full border-[3px] border-white shadow-sm animate-pulse flex gap-4 w-full md:w-auto justify-end">
+                            <div className="h-6 w-24 bg-gray-200 rounded-full"></div>
+                            <div className="h-6 w-32 bg-gray-200 rounded-full"></div>
+                        </div>
+                    );
+                }
+                
+                if (!weather) return null;
+
+                return (
+                    <div className="flex flex-col md:flex-row items-end md:items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-700">
+                        <div className="bg-white/80 backdrop-blur-md rounded-[30px] border-[4px] border-white shadow-sm flex items-center p-1.5 pr-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+                            <div className="absolute inset-0 opacity-10 pointer-events-none" 
+                                 style={{ backgroundImage: 'repeating-linear-gradient(45deg, #7FD1B9 0, #7FD1B9 2px, transparent 2px, transparent 6px)' }}>
+                            </div>
+                            <div className="relative z-10 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center border-[3px] border-white shadow-sm mr-3 shrink-0 transition-transform group-hover:rotate-12"
+                                 style={{ backgroundColor: weather.color }}>
+                                <span className="text-2xl md:text-3xl filter drop-shadow-sm">{weather.icon}</span>
+                            </div>
+                            <div className="flex flex-col relative z-10 mr-4 md:mr-6 border-r-2 border-[#E0E4CC] pr-4 md:pr-6">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl md:text-3xl font-black text-[#574E44] leading-none">{weather.temp}°</span>
+                                    <span className="text-xs font-bold text-[#9CA38F]">{weather.condition}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-[#797365] opacity-70">
+                                    <span>📍 {weather.city}</span>
+                                    {weather.windSpeed && <span>• 💨 {weather.windSpeed} km/h</span>}
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-end relative z-10">
+                                <div className="text-sm md:text-base font-black text-[#7FD1B9] tracking-widest uppercase" style={{fontFamily: '"Varela Round", sans-serif'}}>
+                                    {formatTime(currentTime)}
+                                </div>
+                                <div className="text-xs md:text-sm font-bold text-[#9CA38F] bg-[#F2F4E6] px-2 rounded-full">
+                                    {formatDate(currentTime)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+// --- 新增：動森風格日曆組件 ---
+            const CalendarWidget = () => {
+                const [date, setDate] = useState(new Date());
+                
+                useEffect(() => {
+                    const timer = setInterval(() => setDate(new Date()), 60000); // 每分鐘更新
+                    return () => clearInterval(timer);
+                }, []);
+
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const dayName = days[date.getDay()];
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const textColor = isWeekend ? 'text-[#FF9A8B]' : 'text-[#7FD1B9]'; // 週末顯示粉紅色，平日顯示綠色
+
+                return (
+                    <div className="hidden md:block bg-white p-6 rounded-[35px] border-[6px] border-white text-center shadow-sm mt-4 relative overflow-hidden group hover:rotate-1 transition-transform origin-top cursor-default">
+                        {/* 裝飾：頂部掛孔 */}
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-6">
+                            <div className="w-3 h-3 bg-[#F0F5F1] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"></div>
+                            <div className="w-3 h-3 bg-[#F0F5F1] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"></div>
+                        </div>
+
+                        <div className="mt-2">
+                            {/* 月份 */}
+                            <div className="text-xl font-black text-[#9CA38F] tracking-widest uppercase mb-[-5px]">
+                                {date.getMonth() + 1}月
+                            </div>
+                            
+                            {/* 日期大字 */}
+                            <div className={`text-7xl font-black ${textColor} leading-none tracking-tighter drop-shadow-sm`}>
+                                {date.getDate()}
+                            </div>
+                            
+                            {/* 星期幾 */}
+                            <div className="mt-3">
+                                <span className="text-xs font-bold text-[#797365] bg-[#F8F9F0] px-3 py-1 rounded-full border border-[#E0E4CC]">
+                                    {dayName}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 裝飾：右下角小樹圖案 */}
+                        <Tree className="absolute -bottom-2 -right-2 w-12 h-12 text-[#E0E4CC]/40 rotate-12 pointer-events-none" />
+                    </div>
+                );
+            };
+            const [activeCategory, setActiveCategory] = useState('FUN');
+            const [activeTool, setActiveTool] = useState(null);
+            const { loaded, error } = useExternalScripts();
+            const [isPopped, setIsPopped] = useState(false);
+
+            const handleBalloonClick = () => {
+                setIsPopped(true);
+                setTimeout(() => setIsPopped(false), 3000);
+            };
+
+            const categories = [
+                { id: 'ORGANIZE', label: 'PDF整理', sub: 'Organize', color: 'bg-[#88C9A1]', icon: Layers, desc: "合併、拆分與旋轉" },
+                { id: 'CONVERT', label: '轉換', sub: 'Convert', color: 'bg-[#7ACBD5]', icon: RotateCw, desc: "格式轉換與工具" },
+                { id: 'EDIT', label: 'PDF加工', sub: 'Edit', color: 'bg-[#F4E798]', icon: FileCog, desc: "頁碼與浮水印" },
+                { id: 'CLASS', label: '班級助手', sub: 'Class', color: 'bg-[#26A69A]', icon: School, desc: "座位表與成績分析" },
+                { id: 'SECURITY', label: '安全', sub: 'Security', color: 'bg-[#FF9A8B]', icon: Shield, desc: "密碼保護" },
+                { id: 'DAILY', label: '日常工具', sub: 'Daily', color: 'bg-[#FFC8DD]', icon: CalendarDays, desc: "運勢與計時工具" },
+                { id: 'FUN', label: '放鬆一下', sub: 'Fun', color: 'bg-[#B39DDB]', icon: Laugh, desc: "放鬆一下" },
+            ];
+
+            const tools = {
+                'ORGANIZE': [ { id: 'merge', label: '合併 PDF', icon: Layers, component: PDFMerger }, { id: 'split', label: '拆分 PDF', icon: Scissors, component: PDFSplitter }, { id: 'remove', label: '移除頁面', icon: Trash2, component: PDFPageRemover }, { id: 'rotate', label: '旋轉 PDF', icon: RotateCw, component: PDFRotator }, ],
+                'CONVERT': [ { id: 'img2pdf', label: 'JPG 轉 PDF', icon: ImageIcon, component: ImageToPDF }, { id: 'pdf2jpg', label: 'PDF 轉 JPG', icon: FileOutput, component: PDFToImage, style: 'danger' }, { id: 'num2chi', label: '數字轉大寫', icon: Type, component: NumToChiTool }, ],
+                'EDIT': [ { id: 'watermark', label: '圖片浮水印', icon: Stamp, component: WatermarkTool }, { id: 'pagenum', label: '添加頁碼', icon: Hash, component: PDFPageNumber }, ],
+                'SECURITY': [ { id: 'encrypt', label: 'PDF 加密', icon: Lock, component: PDFEncrypt }, { id: 'passgen', label: '密碼產生器', icon: Key, component: PasswordGeneratorTool } ],
+                'CLASS': [ { id: 'seating', label: '座位大師', icon: Users, component: SeatingChartTool }, { id: 'grouping', label: '分組小幫手', icon: Grid, component: GroupMakerTool }, { id: 'grade', label: '成績分析', icon: BarChart, component: GradeAnalysisTool } ],
+                'DAILY': [ { id: 'horoscope', label: '星座運勢', icon: Sun, component: HoroscopeTool }, { id: 'random', label: '亂數抽籤', icon: Dice5, component: RandomPickerTool }, { id: 'timer', label: '倒數計時', icon: Timer, component: CountdownTool }, { id: 'pomodoro', label: '蕃茄鬧鐘', icon: AlarmClock, component: PomodoroTool }, { id: 'notepad', label: '隨身筆記', icon: StickyNote, component: NotepadTool }, { id: 'todo', label: '待辦清單', icon: ClipboardList, component: TodoListTool }, ],
+                'FUN': [ { id: 'joke', label: '冷笑話', icon: Smile, component: JokeTool }, { id: '2048', label: 'Nook 2048', icon: Grid, component: Game2048Tool } ], 
+            };
+
+            const currentCategoryColor = categories.find(c => c.id === activeCategory)?.color || 'bg-[#88C9A1]';
+
+            return (
+                <div className="min-h-full font-sans p-3 md:p-8 flex justify-center items-start overflow-x-hidden selection:bg-[#88C9A1] selection:text-white">
+                    <LeafPattern />
+                    
+                    <div className={`fixed top-20 right-[5%] z-50 cursor-pointer hidden md:block ${!isPopped ? 'animate-[balloon-float_6s_ease-in-out_infinite]' : ''}`} onClick={handleBalloonClick}>
+                        <div className="relative">
+                            <div className={`w-1 h-12 bg-gray-400 mx-auto absolute top-[-40px] left-1/2 -translate-x-1/2 opacity-50 transition-opacity ${isPopped ? 'opacity-0' : ''}`}></div>
+                            <div className={`w-12 h-14 bg-red-400 rounded-full shadow-lg absolute top-[-50px] left-1/2 -translate-x-1/2 transition-all ${isPopped ? 'animate-pop' : ''}`}></div>
+                            <div className={`bg-white p-2 rounded-lg shadow-md border-2 border-red-200 transition-all ${isPopped ? 'animate-drop' : ''}`}>
+                                <Gift className="w-8 h-8 text-red-500" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl w-full space-y-4 md:space-y-8 relative z-10">
+                       {/* Header Section - Revised Layout */}
+                        <header className="flex flex-col lg:flex-row lg:items-end justify-between pb-4 md:pb-6 gap-4 w-full">
+                            <div className="flex items-center gap-3 md:gap-4 shrink-0">
+                                <div className="bg-white p-3 md:p-4 rounded-[20px] md:rounded-[25px] shadow-sm transform hover:rotate-6 transition-transform duration-300 border-[3px] md:border-[4px] border-[#F2F4E6]">
+                                    <Leaf className="w-8 h-8 md:w-12 md:h-12 text-[#7FD1B9] stroke-[2.5]" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h1 className="text-2xl md:text-4xl font-extrabold text-[#574E44] tracking-tight">島民行政中心</h1>
+                                        <span className="bg-[#F4E798] text-[#797365] text-[10px] md:text-xs font-bold px-2 py-0.5 md:px-3 md:py-1 rounded-full border-2 border-white shadow-sm">v5.0.2 至少50次更新</span>
+                                    </div>
+                                    <div className="relative mt-1 md:mt-2 inline-block">
+                                        <div className="bg-white px-3 py-1 md:px-4 md:py-2 rounded-2xl rounded-tl-none border-[2px] md:border-[3px] border-[#E0E4CC] shadow-sm">
+                                            <p className="text-[#9CA38F] font-bold text-xs md:text-sm flex items-center gap-2">
+                                                <MessageCircle className="w-3 h-3 md:w-4 md:h-4" />
+                                                今天想處理什麼文件呢?
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex-1 flex justify-end w-full lg:w-auto">
+                                <WeatherWidget />
+                            </div>
+                        </header>
+
+                        {error && (
+                            <div className="bg-[#FF9A8B] text-white p-4 rounded-3xl flex items-center shadow-sm font-bold animate-pulse text-sm md:text-base">
+                                <AlertCircle className="w-5 h-5 md:w-6 md:h-6 mr-3" />
+                                <span>核心庫載入失敗，請檢查網路連線。</span>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 relative">
+                            <nav className="md:col-span-4 lg:col-span-3 space-y-4 md:sticky md:top-8 md:h-fit">
+                                {/* 選單按鈕區塊 */}
+                                <div className="bg-white/80 backdrop-blur-md p-3 md:p-4 rounded-[24px] md:rounded-[40px] border-[4px] md:border-[6px] border-white shadow-sm">
+                                    <div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3">
+                                        {categories.map((cat) => (
+                                            <button key={cat.id} onClick={() => { setActiveCategory(cat.id); setActiveTool(null); }} className={`group relative w-full flex flex-col items-center md:items-start p-3 md:p-4 rounded-[20px] md:rounded-[30px] transition-all duration-300 border-[3px] ${activeCategory === cat.id ? `bg-white border-[#797365]/10 shadow-[0_4px_0_0_rgba(0,0,0,0.05)] translate-y-[-2px]` : 'bg-transparent border-transparent hover:bg-white/50 text-[#9CA38F]'}`}>
+                                                <div className={`flex items-center gap-2 md:gap-4 w-full justify-center md:justify-start ${activeCategory === cat.id ? 'opacity-100' : 'opacity-60 group-hover:opacity-80'}`}>
+                                                    <div className={`p-2 md:p-3 rounded-[16px] md:rounded-[20px] ${cat.color} text-white shadow-sm shrink-0`}><cat.icon className="w-5 h-5 md:w-6 md:h-6 stroke-[3]" /></div>
+                                                    <div className="text-left hidden md:block"><span className="block font-extrabold text-[#797365] text-lg">{cat.label}</span><span className="block font-bold text-xs opacity-50 uppercase tracking-wider">{cat.sub}</span></div>
+                                                    <span className="md:hidden font-bold text-[#797365] text-sm">{cat.label}</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 小提示區塊 */}
+                                <div className="hidden md:block bg-[#F4E798] p-6 rounded-[35px] border-[6px] border-white text-[#797365] relative overflow-hidden shadow-sm">
+                                    <Sparkles className="absolute top-2 right-2 w-12 h-12 text-white/40 rotate-12" />
+                                    <div className="absolute bottom-[-10px] right-[-10px] opacity-20"><Gem size={60} /></div>
+                                    <h3 className="font-extrabold text-lg mb-1 relative z-10">小提示</h3>
+                                    <p className="text-sm font-bold opacity-80 leading-relaxed relative z-10">所有運算都在您的電腦上完成，無需上傳，絕對安全！</p>
+                                </div>
+
+                                {/* ★ 新增：這裡放入日曆組件 ★ */}
+                                <CalendarWidget />
+                            </nav>
+                            <main className="md:col-span-8 lg:col-span-9">
+                                <Card className="p-5 md:p-8 min-h-[400px] md:min-h-[600px] relative transition-all duration-500">
+                                    <div className="hidden md:block absolute top-8 right-8 p-6 opacity-[0.08] pointer-events-none transition-all duration-500">
+                                        {activeCategory === 'SECURITY' ? <Shield className="w-64 h-64 text-[#FF9A8B] rotate-12" /> : activeCategory === 'DAILY' ? <Sun className="w-64 h-64 text-[#FFC8DD] rotate-12" /> : activeCategory === 'CLASS' ? <School className="w-64 h-64 text-[#26A69A] rotate-12" /> : activeCategory === 'FUN' ? <Laugh className="w-64 h-64 text-[#B39DDB] rotate-12" /> : <Tree className="w-64 h-64 text-[#88C9A1] rotate-6" />}
+                                    </div>
+
+                                    {!activeTool ? (
+                                        <div className="relative z-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                            <div className="flex items-center mb-6 md:mb-8">
+                                                <span className={`w-3 h-8 md:w-4 md:h-10 rounded-full mr-3 md:mr-4 block ${currentCategoryColor} shadow-sm`}></span>
+                                                <div>
+                                                    <h2 className="text-xl md:text-3xl font-extrabold text-[#797365] tracking-tight">{categories.find(c=>c.id===activeCategory).label}工具箱</h2>
+                                                    <p className="text-[#9CA38F] font-bold text-xs md:text-sm mt-1">{categories.find(c=>c.id===activeCategory).desc}</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                                                {tools[activeCategory].map(tool => (
+                                                    <button key={tool.id} onClick={() => setActiveTool(tool)} className={`group p-5 md:p-6 rounded-[24px] md:rounded-[35px] border-[3px] md:border-[4px] text-left transition-all duration-300 relative overflow-hidden hover:shadow-[0_8px_0_0_rgba(0,0,0,0.05)] hover:translate-y-[-4px] active:translate-y-0 active:shadow-none bg-white border-[#E0E4CC] hover:border-[#88C9A1] ${tool.style === 'danger' ? 'hover:border-[#FF9A8B]' : ''}`}>
+                                                        <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[16px] md:rounded-[20px] mb-3 md:mb-4 flex items-center justify-center transition-colors ${tool.style === 'danger' ? 'bg-[#FFF5F5] text-[#FF9A8B] group-hover:bg-[#FF9A8B] group-hover:text-white' : 'bg-[#F2F4E6] text-[#88C9A1] group-hover:bg-[#88C9A1] group-hover:text-white'}`}>{tool.icon && <tool.icon className="w-6 h-6 md:w-7 md:h-7 stroke-[2.5]" />}</div>
+                                                        <span className="font-extrabold text-lg md:text-xl text-[#797365] block mb-1 group-hover:text-[#555]">{tool.label}</span>
+                                                        <span className="text-[10px] md:text-xs font-bold text-[#9CA38F] bg-[#F8F9F0] px-2 py-1 md:px-3 rounded-full inline-block">Local Only</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="relative z-10 animate-in zoom-in-95 duration-300">
+                                            <button onClick={() => setActiveTool(null)} className="mb-6 md:mb-8 flex items-center text-[#9CA38F] hover:text-[#797365] font-extrabold bg-[#F8F9F0] px-4 py-2 md:px-5 md:py-3 rounded-full w-fit hover:bg-[#F2F4E6] transition-colors text-sm md:text-base"><Home className="w-4 h-4 md:w-5 md:h-5 mr-2 stroke-[2.5]" />返回選單</button>
+                                            <div className="mb-6 md:mb-8 pb-4 md:pb-6 border-b-[3px] border-[#F2F4E6] flex items-center gap-3 md:gap-4"><div className={`p-2 md:p-3 rounded-2xl ${currentCategoryColor} text-white shadow-sm`}>{activeTool.icon && <activeTool.icon className="w-6 h-6 md:w-8 md:h-8 stroke-[2.5]" />}</div><h2 className="text-2xl md:text-3xl font-extrabold text-[#797365]">{activeTool.label}</h2></div>
+                                            <div className="max-w-3xl mx-auto">{React.createElement(activeTool.component, { ready: loaded })}</div>
+                                        </div>
+                                    )}
+                                </Card>
+                            </main>
+                        </div>
+
+                        <div className="w-full flex justify-center items-end pointer-events-none mt-16 px-4 gap-8">
+                            <Tree className="w-24 h-24 text-[#88C9A1] hidden md:block transform -translate-y-4" />
+                            <Tree className="w-32 h-32 text-[#88C9A1] hidden md:block" />
+                            <div className="relative w-48 h-32 bg-[#E0E4CC] rounded-t-full border-t-8 border-l-8 border-r-8 border-[#F2F4E6] flex items-end justify-center pb-4"><span className="text-[#88C9A1] font-black text-6xl tracking-tighter opacity-20"></span></div>
+                            <Tree className="w-32 h-32 text-[#88C9A1] hidden md:block" />
+                            <Tree className="w-24 h-24 text-[#88C9A1] hidden md:block transform -translate-y-4" />
+                        </div>
+
+                        <footer className="text-center text-xs text-[#9CA38F] py-6 md:py-8 font-bold flex flex-col items-center justify-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                            <div className="flex gap-2"><Tent className="w-5 h-5" /><Leaf className="w-5 h-5" /></div><p>Nook Inc. Administrative Tools © 2025 • Designed by MaxChan</p>
+                        </footer>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <ErrorBoundary>
+                <AdminDocHub />
+            </ErrorBoundary>
+        );
+    </script>
+</body>
+</html>
