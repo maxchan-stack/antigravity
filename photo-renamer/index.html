@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量照片改名工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    批量照片改名工具
+                </h1>
+                <p class="subtitle">快速批量重新命名您的照片檔案</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="card">
+                <h2 class="card-title">設定參數</h2>
+                
+                <div class="form-group">
+                    <label for="folderPath">資料夾路徑</label>
+                    <input 
+                        type="text" 
+                        id="folderPath" 
+                        placeholder="/Users/maxchan/Downloads/未命名檔案夾"
+                        value="/Users/maxchan/Downloads/未命名檔案夾"
+                    >
+                    <p class="hint">請輸入包含照片的資料夾完整路徑</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="prefix">檔名前綴</label>
+                    <input 
+                        type="text" 
+                        id="prefix" 
+                        placeholder="LINE貼圖"
+                        value="LINE貼圖"
+                    >
+                    <p class="hint">新檔名的前綴文字，例如：LINE貼圖</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startNumber">起始編號</label>
+                        <input 
+                            type="number" 
+                            id="startNumber" 
+                            value="1"
+                            min="1"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="digitCount">編號位數</label>
+                        <input 
+                            type="number" 
+                            id="digitCount" 
+                            value="3"
+                            min="1"
+                            max="6"
+                        >
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="scanBtn" class="btn btn-primary">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        掃描資料夾
+                    </button>
+                    <button id="renameBtn" class="btn btn-success" disabled>
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        執行改名
+                    </button>
+                </div>
+            </div>
+
+            <div id="previewCard" class="card preview-card" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">預覽改名結果</h2>
+                    <span id="fileCount" class="badge"></span>
+                </div>
+                
+                <div id="previewList" class="preview-list"></div>
+            </div>
+
+            <div id="resultCard" class="card result-card" style="display: none;">
+                <div id="resultContent"></div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>建立於 2026 © 批量照片改名工具</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
