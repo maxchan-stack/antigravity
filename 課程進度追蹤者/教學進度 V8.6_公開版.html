@@ -256,7 +256,6 @@
             const [expandedClasses, setExpandedClasses] = useState({});
             const [calendarDate, setCalendarDate] = useState(new Date());
             const [restoreText, setRestoreText] = useState('');
-            const [holidayYear, setHolidayYear] = useState('2025');
 
             // V8.6 New State: Undo Delete
             const [deletedRecord, setDeletedRecord] = useState(null);
@@ -1012,22 +1011,39 @@
                                     {settingTab === 'system' && (
                                         <div className="space-y-6">
                                             <div className="space-y-4">
-                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">行政院行事曆同步</h4>
-                                                <div className="flex bg-gray-100 dark:bg-black/20 p-1 rounded-xl mb-2">
-                                                    {['2025', '2026'].map(y => (
-                                                        <button key={y} onClick={() => setHolidayYear(y)} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${holidayYear === y ? 'bg-white dark:bg-[#7F0019] text-black dark:text-white shadow-sm' : 'text-gray-400'}`}>{y}年</button>
-                                                    ))}
+                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">行政院行事曆同步 (自動)</h4>
+                                                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl mb-2 text-xs font-bold text-blue-600 dark:text-blue-300">
+                                                    系統將自動抓取「今年 ({new Date().getFullYear()})」與「去年 ({new Date().getFullYear() - 1})」的假日資料。
                                                 </div>
                                                 <AppleButton onClick={async () => {
+                                                    const curYear = new Date().getFullYear();
+                                                    const prevYear = curYear - 1;
+                                                    const years = [curYear, prevYear];
+                                                    let count = 0;
+                                                    let errors = [];
+
                                                     try {
-                                                        const res = await fetch(`https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${holidayYear}.json`);
-                                                        if (!res.ok) throw new Error('無法取得資料');
-                                                        const d = await res.json();
-                                                        const h = d.filter(x => x.isHoliday).map(x => x.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
-                                                        setHolidays(prev => [...new Set([...prev, ...h])].sort());
-                                                        alert(`已成功匯入 ${holidayYear} 年共 ${h.length} 筆假日資料！`);
-                                                    } catch (e) { alert(`同步失敗：${e.message}\n可能是該年度資料尚未發布。`); }
-                                                }} label={`立即匯入 ${holidayYear} 行事曆`} iconName="Calendar" variant="secondary" className="w-full" />
+                                                        const results = await Promise.all(years.map(async (y) => {
+                                                            try {
+                                                                const res = await fetch(`https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${y}.json`);
+                                                                if (!res.ok) throw new Error(`${y} 資料未發布`);
+                                                                const d = await res.json();
+                                                                return d.filter(x => x.isHoliday).map(x => x.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
+                                                            } catch (e) {
+                                                                errors.push(e.message);
+                                                                return [];
+                                                            }
+                                                        }));
+
+                                                        const newHolidays = results.flat();
+                                                        if (newHolidays.length > 0) {
+                                                            setHolidays(prev => [...new Set([...prev, ...newHolidays])].sort());
+                                                            alert(`已成功匯入 ${years.join(' & ')} 年共 ${newHolidays.length} 筆假日資料！\n${errors.length > 0 ? `(注意：${errors.join(', ')})` : ''}`);
+                                                        } else {
+                                                            alert(`未找到新資料。\n錯誤：${errors.join(', ')}`);
+                                                        }
+                                                    } catch (e) { alert(`同步發生未預期錯誤：${e.message}`); }
+                                                }} label="一鍵自動同步行事曆" iconName="Calendar" variant="secondary" className="w-full" />
                                             </div>
                                             <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-white/10">
                                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">匯出</h4>
