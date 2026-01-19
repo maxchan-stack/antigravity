@@ -1201,6 +1201,13 @@
                             </div>
                         )
                     }
+
+                    {/* Footer */}
+                    <footer className="w-full text-center py-8 mt-8 pb-32 md:pb-8">
+                        <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400 dark:text-gray-600">
+                            Designed by <span className="text-[#9B8A5E]">MAXCHAN</span>
+                        </p>
+                    </footer>
                 </div >
             );
         }
@@ -1235,10 +1242,6 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<ErrorBoundary><ClassTrackerV8 /></ErrorBoundary>);
     </script>
-    <footer
-        className="fixed bottom-0 left-0 right-0 p-2 text-center text-[10px] text-gray-400 opacity-50 z-[60] pointer-events-none">
-        Designed by MAXCHAN
-    </footer>
 </body>
 
 </html>
