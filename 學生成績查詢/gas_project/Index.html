@@ -750,6 +750,11 @@
                 // 特殊欄位處理
                 let cardClass = 'grade-card';
                 let valueDisplay = val;
+                let displayName = key; // 🆕 欄位顯示名稱
+
+                // 🆕 修改顯示名稱
+                if (key === '缺交') displayName = '缺交次數';
+                if (key === '學期') displayName = '學期成績';
 
                 // 學期成績：放大強調
                 if (key === '學期' && val !== '-') {
@@ -771,7 +776,7 @@
                 card.className = cardClass;
                 card.innerHTML = `
                     <div class="grade-header">
-                        <span class="subject-name">${key}</span>
+                        <span class="subject-name">${displayName}</span>
                         ${trendHtml}
                     </div>
                     <div class="grade-main-container">
