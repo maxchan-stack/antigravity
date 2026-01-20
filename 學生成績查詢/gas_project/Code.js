@@ -409,7 +409,9 @@ function findStudentData(studentId) {
             let diff = null;
             const rules =
                 [{ match: '二', replace: '一' }, { match: '三', replace: '二' }, { match: '四', replace: '三' },
-                { match: '2', replace: '1' }, { match: '3', replace: '2' }, { match: '4', replace: '3' }];
+                { match: '2', replace: '1' }, { match: '3', replace: '2' }, { match: '4', replace: '3' },
+                // 🆕 期末考與第二次段考比較
+                { match: '期末考', replace: '第二次段考' }];
 
             let prevHeader = null;
             for (let rule of rules) {
