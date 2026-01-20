@@ -503,6 +503,8 @@ function sendQueryCodesToStudents() {
     }
 
     let c = 0;
+    let errors = [];
+
     ss.getSheets().forEach(s => {
         if (s.getName().startsWith('_')) return;
         const d = s.getDataRange().getValues();
@@ -511,7 +513,15 @@ function sendQueryCodesToStudents() {
         const h = d[0];
         const eIdx = h.indexOf('Email'), cIdx = h.indexOf('查詢碼'), iIdx = h.indexOf('學號');
 
-        if (eIdx < 0 || cIdx < 0) return; // Skip if columns missing
+        // 🆕 檢查欄位是否存在
+        if (eIdx < 0) {
+            errors.push(`工作表「${s.getName()}」缺少 Email 欄位`);
+            return;
+        }
+        if (cIdx < 0) {
+            errors.push(`工作表「${s.getName()}」缺少 查詢碼 欄位`);
+            return;
+        }
 
         for (let i = 1; i < d.length; i++) {
             const row = d[i];
@@ -521,11 +531,23 @@ function sendQueryCodesToStudents() {
                     // 使用手動輸入的正確網址
                     MailApp.sendEmail(em, '成績查詢碼', `學號:${row[iIdx]}\n查詢碼:${row[cIdx]}\n查詢網址: ${webAppUrl}`);
                     c++;
-                } catch (e) { }
+                } catch (e) {
+                    // 🆕 詳細記錄錯誤
+                    errors.push(`寄送失敗 (學號: ${row[iIdx]}, Email: ${em}): ${e.message}`);
+                }
             }
         }
     });
-    Browser.msgBox('寄送 ' + c + ' 封');
+
+    // 🆕 顯示詳細結果
+    let message = `✅ 成功寄送 ${c} 封`;
+    if (errors.length > 0) {
+        message += '\n\n⚠️ 錯誤訊息：\n' + errors.slice(0, 5).join('\n');
+        if (errors.length > 5) {
+            message += `\n...(還有 ${errors.length - 5} 個錯誤)`;
+        }
+    }
+    Browser.msgBox(message);
 }
 
 function viewSecurityLog() {
