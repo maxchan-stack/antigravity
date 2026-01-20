@@ -704,13 +704,26 @@
             const container = document.getElementById('list-container');
             container.innerHTML = '';
 
-            const ignore = ['姓名', '學號', 'sheetName', 'rowIndex', '查詢碼', '_stats', '_debug', 'Email', 'email'];
             const stats = data._stats || {};
 
-            Object.keys(data).forEach(key => {
-                if (ignore.includes(key)) return;
+            // 🆕 固定顯示順序（由上到下）
+            const displayOrder = [
+                '第一次段考',
+                '第二次段考',
+                '期末考',
+                '小考平均',
+                '缺交',
+                '平時',
+                '學期'
+            ];
+
+            // 渲染函式
+            const renderGradeCard = (key) => {
+                if (!data.hasOwnProperty(key)) return; // 若欄位不存在則跳過
 
                 const val = data[key];
+                if (val === undefined || val === null) return; // 若值為空則跳過
+
                 const s = stats[key] || {};
 
                 // Trend
@@ -718,7 +731,7 @@
                 if (s.diff !== undefined && s.diff !== null) {
                     const diff = parseFloat(s.diff);
                     if (diff > 0) trendHtml = `<div class="trend-pill up">▲ ${diff}</div>`;
-                    else if (diff < 0) trendHtml = `<div class="trend-pill down">▼ ${Math.abs(diff)}</div>`; // Use abs for display
+                    else if (diff < 0) trendHtml = `<div class="trend-pill down">▼ ${Math.abs(diff)}</div>`;
                     else trendHtml = `<div class="trend-pill flat">-</div>`;
                 }
 
@@ -733,7 +746,7 @@
                     `;
                 }
 
-                // 🆕 特殊欄位處理
+                // 特殊欄位處理
                 let cardClass = 'grade-card';
                 let valueDisplay = val;
 
@@ -766,7 +779,10 @@
                     ${footerHtml}
                 `;
                 container.appendChild(card);
-            });
+            };
+
+            // 按照固定順序渲染
+            displayOrder.forEach(key => renderGradeCard(key));
         }
     </script>
 </body>
