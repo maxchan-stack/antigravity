@@ -322,14 +322,14 @@ function alertAdmin(subject, body) {
 // ==========================================
 
 /**
- * 格式化分數（處理空值、無效值）
+ * 格式化分數（處理空值、無效值，四捨五入至整數）
  * @param {*} value - 原始分數值
  * @returns {string} 格式化後的分數（無效時返回 '-'）
  */
 function formatScore(value) {
     if (value === '' || value === null || value === undefined) return '-';
     const num = parseFloat(value);
-    return isNaN(num) ? '-' : num.toString();
+    return isNaN(num) ? '-' : Math.round(num).toString();
 }
 
 /**
