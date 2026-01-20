@@ -735,9 +735,10 @@
                     else trendHtml = `<div class="trend-pill flat">-</div>`;
                 }
 
-                // Stats
+                // Stats (排名與平均)
                 let footerHtml = '';
-                if (s.avg) {
+                // 🆕 缺交欄位不需要顯示排名和平均
+                if (s.avg && key !== '缺交') {
                     footerHtml = `
                         <div class="stats-footer">
                             <div class="stat-item">班排名 <span class="stat-val">${s.rank}</span></div>
