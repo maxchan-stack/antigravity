@@ -184,8 +184,20 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
             };
         }
 
-        // Success
+        // Success - Format and return all grade data
         cache.remove(attemptKey);
+
+        // 🆕 Format new grade fields with helper functions
+        studentData['平時'] = formatScore(studentData['平時']);
+        studentData['學期'] = formatScore(studentData['學期']);
+        studentData['小考平均'] = formatScore(studentData['小考平均']);
+        studentData['缺交'] = formatInteger(studentData['缺交']);
+
+        // Format existing exam fields for consistency
+        studentData['第一次段考'] = formatScore(studentData['第一次段考']);
+        studentData['第二次段考'] = formatScore(studentData['第二次段考']);
+        studentData['期末考'] = formatScore(studentData['期末考'] || studentData['第三次段考']);
+
         delete studentData['查詢碼'];
         delete studentData['座號'];  // 🆕 移除座號（隱私保護）
         logSecurityEvent(studentId, 'LOGIN_SUCCESS', 'Access granted', sessionId, userEmail);
@@ -303,6 +315,32 @@ function alertAdmin(subject, body) {
     } catch (e) {
         Logger.log('Email alert failed: ' + e.toString());
     }
+}
+
+// ==========================================
+// Helper Functions for Grade Formatting
+// ==========================================
+
+/**
+ * 格式化分數（處理空值、無效值）
+ * @param {*} value - 原始分數值
+ * @returns {string} 格式化後的分數（無效時返回 '-'）
+ */
+function formatScore(value) {
+    if (value === '' || value === null || value === undefined) return '-';
+    const num = parseFloat(value);
+    return isNaN(num) ? '-' : num.toString();
+}
+
+/**
+ * 格式化整數（用於缺交次數）
+ * @param {*} value - 原始整數值
+ * @returns {string} 格式化後的整數（無效時返回 '0'）
+ */
+function formatInteger(value) {
+    if (value === '' || value === null || value === undefined) return '0';
+    const num = parseInt(value);
+    return isNaN(num) || num < 0 ? '0' : num.toString();
 }
 
 // ==========================================

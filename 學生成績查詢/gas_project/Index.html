@@ -385,6 +385,39 @@
             margin-top: 4px;
         }
 
+        /* 🆕 學期成績強調樣式 */
+        .grade-card.semester-highlight {
+            border: 2px solid var(--earth-gold);
+            background: linear-gradient(135deg, var(--obsidian-grey) 0%, rgba(155, 138, 94, 0.1) 100%);
+        }
+
+        .grade-card.semester-highlight .grade-val {
+            font-size: 72px;
+            color: var(--earth-gold);
+            font-weight: 900;
+        }
+
+        /* 🆕 作業缺交警示樣式 */
+        .grade-card.homework-warning {
+            border: 2px solid var(--rose-gold);
+        }
+
+        .grade-card.homework-alert {
+            border: 2px solid var(--error);
+            background: linear-gradient(135deg, var(--obsidian-grey) 0%, rgba(255, 69, 58, 0.15) 100%);
+        }
+
+        .grade-card.homework-alert .grade-val {
+            color: var(--error);
+            font-weight: 900;
+        }
+
+        .homework-unit {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-left: 8px;
+        }
+
         /* Loading */
         #loader {
             position: fixed;
@@ -700,15 +733,35 @@
                     `;
                 }
 
+                // 🆕 特殊欄位處理
+                let cardClass = 'grade-card';
+                let valueDisplay = val;
+
+                // 學期成績：放大強調
+                if (key === '學期' && val !== '-') {
+                    cardClass += ' semester-highlight';
+                }
+
+                // 作業缺交：顯示次數 + 警示
+                if (key === '缺交') {
+                    const count = parseInt(val);
+                    valueDisplay = `${val}<span class="homework-unit">次</span>`;
+                    if (count >= 5) {
+                        cardClass += ' homework-alert';
+                    } else if (count >= 3) {
+                        cardClass += ' homework-warning';
+                    }
+                }
+
                 const card = document.createElement('div');
-                card.className = 'grade-card';
+                card.className = cardClass;
                 card.innerHTML = `
                     <div class="grade-header">
                         <span class="subject-name">${key}</span>
                         ${trendHtml}
                     </div>
                     <div class="grade-main-container">
-                        <span class="grade-val">${val}</span>
+                        <span class="grade-val">${valueDisplay}</span>
                     </div>
                     ${footerHtml}
                 `;
