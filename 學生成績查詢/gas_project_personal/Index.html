@@ -7,7 +7,7 @@
     <title>物理科段考成績查詢</title>
     <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <!-- AJA 星宇設計系統字體 -->
+    <!-- 系統預設字體 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -28,43 +28,43 @@
             /* 大地金 (Earth Gold) - 早晨・創新思維・熱忱服務 */
             --earth-gold: #9B8A5E;
             --earth-gold-light: #F9C78B;
-            /* 數位校準色 */
             --earth-gold-bright: #FFB554;
-            /* 螢幕高亮版 */
 
             /* 玫瑰金 (Rose Gold) - 黃昏・專業本位・豪華配備 */
             --rose-gold: #B4745A;
             --rose-gold-deep: #794425;
-            /* 數位校準色 */
             --rose-gold-light: #C9917A;
-            /* 淺色變體 */
 
             /* 曜石灰 (Obsidian Grey) - 夜晚・謹慎紀律・安全至上 */
             --obsidian-grey: #45464D;
             --obsidian-deep: #0F2D3C;
-            /* 深星耀藍 (官網背景) */
             --obsidian-light: #4E463F;
-            /* 數位校準色 */
 
-            /* 頁面背景 */
+            /* 背景 */
             --cream-bg: #F3F1E5;
-            /* 奶油白 */
             --cream-dark: #E8E6DA;
 
-            /* 語意色彩 */
+            /* 語意色彩 (Apple Style) */
             --text-primary: #FFFFFF;
             --text-secondary: rgba(255, 255, 255, 0.6);
             --text-dark: #1D1D1F;
-            --separator: rgba(255, 255, 255, 0.1);
             --success: #32D74B;
             --error: #FF453A;
+            --warning: #FFD60A;
+            --info: #0A84FF;
 
             /* 圓角系統 */
-            --radius-l: 24px;
-            --radius-m: 16px;
             --radius-s: 8px;
+            --radius-m: 16px;
+            --radius-l: 24px;
             --radius-pill: 50px;
-            /* 膠囊狀 */
+
+            /* 間距系統 */
+            --space-xs: 4px;
+            --space-s: 8px;
+            --space-m: 16px;
+            --space-l: 24px;
+            --space-xl: 32px;
         }
 
         * {
@@ -218,36 +218,30 @@
             height: auto;
         }
 
-        /* 膠囊狀按鈕 - 玫瑰金漸層 */
+        /* Button Primary with Rose Gold Gradient */
         .btn-primary {
-            width: 100%;
-            padding: 18px 32px;
-            border-radius: var(--radius-pill);
-            border: none;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 12px;
-            margin-bottom: 16px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 24px rgba(180, 116, 90, 0.4);
-            /* 玫瑰金陰影 */
-            letter-spacing: 2px;
-            text-transform: uppercase;
-
-            /* 玫瑰金漸層 (Rose Gold Gradient) */
             background: linear-gradient(135deg, var(--rose-gold-deep) 0%, var(--rose-gold) 50%, var(--rose-gold-deep) 100%);
+            border-radius: var(--radius-pill);
             color: #FFFFFF;
-        }
-
-        .btn-primary:hover {
-            box-shadow: 0 12px 32px rgba(180, 116, 90, 0.55);
-            transform: translateY(-2px);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 18px 32px;
+            box-shadow: 0 8px 24px rgba(180, 116, 90, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 10px;
         }
 
         .btn-primary:active {
-            transform: scale(0.98) translateY(0);
-            box-shadow: 0 4px 16px rgba(180, 116, 90, 0.35);
+            transform: scale(0.98);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(180, 116, 90, 0.55);
         }
 
         .btn-secondary {
@@ -344,13 +338,13 @@
         }
 
         .trend-pill.up {
-            background: rgba(50, 215, 75, 0.15);
-            color: var(--success);
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--error);
         }
 
         .trend-pill.down {
-            background: rgba(255, 69, 58, 0.15);
-            color: var(--error);
+            background: rgba(50, 215, 75, 0.15);
+            color: var(--success);
         }
 
         .trend-pill.flat {
@@ -385,11 +379,6 @@
             margin-top: 4px;
         }
 
-        /* 🆕 學期成績強調樣式 */
-        .grade-card.semester-highlight {
-            border: 2px solid var(--earth-gold);
-            background: linear-gradient(135deg, var(--obsidian-grey) 0%, rgba(155, 138, 94, 0.1) 100%);
-        }
 
         .grade-card.semester-highlight .grade-val {
             font-size: 72px;
@@ -397,20 +386,7 @@
             font-weight: 900;
         }
 
-        /* 🆕 作業缺交警示樣式 */
-        .grade-card.homework-warning {
-            border: 2px solid var(--rose-gold);
-        }
 
-        .grade-card.homework-alert {
-            border: 2px solid var(--error);
-            background: linear-gradient(135deg, var(--obsidian-grey) 0%, rgba(255, 69, 58, 0.15) 100%);
-        }
-
-        .grade-card.homework-alert .grade-val {
-            color: var(--error);
-            font-weight: 900;
-        }
 
         .homework-unit {
             font-size: 18px;
@@ -471,6 +447,66 @@
         #toast.visible {
             transform: translateX(-50%) translateY(0);
         }
+
+        /* 🆕 Announcement Banner */
+        .announce-container {
+            width: 100%;
+            margin-bottom: 24px;
+        }
+
+        .announce-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: var(--radius-m);
+            font-size: 14px;
+            line-height: 1.5;
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            animation: slideInDown 0.5s ease;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 🆕 Starlux-Apple Skill Compliant Announcement Colors */
+        .announce-item.info {
+            background: rgba(10, 132, 255, 0.1);
+            /* --info */
+            color: #0A84FF;
+            border-left: 4px solid var(--info);
+        }
+
+        .announce-item.warning {
+            background: rgba(255, 214, 10, 0.1);
+            /* --warning */
+            color: var(--rose-gold);
+            /* 玫瑰金增加星宇感 */
+            border-left: 4px solid var(--warning);
+        }
+
+        .announce-item.emergency {
+            background: rgba(255, 69, 58, 0.1);
+            /* --error */
+            color: var(--error);
+            border-left: 4px solid var(--error);
+        }
+
+        .announce-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
     </style>
 </head>
 
@@ -507,7 +543,7 @@
 
             <button class="btn-primary" onclick="doLogin()">登入查詢 Login</button>
 
-            <!-- 安全警告區塊 (星宇官方品牌規範色) -->
+            <!-- 安全警告區塊 -->
             <div
                 style="margin-top: 24px; padding: 24px; background: var(--obsidian-grey); border: 1px solid rgba(155, 138, 94, 0.25); border-radius: var(--radius-m); box-shadow: 0 8px 24px rgba(69, 70, 77, 0.3);">
                 <div
@@ -516,7 +552,7 @@
                 </div>
                 <div
                     style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px; border-left: 3px solid var(--rose-gold); padding-left: 14px;">
-                    本系統已啟用完整安全日誌。所有操作均被記錄，惡意鎖定他人帳號將被追查並移送學務處處理。
+                    本系統已啟用完整安全日誌。所有操作均被記錄，惡意鎖定他人帳號將被追查並依法處理。
                 </div>
                 <div
                     style="font-size: 11px; color: rgba(255,255,255,0.5); font-family: 'SF Mono', 'Monaco', 'Courier', monospace; background: rgba(0,0,0,0.3); padding: 14px; border-radius: var(--radius-s); line-height: 2.0; border: 1px solid rgba(255,255,255,0.05);">
@@ -536,7 +572,7 @@
             </div>
 
             <p style="text-align:center; color:var(--text-secondary); font-size:12px; margin-top:16px;">
-                Designed by MAXCHAN V6.3
+                Designed by MAXCHAN V9.0 (Physics Edition)
             </p>
         </div>
     </div>
@@ -547,6 +583,9 @@
             <h2 id="disp-name">--</h2>
             <div class="student-id" id="disp-id">--</div>
         </div>
+
+        <!-- 🆕 Announcements Area -->
+        <div id="announce-area" class="announce-container"></div>
 
         <div id="list-container">
             <!-- Cards go here -->
@@ -625,7 +664,7 @@
                         loadCaptcha();
                     }
                 } else {
-                    renderResult(res.data);
+                    renderResult(res.data, res.config, res.announcements);
                 }
             }).login(id, pwd, token, cap, seat, sessionId);  // 🆕 新增 sessionId 參數
         }
@@ -687,9 +726,31 @@
             }, seconds * 1000);
         }
 
-        function renderResult(data) {
+        function renderResult(data, config, announcements) {
             document.getElementById('view-login').style.display = 'none';
             document.getElementById('view-result').style.display = 'flex';
+
+            // 🆕 Store config in data object for easier access in loop
+            data.config = config;
+
+            // 🆕 Render Announcements
+            const announceArea = document.getElementById('announce-area');
+            announceArea.innerHTML = '';
+            if (announcements && announcements.length > 0) {
+                announcements.forEach(a => {
+                    const el = document.createElement('div');
+                    el.className = `announce-item ${a.type}`;
+                    let icon = 'ℹ️';
+                    if (a.type === 'warning') icon = '⚠️';
+                    if (a.type === 'emergency') icon = '🚨';
+
+                    el.innerHTML = `
+                        <div class="announce-icon">${icon}</div>
+                        <div>${a.message}</div>
+                    `;
+                    announceArea.appendChild(el);
+                });
+            }
 
             document.getElementById('disp-name').innerText = data['姓名'] || '同學';
             document.getElementById('disp-id').innerText = data['學號'];
@@ -737,8 +798,9 @@
 
                 // Stats (排名與平均)
                 let footerHtml = '';
-                // 🆕 缺交欄位不需要顯示排名和平均
-                if (s.avg && key !== '缺交') {
+                // 🆕 使用後端傳來的 Config，若無則使用預設值
+                const noStatsFields = (data.config && data.config.noStatsFields) || ['缺交', '小考平均', '平時', '學期'];
+                if (s.avg && !noStatsFields.includes(key)) {
                     footerHtml = `
                         <div class="stats-footer">
                             <div class="stat-item">班排名 <span class="stat-val">${s.rank}</span></div>
@@ -754,22 +816,17 @@
 
                 // 🆕 修改顯示名稱
                 if (key === '缺交') displayName = '缺交次數';
-                if (key === '學期') displayName = '學期成績';
+                if (key === '學期') displayName = '學期總成績';
 
                 // 學期成績：放大強調
                 if (key === '學期' && val !== '-') {
                     cardClass += ' semester-highlight';
                 }
 
-                // 作業缺交：顯示次數 + 警示
+                // 作業缺交：顯示次數 (移除警示色)
                 if (key === '缺交') {
                     const count = parseInt(val);
                     valueDisplay = `${val}<span class="homework-unit">次</span>`;
-                    if (count >= 5) {
-                        cardClass += ' homework-alert';
-                    } else if (count >= 3) {
-                        cardClass += ' homework-warning';
-                    }
                 }
 
                 const card = document.createElement('div');

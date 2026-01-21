@@ -1,6 +1,6 @@
 /**
  * Google Apps Script Backend Code
- * Project: Student Grade Inquiry System V6.0 (MAXCHAN Security Edition)
+ * Project: Student Grade Inquiry System V9.0 (MAXCHAN Physics Edition)
  * Features: 5-Digit Code, Hardened Captcha, Global Rate Limit, Security Log, Admin Alert
  */
 
@@ -17,6 +17,10 @@ const CONFIG = {
 
     // Admin Alert
     ADMIN_EMAIL: 'maxgdodo@gmail.com', // <--- 請修改此處 (Enter Admin Email)
+
+    // 🆕 Config for Consistent Frontend/Backend Logic
+    EXCLUDED_STATS_FIELDS: ['學號', '姓名', '查詢碼', 'Email', '班級', '座號', '備註', '缺交', '小考平均', '平時', '學期'],
+    NO_DISPLAY_STATS_FIELDS: ['缺交', '小考平均', '平時', '學期'], // Frontend won't show Rank/Avg for these
 
     // Time Limit (YYYY-MM-DD HH:mm) - Leave empty '' to disable
     SYSTEM_OPEN_TIME: '',   // e.g. '2026-01-19 08:00'
@@ -198,10 +202,26 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
         studentData['第二次段考'] = formatScore(studentData['第二次段考']);
         studentData['期末考'] = formatScore(studentData['期末考'] || studentData['第三次段考']);
 
+        // 🆕 Ensure stats for '期末考' exist (map from '第三次段考' if needed)
+        if (!studentData._stats['期末考'] && studentData._stats['第三次段考']) {
+            studentData._stats['期末考'] = studentData._stats['第三次段考'];
+        }
+
+        // 🆕 Fetch Announcements
+        const announcements = getAnnouncements();
+
         delete studentData['查詢碼'];
         delete studentData['座號'];  // 🆕 移除座號（隱私保護）
         logSecurityEvent(studentId, 'LOGIN_SUCCESS', 'Access granted', sessionId, userEmail);
-        return { success: true, data: studentData };
+
+        return {
+            success: true,
+            data: studentData,
+            config: {
+                noStatsFields: CONFIG.NO_DISPLAY_STATS_FIELDS
+            },
+            announcements: announcements
+        };
 
     } catch (e) {
         Logger.log(e);
@@ -327,9 +347,9 @@ function alertAdmin(subject, body) {
  * @returns {string} 格式化後的分數（無效時返回 '-'）
  */
 function formatScore(value) {
-    if (value === '' || value === null || value === undefined) return '-';
+    if (value === '' || value === null || value === undefined) return null;
     const num = parseFloat(value);
-    return isNaN(num) ? '-' : Math.round(num).toString();
+    return isNaN(num) ? null : Math.round(num).toString();
 }
 
 /**
@@ -338,7 +358,7 @@ function formatScore(value) {
  * @returns {string} 格式化後的整數（無效時返回 '0'）
  */
 function formatInteger(value) {
-    if (value === '' || value === null || value === undefined) return '0';
+    if (value === '' || value === null || value === undefined) return null;
     const num = parseInt(value);
     return isNaN(num) || num < 0 ? '0' : num.toString();
 }
@@ -349,25 +369,66 @@ function formatInteger(value) {
 function findStudentData(studentId) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheets = ss.getSheets();
+    const cache = CacheService.getScriptCache(); // 🆕 Cache Service
 
     let sheetIdx = -1, rowIdx = -1, rowData = null, headers = null;
 
-    for (let i = 0; i < sheets.length; i++) {
-        if (sheets[i].getName().startsWith('_')) continue;
-        const data = sheets[i].getDataRange().getValues();
-        if (data.length < 2) continue;
-
-        const h = data[0].map(x => String(x).trim());
-        const idCol = h.indexOf('學號');
-        if (idCol === -1) continue;
-
-        for (let r = 1; r < data.length; r++) {
-            if (String(data[r][idCol]) === String(studentId)) {
-                sheetIdx = i; rowIdx = r; rowData = data[r]; headers = h;
-                break;
+    // 🆕 Attempt Cache Lookup First
+    const cachedSheetName = cache.get('IDX_' + studentId);
+    if (cachedSheetName) {
+        const sheet = ss.getSheetByName(cachedSheetName);
+        if (sheet) {
+            // Only search this specific sheet
+            const data = sheet.getDataRange().getValues();
+            if (data.length >= 2) {
+                const h = data[0].map(x => String(x).trim());
+                const idCol = h.indexOf('學號');
+                if (idCol !== -1) {
+                    for (let r = 1; r < data.length; r++) {
+                        if (String(data[r][idCol]) === String(studentId)) {
+                            sheetIdx = sheet.getIndex() - 1; // getIndex is 1-based usually, check logic below use sheets[i] so we need index in 'sheets' array. 
+                            // Actually ss.getSheets() returns array. 
+                            // Let's just store the object directly or use loop optimization.
+                            // Easier: Just set the variables directly without relying on sheetIdx for the loop logic below.
+                            rowData = data[r]; headers = h;
+                            // Need to correctly set 'sheets[sheetIdx]' for later use? 
+                            // The original code uses 'sheets[sheetIdx]' on line 391. 
+                            // Let's rewrite to use 'sheet' object directly later.
+                            // To minimize refactor risk, let's find the index in 'sheets' array.
+                            for (let i = 0; i < sheets.length; i++) {
+                                if (sheets[i].getName() === cachedSheetName) {
+                                    sheetIdx = i; break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
             }
         }
-        if (sheetIdx !== -1) break;
+    }
+
+    // Fallback to Full Scan if Cache Miss or Failed
+    if (sheetIdx === -1) {
+        for (let i = 0; i < sheets.length; i++) {
+            if (sheets[i].getName().startsWith('_')) continue;
+            const data = sheets[i].getDataRange().getValues();
+            if (data.length < 2) continue;
+
+            const h = data[0].map(x => String(x).trim());
+            const idCol = h.indexOf('學號');
+            if (idCol === -1) continue;
+
+            for (let r = 1; r < data.length; r++) {
+                if (String(data[r][idCol]) === String(studentId)) {
+                    sheetIdx = i; rowIdx = r; rowData = data[r]; headers = h;
+                    // 🆕 Save to Cache on Success
+                    cache.put('IDX_' + studentId, sheets[i].getName(), 21600); // 6 Hours
+                    break;
+                }
+            }
+            if (sheetIdx !== -1) break;
+        }
     }
 
     if (sheetIdx === -1) return null;
@@ -389,7 +450,8 @@ function findStudentData(studentId) {
         let val = rowData[colIndex];
         result[header] = val;
 
-        if (['學號', '姓名', '查詢碼', 'Email', '班級', '座號', '備註'].includes(header)) return;
+        // 🆕 排除不需計算排名/班平均的欄位 (Use CONFIG)
+        if (CONFIG.EXCLUDED_STATS_FIELDS.includes(header)) return;
 
         const scores = [];
         for (let r = 1; r < sheetVals.length; r++) {
@@ -529,7 +591,85 @@ function sendQueryCodesToStudents() {
             if (em && String(em).includes('@') && row[cIdx]) {
                 try {
                     // 使用手動輸入的正確網址
-                    MailApp.sendEmail(em, '成績查詢碼', `學號:${row[iIdx]}\n查詢碼:${row[cIdx]}\n查詢網址: ${webAppUrl}`);
+                    const subject = '【重要】物理科段考成績查詢碼 & 使用說明';
+
+                    // 郵件內容 (HTML 版 - 支援格式)
+                    const htmlBody = `
+                        <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
+                            <h2 style="color: #98694c;">📢 成績查詢系統使用說明</h2>
+                            <p>各位同學好，本次段考成績已開放查詢，請依照以下步驟操作：</p>
+                            
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                            <h3 style="color: #2c3e50;">1️⃣ 您的登入資訊</h3>
+                            <ul style="background: #f9f9f9; padding: 15px 20px; border-radius: 8px; list-style: none;">
+                                <li><strong>學號：</strong> ${row[iIdx]}</li>
+                                <li><strong>查詢碼：</strong> <span style="color: #d35400; font-weight: bold; font-size: 1.1em;">${row[cIdx]}</span></li>
+                                <li><strong>查詢網址：</strong> <a href="${webAppUrl}" target="_blank">${webAppUrl}</a></li>
+                            </ul>
+
+                            <h3 style="color: #2c3e50;">2️⃣ 操作步驟</h3>
+                            <ol>
+                                <li>點擊上方網址進入查詢系統 (建議使用 Chrome 或 Safari)。</li>
+                                <li>輸入<strong>學號</strong>與<strong>查詢碼</strong>。</li>
+                                <li>計算驗證碼數學題 (例如 3+5=8) 並輸入答案。</li>
+                            </ol>
+
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                            <h3 style="color: #e74c3c;">⚠️ 常見問題排除 (必看)</h3>
+                            
+                            <p><strong>Q1：點開連結出現「很抱歉，目前無法開啟這個檔案」？</strong><br>
+                            <span style="color: #e74c3c;">A1：這是 Google 帳號衝突造成的。</span><br>
+                            請改用 <strong>「無痕模式 / 私密瀏覽」</strong> 開啟連結即可解決！<br>
+                            📱 手機版：長按連結 → 選擇「以無痕模式開啟」<br>
+                            💻 電腦版：按右鍵 → 選擇「在無痕視窗中開啟連結」</p>
+
+                            <p><strong>Q2：一直顯示「學號或密碼錯誤」？</strong><br>
+                            • 請檢查密碼前後是否不小心多打了「空格」<br>
+                            • 請確認是否輸入了別人的學號</p>
+
+                            <p><strong>Q3：帳號被鎖定了？</strong><br>
+                            • 連續錯誤 5 次會自動鎖定 10 分鐘，請稍後再試。</p>
+                            
+                            <br>
+                            <p style="font-size: 0.9em; color: #7f8c8d;">(此郵件由系統自動發送，請勿直接回信)</p>
+                        </div>
+                    `;
+
+                    // 郵件內容 (純文字版 - 備用)
+                    const plainBody = `
+📢 成績查詢系統使用說明
+
+各位同學好，本次段考成績已開放查詢，請依照以下步驟操作：
+
+1️⃣ 您的登入資訊
+學號：${row[iIdx]}
+查詢碼：${row[cIdx]}
+網址：${webAppUrl}
+
+2️⃣ 操作步驟
+1. 點擊網址進入查詢系統
+2. 輸入學號與查詢碼
+3. 輸入驗證碼
+
+⚠️ 常見問題排除 (必看)
+Q1：點開連結出現「很抱歉，目前無法開啟這個檔案」？
+A1：這是 Google 帳號衝突造成的。請改用「無痕模式 / 私密瀏覽」開啟連結即可解決！
+
+Q2：一直顯示「學號或密碼錯誤」？
+請檢查密碼前後是否不小心多打了「空格」。
+
+Q3：帳號被鎖定了？
+連續錯誤 5 次會自動鎖定 10 分鐘，請稍後再試。
+                    `;
+
+                    MailApp.sendEmail({
+                        to: em,
+                        subject: subject,
+                        body: plainBody,
+                        htmlBody: htmlBody
+                    });
                     c++;
                 } catch (e) {
                     // 🆕 詳細記錄錯誤
@@ -571,7 +711,8 @@ function unlockSpecificStudent() {
         const cache = CacheService.getScriptCache();
         cache.remove('LOCK_' + studentId);
         cache.remove('ATTEMPT_' + studentId);
-        logSecurityEvent(studentId, 'ADMIN_UNLOCK', 'Unlocked by administrator', 'ADMIN_ACTION', Session.getActiveUser().getEmail());
+        const userEmail = Session.getActiveUser().getEmail();
+        logSecurityEvent(studentId, 'ADMIN_UNLOCK', 'Unlocked by administrator', 'ADMIN_ACTION', userEmail);
         ui.alert(`學號 ${studentId} 已解除鎖定。`);
     }
 }
@@ -586,7 +727,8 @@ function emergencyUnlockAll() {
     );
 
     if (response == ui.Button.YES) {
-        logSecurityEvent('ADMIN', 'EMERGENCY_UNLOCK_ALL', 'Admin requested global unlock', 'ADMIN_ACTION', Session.getActiveUser().getEmail());
+        const userEmail = Session.getActiveUser().getEmail();
+        logSecurityEvent('ADMIN', 'EMERGENCY_UNLOCK_ALL', 'Admin requested global unlock', 'ADMIN_ACTION', userEmail);
         ui.alert('已記錄解鎖請求。\n\n舊的鎖定記錄將在 10 分鐘後自動過期。\n建議：檢查 _SecurityLog 確認攻擊來源。');
     }
 }
@@ -630,7 +772,8 @@ function checkSheetPermissions() {
             warningMessage += '⚠️ 這非常重要！否則所有學生成績都可能被他人查看！';
 
             ui.alert('🚨 安全警告', warningMessage, ui.ButtonSet.OK);
-            logSecurityEvent('ADMIN', 'INSECURE_SHEET_DETECTED', 'Sharing: ' + sharingAccess, 'SYSTEM_CHECK', Session.getActiveUser().getEmail());
+            const userEmail = Session.getActiveUser().getEmail();
+            logSecurityEvent('ADMIN', 'INSECURE_SHEET_DETECTED', 'Sharing: ' + sharingAccess, 'SYSTEM_CHECK', userEmail);
         } else if (warningMessage) {
             let statusMessage = '✅ 您的試算表權限設定安全！\n\n';
             statusMessage += '🔒 分享狀態：限制存取\n';
@@ -715,5 +858,47 @@ function showInstructionCard() {
             .setHeight(650);
 
         ui.showModalDialog(userInterface, '📱 教師專用分享圖卡 (請截圖)');
+    }
+}
+
+// ==========================================
+// 🆕 Announcement System
+// ==========================================
+function getAnnouncements() {
+    try {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let sheet = ss.getSheetByName('_Announcement');
+
+        // Auto-create if not exists
+        if (!sheet) {
+            sheet = ss.insertSheet('_Announcement');
+            sheet.appendRow(['Message', 'Type (info/warning/emergency)', 'Active (TRUE/FALSE)']);
+            sheet.appendRow(['歡迎使用成績查詢系統！', 'info', 'TRUE']);
+            sheet.appendRow(['請注意：資料僅供參考，若有疑問請洽導師。', 'warning', 'TRUE']);
+            sheet.setFrozenRows(1);
+            sheet.setColumnWidth(1, 400);
+        }
+
+        const data = sheet.getDataRange().getValues();
+        const announcements = [];
+
+        // Skip header
+        for (let i = 1; i < data.length; i++) {
+            const msg = String(data[i][0]).trim();
+            const type = String(data[i][1]).trim().toLowerCase();
+            const active = String(data[i][2]).toUpperCase();
+
+            // Only fetch active messages
+            if (active === 'TRUE' && msg) {
+                announcements.push({
+                    message: msg,
+                    type: ['info', 'warning', 'emergency'].includes(type) ? type : 'info'
+                });
+            }
+        }
+        return announcements;
+    } catch (e) {
+        Logger.log('Announcement error: ' + e.toString());
+        return [];
     }
 }
