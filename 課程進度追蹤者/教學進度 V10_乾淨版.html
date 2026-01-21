@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>教學進度 V9</title>
+    <title>教學進度 V10</title>
 
     <!-- PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -299,27 +299,17 @@
 
             useEffect(() => {
                 const load = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) || def; } catch { return def; } };
-                // V9 Migration: keys v9_, try loading v8_6_ if v9_ is empty
-                const loadMigrate = (k9, k86, def) => {
-                    const v9 = load(k9, null);
-                    if (v9 !== null) return v9;
-                    return load(k86, def);
-                };
 
-                setAcademicYears(loadMigrate('v9_years', 'v8_6_years', DEFAULT_YEARS));
-                setCurrentYear(localStorage.getItem('v9_current_year') || localStorage.getItem('v8_6_current_year') || DEFAULT_CURRENT_YEAR);
-                setRecords(loadMigrate('v9_records', 'v8_6_records', []));
-                setClasses(loadMigrate('v9_classes', 'v8_6_classes', []));
+                setAcademicYears(load('v10_years', DEFAULT_YEARS));
+                setCurrentYear(localStorage.getItem('v10_current_year') || DEFAULT_CURRENT_YEAR);
+                setRecords(load('v10_records', []));
+                setClasses(load('v10_classes', []));
+                setExams(load('v10_exams', {}));
+                setHolidays(load('v10_holidays', INITIAL_HOLIDAYS));
+                setCustomHolidays(load('v10_custom_holidays', []));
+                setTags(load('v10_tags', ['複習', '實驗', '影片', '學習單', '分組', '口試']));
 
-                // V9 Exam Migration
-                const loadedExams = loadMigrate('v9_exams', 'v8_6_exams', {});
-                setExams(loadedExams);
-                setHolidays(loadMigrate('v9_holidays', 'v8_6_holidays', INITIAL_HOLIDAYS));
-                // V9.1: 載入彈性假期
-                setCustomHolidays(load('v9_custom_holidays', []));
-                setTags(loadMigrate('v9_tags', 'v8_6_tags', ['複習', '實驗', '影片', '學習單', '分組', '口試']));
-
-                if (localStorage.getItem('v9_theme') === 'dark' || (!('v9_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                if (localStorage.getItem('v10_theme') === 'dark' || (!('v10_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     setDarkMode(true);
                     document.documentElement.classList.add('dark');
                 }
@@ -334,16 +324,16 @@
 
             useEffect(() => {
                 Object.entries(persistentData).forEach(([key, value]) => {
-                    const storageKey = key === 'years' ? 'v9_years' :
-                        key === 'currentYear' ? 'v9_current_year' :
-                            key === 'cloudSettings' ? 'v9_cloud_settings' : `v9_${key}`;
+                    const storageKey = key === 'years' ? 'v10_years' :
+                        key === 'currentYear' ? 'v10_current_year' :
+                            key === 'cloudSettings' ? 'v10_cloud_settings' : `v10_${key}`;
                     localStorage.setItem(storageKey, typeof value === 'string' ? value : JSON.stringify(value));
                 });
             }, [persistentData]);
 
             useEffect(() => {
-                if (darkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('v9_theme', 'dark'); }
-                else { document.documentElement.classList.remove('dark'); localStorage.setItem('v9_theme', 'light'); }
+                if (darkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('v10_theme', 'dark'); }
+                else { document.documentElement.classList.remove('dark'); localStorage.setItem('v10_theme', 'light'); }
                 if (window.lucide) window.lucide.createIcons();
             }, [darkMode]);
 
@@ -751,7 +741,7 @@
                         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="bg-white text-[#9B8A5E] p-2.5 rounded-2xl shadow-lg"><LucideIcon name="BookOpen" size={28} /></div>
-                                <div><h1 className="text-2xl sm:text-3xl font-black text-white leading-none">教學日誌</h1><span className="text-xs font-bold text-white/80 uppercase">V9</span></div>
+                                <div><h1 className="text-2xl sm:text-3xl font-black text-white leading-none">教學日誌</h1><span className="text-xs font-bold text-white/80 uppercase">V10</span></div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="hidden md:flex items-center bg-white/10 rounded-full px-4 py-2">
@@ -1206,7 +1196,7 @@
                                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">備份與還原</h4>
                                                 <AppleButton onClick={() => {
                                                     const a = document.createElement('a');
-                                                    a.href = URL.createObjectURL(new Blob([JSON.stringify({ version: "8.5", records, classes, exams, holidays, academicYears })], { type: 'application/json' }));
+                                                    a.href = URL.createObjectURL(new Blob([JSON.stringify({ version: "10.0", records, classes, exams, holidays, academicYears })], { type: 'application/json' }));
                                                     a.download = `Backup_${formatDate(new Date())}.json`; a.click();
                                                 }} label="下載備份檔" iconName="Download" variant="secondary" className="w-full" />
                                                 <div className="relative">
