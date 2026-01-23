@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Intel AI | 美股情報站</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rufina:wght@400;700&family=Montserrat:wght@400;500;600;700&family=SF+Mono&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            /* STARLUX Brand Colors */
+            --earth-gold: #9B8A5E;
+            --earth-gold-light: #F9C78B;
+            --earth-gold-bright: #FFB554;
+
+            --rose-gold: #B4745A;
+            --rose-gold-deep: #794425;
+
+            --obsidian-grey: #45464D;
+            --obsidian-deep: #0F2D3C;
+
+            --bg-dark: #0d1117;
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+
+            /* Sentiment Colors */
+            --bullish: #32D74B;
+            --bearish: #FF453A;
+            --neutral: #FFD60A;
+        }
+
+        body {
+            font-family: 'Montserrat', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 0;
+            border-bottom: 1px solid rgba(155, 138, 94, 0.2);
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Rufina', serif;
+            color: var(--earth-gold-light);
+            font-size: 2.5em;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-top: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Ticker Input */
+        .add-ticker-form {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .ticker-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--obsidian-grey);
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            width: 120px;
+            font-family: 'SF Mono', monospace;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .ticker-input:focus {
+            outline: none;
+            border-color: var(--earth-gold);
+            width: 150px;
+        }
+
+        .add-btn {
+            background: var(--earth-gold);
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover {
+            transform: scale(1.1);
+            background: var(--earth-gold-light);
+        }
+
+        /* Ticker Nav */
+        .ticker-nav {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-pill {
+            background: rgba(69, 70, 77, 0.5);
+            border: 1px solid rgba(155, 138, 94, 0.3);
+            color: var(--text-secondary);
+            padding: 8px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .nav-pill:hover,
+        .nav-pill.active {
+            background: var(--earth-gold);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(155, 138, 94, 0.4);
+            border-color: var(--earth-gold);
+        }
+
+        .ticker-group {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        .delete-ticker-btn {
+            background: rgba(255, 69, 58, 0.2);
+            border: none;
+            color: #ff8a84;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: -10px;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+
+        .ticker-group:hover .delete-ticker-btn {
+            opacity: 1;
+            margin-left: 5px;
+        }
+
+        .delete-ticker-btn:hover {
+            background: var(--bearish);
+            color: #fff;
+        }
+
+        /* News Cards */
+        .card {
+            background: var(--obsidian-grey);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(155, 138, 94, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: var(--earth-gold);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .news-title {
+            font-family: 'Rufina', serif;
+            font-size: 1.4em;
+            margin: 0;
+            color: #fff;
+            text-decoration: none;
+            flex: 1;
+        }
+
+        .news-title:hover {
+            color: var(--earth-gold-light);
+            text-decoration: underline;
+        }
+
+        /* Sentiment Badge */
+        .sentiment-badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 15px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bullish {
+            background: rgba(50, 215, 75, 0.15);
+            color: var(--bullish);
+            border: 1px solid var(--bullish);
+        }
+
+        .bearish {
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--bearish);
+            border: 1px solid var(--bearish);
+        }
+
+        .neutral {
+            background: rgba(255, 214, 10, 0.15);
+            color: var(--neutral);
+            border: 1px solid var(--neutral);
+        }
+
+        .impact-score {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 2em;
+            font-weight: 900;
+            opacity: 0.1;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .ai-summary {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--earth-gold);
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+
+        .risks-section {
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        .risk-tag {
+            background: rgba(255, 69, 58, 0.1);
+            color: #ff8a84;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 5px;
+            border: 1px solid rgba(255, 69, 58, 0.3);
+        }
+
+        .meta {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            color: var(--text-secondary);
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>MARKET INTEL AI</h1>
+            <div class="subtitle">美股市場智能情報站</div>
+
+            <form action="/api/tickers" method="post" class="add-ticker-form">
+                <input type="text" name="ticker" class="ticker-input" placeholder="+ ADD" required>
+                <button type="submit" class="add-btn">＋</button>
+            </form>
+        </header>
+
+        <nav class="ticker-nav">
+            <a href="/?sort={{ current_sort }}"
+                class="nav-pill {% if current_ticker == 'all' %}active{% endif %}">全部市場</a>
+            {% for ticker in tickers %}
+            <div class="ticker-group">
+                <a href="/?ticker={{ ticker }}&sort={{ current_sort }}"
+                    class="nav-pill {% if current_ticker == ticker %}active{% endif %}">{{ ticker }}</a>
+                <button class="delete-ticker-btn" onclick="deleteTicker('{{ ticker }}')"
+                    title="移除 {{ ticker }}">×</button>
+            </div>
+            {% endfor %}
+        </nav>
+
+        <div style="text-align: right; margin-bottom: 20px;">
+            <select onchange="window.location.href=this.value"
+                style="background: var(--obsidian-grey); color: #fff; padding: 5px; border: 1px solid #555; border-radius: 5px;">
+                <option value="/?ticker={{ current_ticker }}&sort=score" {% if current_sort=='score' %}selected{% endif
+                    %}>▼ 市場影響力 (高→低)</option>
+                <option value="/?ticker={{ current_ticker }}&sort=newest" {% if current_sort=='newest' %}selected{%
+                    endif %}>▼ 最新發布</option>
+            </select>
+        </div>
+
+        {% for article in articles %}
+        <div class="card">
+            <div class="impact-score">{{ article.score }}</div>
+
+            <div class="card-header">
+                <a href="{{ article.url }}" target="_blank" class="news-title">{{ article.title }}</a>
+                <div class="sentiment-badge {{ article.sentiment }}">
+                    {{ article.sentiment }}
+                </div>
+            </div>
+
+            <div class="ai-summary">
+                <strong>💡 AI 觀點：</strong> {{ article.ai_summary }}
+            </div>
+
+            {% if article.key_risks %}
+            <div class="risks-section">
+                <strong>⚠️ 風險提示：</strong>
+                {% for risk in article.key_risks %}
+                <span class="risk-tag">{{ risk }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="meta">
+                <span>📅 {{ article.published_date }}</span>
+                <span>🔗 {{ article.source }}</span>
+                {% for tag in article.tags %}
+                <span>#{{ tag }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if not articles %}
+        <div style="text-align: center; padding: 50px; color: var(--text-secondary);">
+            <h2>等待數據中...</h2>
+            <p>AI 正在從 Google News 提煉最新市場情報</p>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            Powered by Starlux Agent Skill & Gemini AI
+        </div>
+    </div>
+</body>
+
+<script>
+    async function deleteTicker(ticker) {
+        if (!confirm(`確定要移除 ${ticker} 嗎？`)) return;
+
+        try {
+            const res = await fetch(`/api/tickers/${ticker}`, { method: 'DELETE' });
+            if (res.ok) {
+                window.location.href = '/';
+            } else {
+                alert('移除失敗');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('網路錯誤');
+        }
+    }
+</script>
+
+</html>

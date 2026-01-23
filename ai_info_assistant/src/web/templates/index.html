@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 AI 資訊助理</title>
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --bg-card: #161b22;
+            --accent: #58a6ff;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+            --success: #3fb950;
+            --warning: #d29922;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid #30363d;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+
+        header p {
+            color: var(--text-dim);
+            margin-top: 10px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+
+        .stats span {
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .article {
+            background: var(--bg-card);
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: border-color 0.2s;
+        }
+
+        .article:hover {
+            border-color: var(--accent);
+        }
+
+        .article-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .source-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .source-arxiv {
+            background: #2ea043;
+            color: #fff;
+        }
+
+        .source-github {
+            background: #6e40c9;
+            color: #fff;
+        }
+
+        .source-hn {
+            background: #ff6600;
+            color: #fff;
+        }
+
+        .source-reddit {
+            background: #ff4500;
+            color: #fff;
+        }
+
+        .article h2 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .article h2 a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .article h2 a:hover {
+            text-decoration: underline;
+        }
+
+        .score {
+            margin-left: auto;
+            background: linear-gradient(135deg, var(--accent), #1f6feb);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .ai-summary {
+            background: #1f2937;
+            border-left: 3px solid var(--accent);
+            padding: 12px 15px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95em;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .tag {
+            background: #21262d;
+            border: 1px solid #30363d;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 1.1em;
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-btn:hover {
+            background: rgba(248, 81, 73, 0.15);
+            color: #f85149;
+        }
+
+        .analyze-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 1.1em;
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+
+        .analyze-btn:hover {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--accent);
+        }
+
+        .rlm-analysis {
+            background: #1a1f2e;
+            border: 1px dashed var(--accent);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 12px 0;
+            font-size: 0.9em;
+        }
+
+        .analysis-loading {
+            color: var(--warning);
+            text-align: center;
+        }
+
+        .analysis-content {
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+
+        /* Tabs Styles */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 15px;
+        }
+
+        .tab {
+            text-decoration: none;
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: var(--bg-card);
+            color: var(--accent);
+            border: 1px solid #30363d;
+        }
+
+        .sort-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: var(--text-dim);
+        }
+
+        .sort-bar select {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid #30363d;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-dim);
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 AI 資訊助理</h1>
+            <p>自動追蹤 ArXiv、GitHub、Hacker News、Reddit，並用 AI 提煉知識</p>
+            <div class="stats">
+                <span>📊 已收錄 {{ total_count }} 條知識</span>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <a href="/?source=all&sort={{ current_sort }}"
+                class="tab {% if current_source == 'all' %}active{% endif %}">全部 (All)</a>
+            <a href="/?source=arxiv&sort={{ current_sort }}"
+                class="tab {% if current_source == 'arxiv' %}active{% endif %}">學術論文 (ArXiv)</a>
+            <a href="/?source=github&sort={{ current_sort }}"
+                class="tab {% if current_source == 'github' %}active{% endif %}">開源專案 (GitHub)</a>
+            <a href="/?source=hn&sort={{ current_sort }}"
+                class="tab {% if current_source == 'hn' %}active{% endif %}">科技話題 (HN)</a>
+            <a href="/?source=reddit&sort={{ current_sort }}"
+                class="tab {% if current_source == 'reddit' %}active{% endif %}">Reddit</a>
+        </nav>
+
+        <div class="sort-bar">
+            <label for="sort-select">排序方式：</label>
+            <select id="sort-select" onchange="changeSort(this.value)">
+                <option value="newest" {% if current_sort=='newest' %}selected{% endif %}>最新處理</option>
+                <option value="score" {% if current_sort=='score' %}selected{% endif %}>信任度最高</option>
+                <option value="published" {% if current_sort=='published' %}selected{% endif %}>最新發布</option>
+            </select>
+        </div>
+
+        {% for article in articles %}
+        <div class="article" id="article-{{ article.id }}">
+            <div class="article-header">
+                <span class="source-badge source-{{ article.source }}">{{ article.source }}</span>
+                <h2><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></h2>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                    <span class="score">{{ article.trust_score }}</span>
+                    <button class="analyze-btn" onclick="analyzeArticle('{{ article.id }}')"
+                        title="RLM 深度分析">🔬</button>
+                    <button class="delete-btn" onclick="deleteArticle('{{ article.id }}')" title="刪除">🗑️</button>
+                </div>
+            </div>
+            <div class="ai-summary">💡 {{ article.ai_summary }}</div>
+            <div class="rlm-analysis" id="analysis-{{ article.id }}"
+                style="{% if article.rlm_analysis %}display: block;{% else %}display: none;{% endif %}">
+                <div class="analysis-loading" style="display: none;">⏳ RLM 正在深度分析中，請稍候...</div>
+                <div class="analysis-content">
+                    {% if article.rlm_analysis %}
+                    <strong>🔬 RLM 深度分析結果：</strong><br><br>{{ article.rlm_analysis }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="tags">
+                {% for tag in article.tags %}
+                <span class="tag">#{{ tag }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <footer>
+            Powered by Antigravity × Gemini
+        </footer>
+    </div>
+
+    <script>
+        function changeSort(sortValue) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('sort', sortValue);
+            window.location.href = url.toString();
+        }
+
+        async function deleteArticle(articleId) {
+            if (!confirm('伺服器：確定要刪除這篇文章嗎？')) return;
+
+            try {
+                const response = await fetch(`/api/articles/${articleId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    const el = document.getElementById(`article-${articleId}`);
+                    // 加入一個簡單的消失動畫效果
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateX(20px)';
+                    el.style.transition = 'all 0.3s ease';
+                    setTimeout(() => el.remove(), 300);
+                } else {
+                    alert('刪除失敗');
+                }
+            } catch (err) {
+                console.error('Delete error:', err);
+                alert('網路錯誤');
+            }
+        }
+
+        async function analyzeArticle(articleId) {
+            const analysisDiv = document.getElementById(`analysis-${articleId}`);
+            const loadingDiv = analysisDiv.querySelector('.analysis-loading');
+            const contentDiv = analysisDiv.querySelector('.analysis-content');
+
+            // 顯示 loading 狀態
+            analysisDiv.style.display = 'block';
+            loadingDiv.style.display = 'block';
+            contentDiv.innerHTML = '';
+
+            try {
+                // 啟動分析任務
+                const startRes = await fetch(`/api/articles/${articleId}/analyze`, {
+                    method: 'POST'
+                });
+
+                if (!startRes.ok) {
+                    throw new Error('啟動分析失敗');
+                }
+
+                // 輪詢檢查結果 (每 3 秒)
+                const maxAttempts = 60; // 最多等待 3 分鐘
+                for (let i = 0; i < maxAttempts; i++) {
+                    await new Promise(r => setTimeout(r, 3000));
+
+                    const resultRes = await fetch(`/api/articles/${articleId}/analysis`);
+                    const data = await resultRes.json();
+
+                    if (data.analysis) {
+                        loadingDiv.style.display = 'none';
+                        contentDiv.innerHTML = `<strong>🔬 RLM 深度分析結果：</strong>\n\n${data.analysis}`;
+                        return;
+                    }
+                }
+
+                loadingDiv.innerHTML = '⚠️ 分析超時，請稍後重試';
+            } catch (err) {
+                console.error('Analyze error:', err);
+                loadingDiv.style.display = 'none';
+                contentDiv.innerHTML = '❌ 分析失敗: ' + err.message;
+            }
+        }
+    </script>
+</body>
+
+</html>
