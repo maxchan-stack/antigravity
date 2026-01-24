@@ -770,7 +770,7 @@
             <div
                 style="margin-top: 24px; padding: 24px; background: var(--obsidian-grey); border: 1px solid rgba(155, 138, 94, 0.25); border-radius: var(--radius-m); box-shadow: 0 8px 24px rgba(69, 70, 77, 0.3);">
                 <div
-                    style="font-size: 14px; font-weight: 700; color: var(--earth-gold); margin-bottom: 14px; letter-spacing: 1px; text-transform: uppercase;">
+                    style="font-size: 14px; font-weight: 700; color: var(--earth-gold); margin-bottom: 14px; letter-spacing: 1px; text-transform: uppercase; text-align: center;">
                     ⚠️ Security Notice
                 </div>
                 <div
@@ -779,9 +779,12 @@
                 </div>
                 <div
                     style="font-size: 11px; color: rgba(255,255,255,0.5); font-family: 'SF Mono', 'Monaco', 'Courier', monospace; background: rgba(0,0,0,0.3); padding: 14px; border-radius: var(--radius-s); line-height: 2.0; border: 1px solid rgba(255,255,255,0.05);">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="color: rgba(255,255,255,0.4);">👤 User:</span>
-                        <span id="user-identity" style="color: var(--earth-gold); font-weight: 600;">驗證中...</span>
+                    <div style="margin-bottom: 6px;">
+                        <div style="color: rgba(255,255,255,0.4); margin-bottom: 4px;">👤 User:</div>
+                        <div style="color: var(--earth-gold); font-weight: 600; padding-left: 20px;">
+                            <div id="user-email">Email: 驗證中...</div>
+                            <div id="user-ip" style="margin-top: 2px;">IP: 載入中...</div>
+                        </div>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                         <span style="color: rgba(255,255,255,0.4);">📍 SID:</span>
@@ -884,11 +887,20 @@
             const now = new Date();
             const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
-            // 🆕 更新顯示 (顯示真實 Email)
-            // userEmail 變數由後端 doGet 傳入 (透過 Scriptlet)
-            document.getElementById('user-identity').textContent = "<?= userEmail ?>";
+            // 🆕 更新顯示 (顯示真實 Email 與 IP)
+            document.getElementById('user-email').textContent = "Email: <?= userEmail ?>";
             document.getElementById('session-id').textContent = sessionId;
             document.getElementById('access-time').textContent = timeStr;
+
+            // 🆕 取得客戶端 IP（使用第三方服務）
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('user-ip').textContent = `IP: ${data.ip}`;
+                })
+                .catch(() => {
+                    document.getElementById('user-ip').textContent = 'IP: 無法取得';
+                });
         }
 
         function loadCaptcha() {
