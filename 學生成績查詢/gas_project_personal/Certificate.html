@@ -49,25 +49,12 @@
         }
 
         .header {
+            text-align: center;
             margin-bottom: 24px;
+            /* 🆕 減少從 40px 到 24px */
             border-bottom: 3px double #9B8A5E;
             padding-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .logo-img {
-            width: 80px;
-            height: auto;
-            object-fit: contain;
-        }
-
-        .header-text {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            /* 🆕 減少從 20px 到 16px */
         }
 
         .school-name {
@@ -209,16 +196,11 @@
 <body>
     <div class="certificate">
         <div class="header">
-            <!-- 🆕 新增中正高中校徽 (Google Drive Link) -->
-            <img src="https://drive.google.com/uc?export=view&id=1Nur1IQLrP7vzPWk4OXv7GOOgwUXV0fmL" alt="School Logo"
-                class="logo-img">
 
-            <div class="header-text">
-                <h1 class="school-name">臺北市立中正高級中學</h1>
-                <h2 class="doc-title">
-                    <?= data.examType ?>成績證明
-                </h2>
-            </div>
+            <h1 class="school-name">臺北市立中正高級中學</h1>
+            <h2 class="doc-title">
+                <?= data.examType ?>成績證明
+            </h2>
         </div>
 
         <div class="content">
