@@ -562,6 +562,49 @@
             opacity: 0.7;
         }
 
+        /* 🆕 Fail Risk Indicator (V10.1) */
+        .risk-indicator {
+            width: 100%;
+            margin-top: 24px;
+            padding: 16px 20px;
+            border-radius: var(--radius-l);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .risk-indicator.safe {
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.15), rgba(52, 199, 89, 0.05));
+            color: var(--success);
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
+
+        .risk-indicator.danger {
+            background: linear-gradient(135deg, rgba(255, 69, 58, 0.15), rgba(255, 69, 58, 0.05));
+            color: var(--error);
+            border: 1px solid rgba(255, 69, 58, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .risk-icon {
+            font-size: 18px;
+        }
+
         /* 🆕 Grade Chart Section (V9.2) */
         .chart-section {
             width: 100%;
@@ -729,6 +772,12 @@
 
         <div id="list-container">
             <!-- Cards go here -->
+        </div>
+
+        <!-- 🆕 Fail Risk Indicator (V10.1) -->
+        <div id="risk-indicator" class="risk-indicator safe" style="display: none;">
+            <span class="risk-icon"></span>
+            <span class="risk-text"></span>
         </div>
 
         <!-- 🆕 Grade Charts Section (V9.2) -->
@@ -993,6 +1042,10 @@
 
             // 渲染函式
             const renderGradeCard = (key) => {
+                // 🆕 V10.1: 檢查欄位是否允許顯示
+                const visibleFields = data.visibleFields || [];
+                if (visibleFields.length > 0 && !visibleFields.includes(key)) return;
+
                 if (!data.hasOwnProperty(key)) return; // 若欄位不存在則跳過
 
                 const val = data[key];
@@ -1059,6 +1112,19 @@
 
             // 按照固定順序渲染
             displayOrder.forEach(key => renderGradeCard(key));
+
+            // 🆕 渲染風險指示器 (V10.1)
+            if (data.failRisk) {
+                const riskEl = document.getElementById('risk-indicator');
+                const isAtRisk = data.failRisk.isAtRisk;
+
+                riskEl.className = `risk-indicator ${isAtRisk ? 'danger' : 'safe'}`;
+                riskEl.querySelector('.risk-icon').innerText = isAtRisk ? '⚠️' : '✅';
+                riskEl.querySelector('.risk-text').innerText = isAtRisk
+                    ? '學期成績預估：危險（平時需更加努力）'
+                    : '學期成績預估：及格無虞';
+                riskEl.style.display = 'flex';
+            }
 
             // 🆕 渲染圖表 (V9.2)
             if (data.chartData) {

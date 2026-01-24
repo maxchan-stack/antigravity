@@ -573,6 +573,126 @@ function markAnnouncementRead(studentId, announcementId) {
 }
 
 // ==========================================
+// 🆕 Settings & Display Control (V10.1)
+// ==========================================
+
+/**
+ * 確保 _Settings 工作表存在，若不存在則自動建立
+ * @returns {Sheet} 設定工作表
+ */
+function _ensureSettingsSheet() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('_Settings');
+
+    if (!sheet) {
+        sheet = ss.insertSheet('_Settings');
+        // 設定表頭
+        sheet.getRange(1, 1, 1, 3).setValues([['key', 'value', 'description']]);
+
+        // 預設顯示設定
+        const defaultSettings = [
+            ['顯示_第一次段考', 'TRUE', '是否顯示第一次段考'],
+            ['顯示_第二次段考', 'TRUE', '是否顯示第二次段考'],
+            ['顯示_期末考', 'TRUE', '是否顯示期末考'],
+            ['顯示_小考平均', 'TRUE', '是否顯示小考平均'],
+            ['顯示_缺交', 'TRUE', '是否顯示缺交次數'],
+            ['顯示_平時', 'TRUE', '是否顯示平時成績'],
+            ['顯示_學期', 'TRUE', '是否顯示學期總成績']
+        ];
+        sheet.getRange(2, 1, defaultSettings.length, 3).setValues(defaultSettings);
+
+        // 凍結表頭
+        sheet.setFrozenRows(1);
+        // 設定欄寬
+        sheet.setColumnWidth(1, 150);
+        sheet.setColumnWidth(3, 200);
+    }
+
+    return sheet;
+}
+
+/**
+ * 讀取設定並回傳可顯示的欄位清單
+ * @returns {Object} { visibleFields: ['第一次段考', ...] }
+ */
+function _getSettings() {
+    const sheet = _ensureSettingsSheet();
+    const data = sheet.getDataRange().getValues();
+
+    const visibleFields = [];
+
+    for (let i = 1; i < data.length; i++) {
+        const key = String(data[i][0]);
+        const value = String(data[i][1]).toUpperCase();
+
+        // 解析「顯示_欄位名」格式
+        if (key.startsWith('顯示_') && value === 'TRUE') {
+            const fieldName = key.replace('顯示_', '');
+            visibleFields.push(fieldName);
+        }
+    }
+
+    return { visibleFields };
+}
+
+/**
+ * 計算當掉風險
+ * 規則：三次段考各 20% + 平時 40%（假設滿分）
+ * 未輸入的段考以 60 分計算
+ * @param {Object} studentData - 學生資料
+ * @returns {Object} { estimatedScore, isAtRisk, status }
+ */
+function _calculateFailRisk(studentData) {
+    // 權重設定
+    const EXAM_WEIGHT = 0.2;  // 每次段考 20%
+    const DAILY_WEIGHT = 0.4; // 平時 40%
+    const DAILY_ASSUMED = 100; // 平時假設滿分
+    const MISSING_EXAM_SCORE = 60; // 未輸入段考預設 60 分
+    const PASS_THRESHOLD = 60; // 及格門檻
+
+    // 段考欄位對應
+    const examFields = [
+        { name: '第一次段考', aliases: ['第一次段考'] },
+        { name: '第二次段考', aliases: ['第二次段考'] },
+        { name: '期末考', aliases: ['期末考', '第三次段考'] }
+    ];
+
+    let totalScore = DAILY_ASSUMED * DAILY_WEIGHT; // 平時 40 分
+
+    for (const exam of examFields) {
+        let score = null;
+
+        // 嘗試從學生資料中取得成績
+        for (const alias of exam.aliases) {
+            if (studentData.hasOwnProperty(alias)) {
+                const val = parseFloat(studentData[alias]);
+                if (!isNaN(val)) {
+                    score = val;
+                    break;
+                }
+            }
+        }
+
+        // 若無成績則使用預設 60 分
+        if (score === null) {
+            score = MISSING_EXAM_SCORE;
+        }
+
+        totalScore += score * EXAM_WEIGHT;
+    }
+
+    // 四捨五入到整數
+    const estimatedScore = Math.round(totalScore);
+    const isAtRisk = estimatedScore < PASS_THRESHOLD;
+
+    return {
+        estimatedScore: estimatedScore,
+        isAtRisk: isAtRisk,
+        status: isAtRisk ? '危險' : '及格'
+    };
+}
+
+// ==========================================
 // Core Data Logic (V10 Refactored)
 // ==========================================
 
@@ -755,6 +875,13 @@ function findStudentData(studentId) {
 
     // Step 6: 取得個人化公告 (V10 Smart Announcements)
     result.announcements = getPersonalizedAnnouncements(result);
+
+    // Step 7: 讀取顯示設定 (V10.1)
+    const settings = _getSettings();
+    result.visibleFields = settings.visibleFields;
+
+    // Step 8: 計算當掉風險 (V10.1)
+    result.failRisk = _calculateFailRisk(result);
 
     return result;
 }
