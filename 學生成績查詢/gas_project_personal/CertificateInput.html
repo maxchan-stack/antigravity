@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            padding: 24px;
+            background: #F3F1E5;
+            color: #1D1D1F;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #45464D;
+            margin-bottom: 24px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #45464D;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(155, 138, 94, 0.3);
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            color: #1D1D1F;
+            transition: all 0.2s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #9B8A5E;
+            box-shadow: 0 0 0 3px rgba(155, 138, 94, 0.1);
+        }
+
+        input::placeholder {
+            color: rgba(29, 29, 31, 0.4);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #794425 0%, #B4745A 50%, #794425 100%);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 24px;
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(180, 116, 90, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(180, 116, 90, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #86868b;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>📄 產生成績證明</h2>
+
+        <div class="form-group">
+            <label>學生學號</label>
+            <input type="text" id="studentId" placeholder="請輸入學號" autofocus>
+            <div class="hint">例如：114001</div>
+        </div>
+
+        <div class="form-group">
+            <label>段考次數</label>
+            <select id="examType">
+                <option value="第一次段考">第一次段考</option>
+                <option value="第二次段考">第二次段考</option>
+                <option value="期末考">期末考</option>
+            </select>
+        </div>
+
+        <button class="btn-primary" onclick="generate()">產生證明</button>
+    </div>
+
+    <script>
+        // 按下 Enter 鍵時觸發產生
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                generate();
+            }
+        });
+
+        function generate() {
+            const studentId = document.getElementById('studentId').value.trim();
+            const examType = document.getElementById('examType').value;
+
+            if (!studentId) {
+                alert('請輸入學號');
+                document.getElementById('studentId').focus();
+                return;
+            }
+
+            // 禁用按鈕防止重複點擊
+            const btn = document.querySelector('.btn-primary');
+            btn.disabled = true;
+            btn.textContent = '產生中...';
+
+            // 呼叫後端函式，等待成功後才關閉
+            google.script.run
+                .withSuccessHandler(function () {
+                    // 成功後關閉輸入對話框
+                    google.script.host.close();
+                })
+                .withFailureHandler(function (error) {
+                    // 失敗時顯示錯誤並恢復按鈕
+                    alert('產生失敗：' + error.message);
+                    btn.disabled = false;
+                    btn.textContent = '產生證明';
+                })
+                .showCertificate(studentId, examType);
+        }
+    </script>
+</body>
+
+</html>

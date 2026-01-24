@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: white !important;
+                padding: 0 !important;
+            }
+
+            .certificate {
+                box-shadow: none !important;
+                margin: 0 !important;
+                transform: scale(0.85);
+                /* 🆕 列印時縮小 15% */
+                transform-origin: top center;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', -apple-system, sans-serif;
+            background: #F3F1E5;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .certificate {
+            background: white;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 50px;
+            /* 🆕 減少上下 padding 從 60px 到 40px */
+            border: 8px solid #9B8A5E;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            /* 🆕 減少從 40px 到 24px */
+            border-bottom: 3px double #9B8A5E;
+            padding-bottom: 16px;
+            /* 🆕 減少從 20px 到 16px */
+        }
+
+        .school-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #45464D;
+            margin: 0 0 12px 0;
+            letter-spacing: 4px;
+        }
+
+        .doc-title {
+            font-size: 22px;
+            color: #B4745A;
+            margin: 0;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        .content {
+            line-height: 1.8;
+            /* 🆕 縮小行距 */
+            font-size: 22px;
+            /* 🆕 增大字體從 18px 到 22px */
+            color: #333;
+            margin-bottom: 24px;
+            /* 🆕 減少間距 */
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 12px;
+            /* 🆕 減少從 16px 到 12px */
+            align-items: baseline;
+        }
+
+        .label {
+            font-weight: 600;
+            color: #45464D;
+            min-width: 140px;
+            flex-shrink: 0;
+            font-size: 22px;
+            /* 🆕 增大標籤字體 */
+        }
+
+        .value {
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 4px;
+            padding-left: 8px;
+            color: #1D1D1F;
+            font-size: 22px;
+            /* 🆕 增大數值字體 */
+        }
+
+        .statement {
+            text-align: center;
+            margin: 24px 0;
+            /* 🆕 減少從 40px 到 24px */
+            padding: 16px;
+            /* 🆕 減少從 20px 到 16px */
+            background: #FFF9F0;
+            border-left: 4px solid #B4745A;
+            font-size: 16px;
+            color: #666;
+            letter-spacing: 1px;
+        }
+
+        .signature-area {
+            margin-top: 32px;
+            /* 🆕 減少從 60px 到 32px */
+            text-align: right;
+        }
+
+        .date {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .stamp-container {
+            display: inline-block;
+            position: relative;
+        }
+
+        .stamp-box {
+            width: 120px;
+            height: 120px;
+            border: 2px dashed #9B8A5E;
+            display: inline-block;
+            position: relative;
+        }
+
+        .stamp-label {
+            text-align: center;
+            font-size: 14px;
+            color: #999;
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+
+        .btn-print {
+            background: #9B8A5E;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 30px auto;
+            display: block;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(155, 138, 94, 0.3);
+        }
+
+        .btn-print:hover {
+            background: #86754d;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(155, 138, 94, 0.4);
+        }
+
+        .btn-print:active {
+            transform: scale(0.98);
+        }
+
+        /* 星宇配色裝飾線 */
+        .decoration-line {
+            height: 4px;
+            background: linear-gradient(90deg, #9B8A5E 0%, #B4745A 50%, #45464D 100%);
+            margin: 20px 0;
+            /* 🆕 減少從 30px 到 20px */
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="certificate">
+        <div class="header">
+
+            <h1 class="school-name">台北市立中正高級中學</h1>
+            <h2 class="doc-title">
+                <?= data.examType ?>成績證明
+            </h2>
+        </div>
+
+        <div class="content">
+            <div class="info-row">
+                <span class="label">班級：</span>
+                <span class="value">
+                    <?= data.className ?>
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">座號：</span>
+                <span class="value">
+                    <?= data.seatNumber ?>
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">學生姓名：</span>
+                <span class="value">
+                    <?= data.studentName ?>
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">學號：</span>
+                <span class="value">
+                    <?= data.studentId ?>
+                </span>
+            </div>
+
+            <div class="decoration-line"></div>
+
+            <div class="info-row">
+                <span class="label">物理成績：</span>
+                <span class="value">
+                    <?= data.score ?> 分
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">班級排名：</span>
+                <span class="value">第
+                    <?= data.rank ?> 名
+                </span>
+            </div>
+        </div>
+
+        <div class="statement">
+            此證明僅供申請獎學金使用
+        </div>
+
+        <div class="signature-area">
+            <div class="date">證明日期：中華民國
+                <?= data.generateDate ?>
+            </div>
+            <div class="stamp-container">
+                <div class="stamp-box"></div>
+                <div class="stamp-label">教師簽章</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-print no-print" onclick="window.print()">🖨️ 列印證明</button>
+
+    <script>
+        // 列印後自動關閉對話框（可選）
+        window.addEventListener('afterprint', function () {
+            // google.script.host.close();
+        });
+    </script>
+</body>
+
+</html>

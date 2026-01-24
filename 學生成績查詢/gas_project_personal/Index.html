@@ -601,9 +601,23 @@
         window.onload = function () {
             loadCaptcha();
             initSecurityInfo();  // 🆕 初始化安全資訊
+            setupEnterKeySupport();  // 🆕 支援 Enter 鍵送出
         };
         const capBox = document.getElementById('cap-box');
         capBox.onclick = loadCaptcha;
+
+        // 🆕 Enter 鍵送出支援（效能優化 - 提升 UX）
+        function setupEnterKeySupport() {
+            const inputs = document.querySelectorAll('#inp-id, #inp-pwd, #inp-cap');
+            inputs.forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        doLogin();
+                    }
+                });
+            });
+        }
 
         // 🆕 初始化安全資訊
         function initSecurityInfo() {
