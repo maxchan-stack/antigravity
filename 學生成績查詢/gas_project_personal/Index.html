@@ -566,25 +566,22 @@
         .risk-indicator {
             width: 100%;
             margin-top: 24px;
-            padding: 16px 20px;
+            padding: 20px;
             border-radius: var(--radius-l);
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
             gap: 8px;
-            font-size: 15px;
-            font-weight: 600;
+            text-align: center;
         }
 
         .risk-indicator.safe {
             background: linear-gradient(135deg, rgba(52, 199, 89, 0.15), rgba(52, 199, 89, 0.05));
-            color: var(--success);
             border: 1px solid rgba(52, 199, 89, 0.3);
         }
 
         .risk-indicator.danger {
             background: linear-gradient(135deg, rgba(255, 69, 58, 0.15), rgba(255, 69, 58, 0.05));
-            color: var(--error);
             border: 1px solid rgba(255, 69, 58, 0.3);
             animation: pulse 2s ease-in-out infinite;
         }
@@ -601,8 +598,40 @@
             }
         }
 
-        .risk-icon {
-            font-size: 18px;
+        .risk-disclaimer {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .risk-probability {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .risk-indicator.safe .risk-probability {
+            color: var(--success);
+        }
+
+        .risk-indicator.danger .risk-probability {
+            color: var(--error);
+            text-shadow: 0 2px 8px rgba(255, 69, 58, 0.3);
+        }
+
+        .risk-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .risk-indicator.safe .risk-label {
+            color: var(--success);
+        }
+
+        .risk-indicator.danger .risk-label {
+            color: var(--error);
         }
 
         /* 🆕 Grade Chart Section (V9.2) */
@@ -776,8 +805,9 @@
 
         <!-- 🆕 Fail Risk Indicator (V10.1) -->
         <div id="risk-indicator" class="risk-indicator safe" style="display: none;">
-            <span class="risk-icon"></span>
-            <span class="risk-text"></span>
+            <div class="risk-disclaimer">平時成績滿分狀況下，推測目前</div>
+            <div class="risk-probability"></div>
+            <div class="risk-label">期末及格機率</div>
         </div>
 
         <!-- 🆕 Grade Charts Section (V9.2) -->
@@ -804,7 +834,7 @@
             </div>
         </div>
 
-        <button class="btn-secondary" onclick="location.reload()">登出系統</button>
+        <button class="btn-secondary" onclick="doLogout()">登出系統</button>
     </div>
 
     <script>
@@ -863,6 +893,37 @@
             t.innerHTML = msg;
             t.className = type === 'error' ? 'visible error' : 'visible';
             setTimeout(() => t.classList.remove('visible'), 3000);
+        }
+
+        // 🆕 登出函數 - 返回登入畫面（不重新整理）
+        function doLogout() {
+            // 隱藏結果頁
+            document.getElementById('view-result').style.display = 'none';
+            // 顯示登入頁
+            document.getElementById('view-login').style.display = 'flex';
+
+            // 清空輸入欄位
+            document.getElementById('inp-id').value = '';
+            document.getElementById('inp-pwd').value = '';
+            document.getElementById('inp-cap').value = '';
+
+            // 移除座號輸入框（如果存在）
+            const seatRow = document.getElementById('seat-row');
+            if (seatRow) seatRow.remove();
+
+            // 清空結果區域
+            document.getElementById('list-container').innerHTML = '';
+            document.getElementById('announce-area').innerHTML = '';
+            document.getElementById('chart-section').style.display = 'none';
+            document.getElementById('risk-indicator').style.display = 'none';
+
+            // 重新載入驗證碼
+            loadCaptcha();
+
+            // 重新生成 Session ID
+            initSecurityInfo();
+
+            showToast('已登出，請重新登入');
         }
 
         // 🆕 V10 Smart Announcement: Mark as Read
@@ -1116,13 +1177,20 @@
             // 🆕 渲染風險指示器 (V10.1)
             if (data.failRisk) {
                 const riskEl = document.getElementById('risk-indicator');
+                const estimated = data.failRisk.estimatedScore;
                 const isAtRisk = data.failRisk.isAtRisk;
 
+                // 計算及格機率：>=60分=100%，<60分則按比例計算
+                let probability;
+                if (estimated >= 60) {
+                    probability = 100;
+                } else {
+                    // 低於60分，按比例計算（0-59分 → 0%-99%）
+                    probability = Math.max(0, Math.round((estimated / 60) * 100));
+                }
+
                 riskEl.className = `risk-indicator ${isAtRisk ? 'danger' : 'safe'}`;
-                riskEl.querySelector('.risk-icon').innerText = isAtRisk ? '⚠️' : '✅';
-                riskEl.querySelector('.risk-text').innerText = isAtRisk
-                    ? '學期成績預估：危險（平時需更加努力）'
-                    : '學期成績預估：及格無虞';
+                riskEl.querySelector('.risk-probability').innerText = `${probability}%`;
                 riskEl.style.display = 'flex';
             }
 
@@ -1230,7 +1298,13 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        title: { display: false }, // 標題已在卡片標題列
+                        title: {
+                            display: true,
+                            text: '全班成績分佈',
+                            font: { size: 14, weight: '600' },
+                            color: '#45464D',
+                            padding: { bottom: 16 }
+                        },
                         tooltip: {
                             callbacks: {
                                 afterLabel: function (context) {
@@ -1245,6 +1319,12 @@
                     scales: {
                         y: {
                             beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '人數',
+                                color: '#45464D',
+                                font: { weight: '500' }
+                            },
                             ticks: {
                                 stepSize: 1,
                                 color: colors.obsidian
@@ -1252,6 +1332,12 @@
                             grid: { color: 'rgba(0,0,0,0.05)' }
                         },
                         x: {
+                            title: {
+                                display: true,
+                                text: '分數區間',
+                                color: '#45464D',
+                                font: { weight: '500' }
+                            },
                             ticks: { color: colors.obsidian },
                             grid: { display: false }
                         }
@@ -1328,6 +1414,12 @@
                         y: {
                             min: 0,
                             max: 100,
+                            title: {
+                                display: true,
+                                text: '分數',
+                                color: '#45464D',
+                                font: { weight: '500' }
+                            },
                             ticks: {
                                 stepSize: 20,
                                 color: colors.obsidian
@@ -1335,6 +1427,12 @@
                             grid: { color: 'rgba(0,0,0,0.05)' }
                         },
                         x: {
+                            title: {
+                                display: true,
+                                text: '考試',
+                                color: '#45464D',
+                                font: { weight: '500' }
+                            },
                             ticks: { color: colors.obsidian },
                             grid: { display: false }
                         }

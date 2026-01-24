@@ -647,7 +647,7 @@ function _calculateFailRisk(studentData) {
     const EXAM_WEIGHT = 0.2;  // 每次段考 20%
     const DAILY_WEIGHT = 0.4; // 平時 40%
     const DAILY_ASSUMED = 100; // 平時假設滿分
-    const MISSING_EXAM_SCORE = 60; // 未輸入段考預設 60 分
+    const MISSING_EXAM_SCORE = 50; // 未輸入段考預設 50 分（警戒用）
     const PASS_THRESHOLD = 60; // 及格門檻
 
     // 段考欄位對應
