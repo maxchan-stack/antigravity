@@ -65,8 +65,15 @@ function doGet(e) {
     const template = HtmlService.createTemplateFromFile('Index');
 
     // 🆕 取得當前登入者 Email (僅在 Workspace 模式有效)
-    const activeUser = Session.getActiveUser().getEmail();
-    template.userEmail = activeUser ? activeUser : 'Anonymous (Public Mode)';
+    // 🆕 取得當前登入者 Email (僅在 Workspace 模式有效)
+    let activeUser = 'Anonymous (Public Mode)';
+    try {
+        const email = Session.getActiveUser().getEmail();
+        if (email) activeUser = email;
+    } catch (e) {
+        console.warn('Unable to get active user email:', e);
+    }
+    template.userEmail = activeUser;
 
     return template.evaluate()
         .setTitle('物理科段考成績查詢系統')
@@ -371,144 +378,507 @@ function formatInteger(value) {
 }
 
 // ==========================================
-// Core Data Logic
+// 🆕 Smart Announcement System (V10)
 // ==========================================
-function findStudentData(studentId) {
+
+/**
+ * 確保 _Announcements 工作表存在，若不存在則自動建立
+ * @returns {Sheet} 公告工作表
+ */
+function _ensureAnnouncementsSheet() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheets = ss.getSheets();
-    const cache = CacheService.getScriptCache(); // 🆕 Cache Service
+    let sheet = ss.getSheetByName('_Announcements');
 
-    let sheetIdx = -1, rowIdx = -1, rowData = null, headers = null;
+    if (!sheet) {
+        sheet = ss.insertSheet('_Announcements');
+        // 設定表頭
+        sheet.getRange(1, 1, 1, 7).setValues([[
+            'id', 'message', 'type', 'target', 'startDate', 'endDate', 'priority'
+        ]]);
+        // 加入範例公告
+        sheet.getRange(2, 1, 1, 7).setValues([[
+            1, '歡迎使用智慧公告系統！', 'info', 'all', '', '', 10
+        ]]);
+        // 凍結表頭
+        sheet.setFrozenRows(1);
+        // 設定欄寬
+        sheet.setColumnWidth(2, 300); // message 欄位加寬
+    }
 
-    // 🆕 Attempt Cache Lookup First
+    return sheet;
+}
+
+/**
+ * 確保 _AnnouncementReads 工作表存在（記錄已讀狀態）
+ * @returns {Sheet} 已讀記錄工作表
+ */
+function _ensureAnnouncementReadsSheet() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('_AnnouncementReads');
+
+    if (!sheet) {
+        sheet = ss.insertSheet('_AnnouncementReads');
+        sheet.getRange(1, 1, 1, 3).setValues([['studentId', 'announcementId', 'readAt']]);
+        sheet.setFrozenRows(1);
+    }
+
+    return sheet;
+}
+
+/**
+ * 取得個人化公告
+ * @param {Object} studentData - 學生資料（含學號、成績等）
+ * @returns {Array} 個人化公告陣列
+ */
+function getPersonalizedAnnouncements(studentData) {
+    const sheet = _ensureAnnouncementsSheet();
+    const data = sheet.getDataRange().getValues();
+
+    if (data.length < 2) return [];
+
+    const headers = data[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const announcements = [];
+
+    // 取得已讀清單
+    const readIds = _getReadAnnouncementIds(studentData['學號']);
+
+    for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const announcement = {
+            id: row[0],
+            message: row[1],
+            type: row[2] || 'info',
+            target: row[3] || 'all',
+            startDate: row[4],
+            endDate: row[5],
+            priority: row[6] || 0,
+            isRead: readIds.includes(String(row[0]))
+        };
+
+        // 檢查日期範圍
+        if (announcement.startDate) {
+            const start = new Date(announcement.startDate);
+            start.setHours(0, 0, 0, 0);
+            if (today < start) continue;
+        }
+        if (announcement.endDate) {
+            const end = new Date(announcement.endDate);
+            end.setHours(23, 59, 59, 999);
+            if (today > end) continue;
+        }
+
+        // 檢查目標條件
+        if (!_matchTarget(announcement.target, studentData)) continue;
+
+        announcements.push(announcement);
+    }
+
+    // 依優先順序排序（高優先在前）
+    announcements.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+    return announcements;
+}
+
+/**
+ * 檢查學生是否符合公告目標條件
+ * @param {string} target - 目標條件字串
+ * @param {Object} studentData - 學生資料
+ * @returns {boolean}
+ */
+function _matchTarget(target, studentData) {
+    if (!target || target === 'all') return true;
+
+    // 解析條件
+    const conditions = target.split(',').map(c => c.trim());
+
+    for (const condition of conditions) {
+        // 特定學號
+        if (condition.startsWith('student:')) {
+            const targetId = condition.replace('student:', '');
+            if (String(studentData['學號']) === targetId) return true;
+        }
+        // 特定班級
+        else if (condition.startsWith('class:')) {
+            const targetClass = condition.replace('class:', '');
+            if (studentData.sheetName && studentData.sheetName.includes(targetClass)) return true;
+        }
+        // 成績條件
+        else if (condition.includes('<') || condition.includes('>')) {
+            // 解析如 score<60, 學期>80
+            const match = condition.match(/(\w+)([<>=]+)(\d+)/);
+            if (match) {
+                const [, field, operator, value] = match;
+                // 對應欄位（支援 score 作為學期成績別名）
+                const fieldMap = { 'score': '學期', 'semester': '學期' };
+                const actualField = fieldMap[field] || field;
+                const studentValue = parseFloat(studentData[actualField]);
+                const targetValue = parseFloat(value);
+
+                if (!isNaN(studentValue) && !isNaN(targetValue)) {
+                    if (operator === '<' && studentValue < targetValue) return true;
+                    if (operator === '>' && studentValue > targetValue) return true;
+                    if (operator === '<=' && studentValue <= targetValue) return true;
+                    if (operator === '>=' && studentValue >= targetValue) return true;
+                    if (operator === '=' && studentValue === targetValue) return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * 取得學生已讀的公告 ID 清單
+ * @param {string} studentId - 學號
+ * @returns {Array<string>} 已讀公告 ID 陣列
+ */
+function _getReadAnnouncementIds(studentId) {
+    const sheet = _ensureAnnouncementReadsSheet();
+    const data = sheet.getDataRange().getValues();
+
+    const readIds = [];
+    for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]) === String(studentId)) {
+            readIds.push(String(data[i][1]));
+        }
+    }
+    return readIds;
+}
+
+/**
+ * 標記公告為已讀
+ * @param {string} studentId - 學號
+ * @param {string|number} announcementId - 公告 ID
+ * @returns {Object} 結果
+ */
+function markAnnouncementRead(studentId, announcementId) {
+    const sheet = _ensureAnnouncementReadsSheet();
+
+    // 檢查是否已標記
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]) === String(studentId) && String(data[i][1]) === String(announcementId)) {
+            return { success: true, message: '已經標記過' };
+        }
+    }
+
+    // 新增記錄
+    sheet.appendRow([studentId, announcementId, new Date().toISOString()]);
+
+    return { success: true, message: '標記成功' };
+}
+
+// ==========================================
+// Core Data Logic (V10 Refactored)
+// ==========================================
+
+/**
+ * 🆕 從快取中查詢學生位置
+ * @param {string} studentId - 學號
+ * @param {Cache} cache - CacheService 實例
+ * @param {Spreadsheet} ss - Spreadsheet 實例
+ * @returns {Object|null} 找到則回傳 { sheet, headers, rowData, sheetVals }
+ */
+function _findStudentFromCache(studentId, cache, ss) {
     const cachedSheetName = cache.get('IDX_' + studentId);
-    if (cachedSheetName) {
-        const sheet = ss.getSheetByName(cachedSheetName);
-        if (sheet) {
-            // Only search this specific sheet
-            const data = sheet.getDataRange().getValues();
-            if (data.length >= 2) {
-                const h = data[0].map(x => String(x).trim());
-                const idCol = h.indexOf('學號');
-                if (idCol !== -1) {
-                    for (let r = 1; r < data.length; r++) {
-                        if (String(data[r][idCol]) === String(studentId)) {
-                            sheetIdx = sheet.getIndex() - 1; // getIndex is 1-based usually, check logic below use sheets[i] so we need index in 'sheets' array. 
-                            // Actually ss.getSheets() returns array. 
-                            // Let's just store the object directly or use loop optimization.
-                            // Easier: Just set the variables directly without relying on sheetIdx for the loop logic below.
-                            rowData = data[r]; headers = h;
-                            // Need to correctly set 'sheets[sheetIdx]' for later use? 
-                            // The original code uses 'sheets[sheetIdx]' on line 391. 
-                            // Let's rewrite to use 'sheet' object directly later.
-                            // To minimize refactor risk, let's find the index in 'sheets' array.
-                            for (let i = 0; i < sheets.length; i++) {
-                                if (sheets[i].getName() === cachedSheetName) {
-                                    sheetIdx = i; break;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
+    if (!cachedSheetName) return null;
+
+    const sheet = ss.getSheetByName(cachedSheetName);
+    if (!sheet) return null;
+
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return null;
+
+    const headers = data[0].map(x => String(x).trim());
+    const idCol = headers.indexOf('學號');
+    if (idCol === -1) return null;
+
+    for (let r = 1; r < data.length; r++) {
+        if (String(data[r][idCol]) === String(studentId)) {
+            return {
+                sheet: sheet,
+                headers: headers,
+                rowData: data[r],
+                sheetVals: data
+            };
+        }
+    }
+    return null;
+}
+
+/**
+ * 🆕 全掃描查詢學生資料
+ * @param {string} studentId - 學號
+ * @param {Cache} cache - CacheService 實例
+ * @param {Array} sheets - 所有工作表陣列
+ * @returns {Object|null} 找到則回傳 { sheet, headers, rowData, sheetVals }
+ */
+function _findStudentFromSheets(studentId, cache, sheets) {
+    for (let i = 0; i < sheets.length; i++) {
+        // 跳過系統工作表（以 _ 開頭）
+        if (sheets[i].getName().startsWith('_')) continue;
+
+        const data = sheets[i].getDataRange().getValues();
+        if (data.length < 2) continue;
+
+        const headers = data[0].map(x => String(x).trim());
+        const idCol = headers.indexOf('學號');
+        if (idCol === -1) continue;
+
+        for (let r = 1; r < data.length; r++) {
+            if (String(data[r][idCol]) === String(studentId)) {
+                // 存入快取 (24小時)
+                cache.put('IDX_' + studentId, sheets[i].getName(), CONFIG.CACHE_DURATION.STUDENT_INDEX);
+                return {
+                    sheet: sheets[i],
+                    headers: headers,
+                    rowData: data[r],
+                    sheetVals: data
+                };
             }
         }
     }
+    return null;
+}
 
-    // Fallback to Full Scan if Cache Miss or Failed
-    if (sheetIdx === -1) {
-        for (let i = 0; i < sheets.length; i++) {
-            if (sheets[i].getName().startsWith('_')) continue;
-            const data = sheets[i].getDataRange().getValues();
-            if (data.length < 2) continue;
-
-            const h = data[0].map(x => String(x).trim());
-            const idCol = h.indexOf('學號');
-            if (idCol === -1) continue;
-
-            for (let r = 1; r < data.length; r++) {
-                if (String(data[r][idCol]) === String(studentId)) {
-                    sheetIdx = i; rowIdx = r; rowData = data[r]; headers = h;
-                    // 🆕 Save to Cache on Success (延長至 24 小時提升效能)
-                    cache.put('IDX_' + studentId, sheets[i].getName(), CONFIG.CACHE_DURATION.STUDENT_INDEX);
-                    break;
-                }
-            }
-            if (sheetIdx !== -1) break;
-        }
-    }
-
-    if (sheetIdx === -1) return null;
-
-    const result = {
-        sheetName: sheets[sheetIdx].getName(),
-        rowIndex: rowIdx + 1,
-        _stats: {},
-        _debug: []
-    };
-    result._debug.push(`[System] Found student in sheet: ${result.sheetName}`);
-
+/**
+ * 🆕 計算統計資料（排名、平均、趨勢）
+ * @param {Array} headers - 表頭陣列
+ * @param {Array} rowData - 學生該行資料
+ * @param {Array} sheetVals - 全班資料 (含表頭)
+ * @returns {Object} stats - { 欄位名: { avg, rank, diff } }
+ */
+function _calculateStats(headers, rowData, sheetVals) {
+    const stats = {};
     const valueMap = {};
     headers.forEach((h, i) => { valueMap[h] = rowData[i]; });
 
-    const sheetVals = sheets[sheetIdx].getDataRange().getValues();
+    // 趨勢比較規則
+    const trendRules = [
+        { match: '二', replace: '一' },
+        { match: '三', replace: '二' },
+        { match: '四', replace: '三' },
+        { match: '2', replace: '1' },
+        { match: '3', replace: '2' },
+        { match: '4', replace: '3' },
+        { match: '期末考', replace: '第二次段考' }
+    ];
 
     headers.forEach((header, colIndex) => {
-        let val = rowData[colIndex];
-        result[header] = val;
-
-        // 🆕 排除不需計算排名/班平均的欄位 (Use CONFIG)
+        // 排除不需計算排名/班平均的欄位
         if (CONFIG.EXCLUDED_STATS_FIELDS.includes(header)) return;
 
+        // 收集全班該欄位分數
         const scores = [];
         for (let r = 1; r < sheetVals.length; r++) {
             const s = parseFloat(sheetVals[r][colIndex]);
             if (!isNaN(s)) scores.push(s);
         }
 
-        if (scores.length > 0) {
-            const myScore = parseFloat(val);
-            const sum = scores.reduce((a, b) => a + b, 0);
-            const avg = sum / scores.length;
+        if (scores.length === 0) return;
 
-            scores.sort((a, b) => b - a);
-            let rank = '-';
-            if (!isNaN(myScore)) rank = scores.indexOf(myScore) + 1;
+        const myScore = parseFloat(rowData[colIndex]);
+        const sum = scores.reduce((a, b) => a + b, 0);
+        const avg = sum / scores.length;
 
-            let diff = null;
-            const rules =
-                [{ match: '二', replace: '一' }, { match: '三', replace: '二' }, { match: '四', replace: '三' },
-                { match: '2', replace: '1' }, { match: '3', replace: '2' }, { match: '4', replace: '3' },
-                // 🆕 期末考與第二次段考比較
-                { match: '期末考', replace: '第二次段考' }];
+        // 計算排名
+        scores.sort((a, b) => b - a);
+        let rank = '-';
+        if (!isNaN(myScore)) rank = scores.indexOf(myScore) + 1;
 
-            let prevHeader = null;
-            for (let rule of rules) {
-                if (header.includes(rule.match)) {
-                    let potential = header.replace(rule.match, rule.replace);
-                    if (valueMap.hasOwnProperty(potential)) {
-                        prevHeader = potential; break;
+        // 計算趨勢差異
+        let diff = null;
+        for (let rule of trendRules) {
+            if (header.includes(rule.match)) {
+                const potential = header.replace(rule.match, rule.replace);
+                if (valueMap.hasOwnProperty(potential)) {
+                    const prevVal = parseFloat(valueMap[potential]);
+                    if (!isNaN(myScore) && !isNaN(prevVal)) {
+                        diff = parseFloat((myScore - prevVal).toFixed(1));
                     }
+                    break;
                 }
             }
-
-            if (prevHeader) {
-                const prevVal = parseFloat(valueMap[prevHeader]);
-                if (!isNaN(myScore) && !isNaN(prevVal)) {
-                    diff = parseFloat((myScore - prevVal).toFixed(1));
-                    result._debug.push(`[Trend] ${header}: Current=${myScore}, Prev(${prevHeader})=${prevVal}, Diff=${diff}`);
-                }
-            }
-
-            result._stats[header] = {
-                avg: parseFloat(avg.toFixed(1)),
-                rank: rank,
-                diff: diff
-            };
         }
+
+        stats[header] = {
+            avg: parseFloat(avg.toFixed(1)),
+            rank: rank,
+            diff: diff
+        };
     });
 
+    return stats;
+}
+
+/**
+ * 主查詢函數 (V10 Refactored)
+ * @param {string} studentId - 學號
+ * @returns {Object|null} 學生完整資料（含成績、統計、圖表）
+ */
+function findStudentData(studentId) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const cache = CacheService.getScriptCache();
+
+    // Step 1: 嘗試從快取查詢
+    let found = _findStudentFromCache(studentId, cache, ss);
+
+    // Step 2: 快取未命中，執行全掃描
+    if (!found) {
+        found = _findStudentFromSheets(studentId, cache, ss.getSheets());
+    }
+
+    // 找不到學生
+    if (!found) return null;
+
+    // Step 3: 組裝結果物件
+    const result = {
+        sheetName: found.sheet.getName(),
+        _stats: {},
+        _debug: [`[System] Found student in sheet: ${found.sheet.getName()}`]
+    };
+
+    // 將資料填入 result
+    found.headers.forEach((h, i) => {
+        result[h] = found.rowData[i];
+    });
+
+    // Step 4: 計算統計資料
+    result._stats = _calculateStats(found.headers, found.rowData, found.sheetVals);
+
+    // Step 5: 計算圖表資料
+    result.chartData = calculateChartData(found.headers, found.rowData, found.sheetVals);
+
+    // Step 6: 取得個人化公告 (V10 Smart Announcements)
+    result.announcements = getPersonalizedAnnouncements(result);
+
     return result;
+}
+
+/**
+ * 🆕 計算圖表資料 (成績視覺化儀表板)
+ * @param {Array} headers - 表頭陣列
+ * @param {Array} rowData - 學生該行資料
+ * @param {Array} sheetVals - 全班資料 (含表頭)
+ * @returns {Object} chartData - 包含 distribution 和 trend 資料
+ */
+function calculateChartData(headers, rowData, sheetVals) {
+    const chartData = {
+        distributions: [], // 🆕 改為陣列，儲存所有考試的分佈
+        trend: null
+    };
+
+    // 定義段考欄位名稱（按順序）
+    // 支援別名：如果找不到 '期末考'，則嘗試找 '第三次段考'
+    const examConfig = [
+        { label: '第一次段考', potentialFields: ['第一次段考'] },
+        { label: '第二次段考', potentialFields: ['第二次段考'] },
+        { label: '期末考', potentialFields: ['期末考', '第三次段考'] }
+    ];
+
+    const examLabels = [];
+    const examIndices = [];
+
+    // 解析欄位索引
+    examConfig.forEach(cfg => {
+        let idx = -1;
+        for (const field of cfg.potentialFields) {
+            idx = headers.indexOf(field);
+            if (idx !== -1) break;
+        }
+        // 無論是否找到，都保留佔位 (idx 為 -1 表示沒資料)
+        examIndices.push(idx);
+        examLabels.push(cfg.label);
+    });
+
+    const validExamIndices = examIndices.filter(idx => idx !== -1);
+
+    // 定義分佈圖的分數區間標籤
+    const distributionLabels = ['0-59', '60-69', '70-79', '80-89', '90-100'];
+
+    if (validExamIndices.length === 0) {
+        return chartData; // 無段考資料
+    }
+
+    // === 1. 計算「所有考試」的全班成績分佈 ===
+    for (let i = 0; i < examIndices.length; i++) {
+        const idx = examIndices[i];
+        if (idx === -1) continue; // 該考試欄位不存在
+
+        const distribution = [0, 0, 0, 0, 0]; // 0-59, 60-69, 70-79, 80-89, 90-100
+        let hasData = false;
+
+        for (let r = 1; r < sheetVals.length; r++) {
+            const score = parseFloat(sheetVals[r][idx]);
+            if (!isNaN(score)) {
+                hasData = true;
+                if (score < 60) distribution[0]++;
+                else if (score < 70) distribution[1]++;
+                else if (score < 80) distribution[2]++;
+                else if (score < 90) distribution[3]++;
+                else distribution[4]++;
+            }
+        }
+
+        // 找出學生所在的分數區間
+        const myScore = parseFloat(rowData[idx]);
+        let myRangeIndex = -1;
+        if (!isNaN(myScore)) {
+            if (myScore < 60) myRangeIndex = 0;
+            else if (myScore < 70) myRangeIndex = 1;
+            else if (myScore < 80) myRangeIndex = 2;
+            else if (myScore < 90) myRangeIndex = 3;
+            else myRangeIndex = 4;
+        }
+
+        // 只加入有資料的考試
+        if (hasData) {
+            chartData.distributions.push({
+                examName: examLabels[i],
+                labels: distributionLabels,
+                data: distribution,
+                myRangeIndex: myRangeIndex
+            });
+        }
+    }
+
+    // === 2. 計算個人成績趨勢 + 班級平均 ===
+    const trendLabels = [];
+    const myScores = [];
+    const classAvgs = [];
+
+    for (let i = 0; i < examIndices.length; i++) {
+        const idx = examIndices[i];
+
+        if (idx === -1) continue;
+
+        trendLabels.push(examLabels[i]);
+
+        // 個人分數
+        const personalScore = parseFloat(rowData[idx]);
+        myScores.push(isNaN(personalScore) ? null : personalScore);
+
+        // 班級平均
+        let sum = 0, count = 0;
+        for (let r = 1; r < sheetVals.length; r++) {
+            const s = parseFloat(sheetVals[r][idx]);
+            if (!isNaN(s)) { sum += s; count++; }
+        }
+        const avg = count > 0 ? parseFloat((sum / count).toFixed(1)) : null;
+        classAvgs.push(avg);
+    }
+
+    chartData.trend = {
+        labels: trendLabels,
+        myScores: myScores,
+        classAvg: classAvgs
+    };
+
+    return chartData;
 }
 
 // ==========================================

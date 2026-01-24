@@ -7,6 +7,19 @@
     <title>物理科段考成績查詢</title>
     <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+
+    <!-- 🆕 PWA Support (V10) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="成績查詢">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <!-- App Icon (SVG inline as data URI for GAS compatibility) -->
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect fill='%231a1a2e' width='180' height='180' rx='40'/%3E%3Ctext x='90' y='115' font-size='80' text-anchor='middle' fill='%239B8A5E'%3E📊%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231a1a2e' width='32' height='32' rx='6'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%239B8A5E'%3E📊%3C/text%3E%3C/svg%3E">
+
     <!-- 系統預設字體 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -507,7 +520,134 @@
             flex-shrink: 0;
             margin-top: 2px;
         }
+
+        /* 🆕 V10 Smart Announcement System Styles */
+        .announce-content {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .announce-message {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .announce-item.read {
+            opacity: 0.6;
+        }
+
+        .mark-read-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--earth-gold);
+            background: transparent;
+            border: 1px solid var(--earth-gold);
+            border-radius: var(--radius-s);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mark-read-btn:hover {
+            background: var(--earth-gold);
+            color: white;
+        }
+
+        .read-badge {
+            font-size: 11px;
+            color: var(--earth-gold);
+            opacity: 0.7;
+        }
+
+        /* 🆕 Grade Chart Section (V9.2) */
+        .chart-section {
+            width: 100%;
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--radius-l);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .chart-section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--obsidian-grey);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: #f8f8f8;
+            border-radius: var(--radius-m);
+            padding: 16px;
+            position: relative;
+        }
+
+        .chart-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--obsidian-grey);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+
+        /* 🆕 考試選擇下拉選單樣式 */
+        .exam-selector {
+            margin-left: auto;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--obsidian-grey);
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: var(--radius-s);
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .exam-selector:hover {
+            border-color: var(--earth-gold);
+        }
+
+        .exam-selector:focus {
+            border-color: var(--earth-gold);
+            box-shadow: 0 0 0 2px rgba(155, 138, 94, 0.2);
+        }
+
+        /* RWD: 小螢幕時堆疊 */
+        @media (max-width: 600px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 180px;
+            }
+        }
     </style>
+    <!-- 🆕 Chart.js CDN for Grade Visualization (V9.2) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -591,6 +731,30 @@
             <!-- Cards go here -->
         </div>
 
+        <!-- 🆕 Grade Charts Section (V9.2) -->
+        <div id="chart-section" class="chart-section" style="display: none;">
+            <div class="chart-section-title">📊 成績分析</div>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-card-title">
+                        📈 全班成績分佈
+                        <select id="examSelector" class="exam-selector" onchange="updateDistributionChart()">
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-card-title">📉 個人成績趨勢</div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <button class="btn-secondary" onclick="location.reload()">登出系統</button>
     </div>
 
@@ -650,6 +814,32 @@
             t.innerHTML = msg;
             t.className = type === 'error' ? 'visible error' : 'visible';
             setTimeout(() => t.classList.remove('visible'), 3000);
+        }
+
+        // 🆕 V10 Smart Announcement: Mark as Read
+        function markAsRead(studentId, announcementId, btn) {
+            btn.disabled = true;
+            btn.innerText = '處理中...';
+
+            google.script.run
+                .withSuccessHandler(res => {
+                    if (res.success) {
+                        // 更新 UI
+                        const item = btn.closest('.announce-item');
+                        item.classList.add('read');
+                        btn.outerHTML = '<span class="read-badge">已讀</span>';
+                    } else {
+                        showToast('標記失敗', 'error');
+                        btn.disabled = false;
+                        btn.innerText = '✓ 已讀';
+                    }
+                })
+                .withFailureHandler(err => {
+                    showToast('標記失敗: ' + err.message, 'error');
+                    btn.disabled = false;
+                    btn.innerText = '✓ 已讀';
+                })
+                .markAnnouncementRead(studentId, announcementId);
         }
 
         function doLogin() {
@@ -747,20 +937,29 @@
             // 🆕 Store config in data object for easier access in loop
             data.config = config;
 
-            // 🆕 Render Announcements
+            // 🆕 Render Announcements (V10 Smart Announcement System)
             const announceArea = document.getElementById('announce-area');
             announceArea.innerHTML = '';
-            if (announcements && announcements.length > 0) {
-                announcements.forEach(a => {
+
+            // 使用後端傳來的個人化公告
+            const smartAnnouncements = data.announcements || [];
+
+            if (smartAnnouncements.length > 0) {
+                smartAnnouncements.forEach(a => {
                     const el = document.createElement('div');
-                    el.className = `announce-item ${a.type}`;
+                    el.className = `announce-item ${a.type}${a.isRead ? ' read' : ''}`;
+                    el.dataset.id = a.id;
+
                     let icon = 'ℹ️';
                     if (a.type === 'warning') icon = '⚠️';
                     if (a.type === 'emergency') icon = '🚨';
 
                     el.innerHTML = `
                         <div class="announce-icon">${icon}</div>
-                        <div>${a.message}</div>
+                        <div class="announce-content">
+                            <div class="announce-message">${a.message}</div>
+                            ${!a.isRead ? `<button class="mark-read-btn" onclick="markAsRead('${data['學號']}', '${a.id}', this)">✓ 已讀</button>` : '<span class="read-badge">已讀</span>'}
+                        </div>
                     `;
                     announceArea.appendChild(el);
                 });
@@ -860,6 +1059,222 @@
 
             // 按照固定順序渲染
             displayOrder.forEach(key => renderGradeCard(key));
+
+            // 🆕 渲染圖表 (V9.2)
+            if (data.chartData) {
+                renderCharts(data.chartData);
+            }
+        }
+
+        // 🆕 Chart.js 圖表渲染函數 (V9.2 Grade Visualization Dashboard)
+        let distributionChartInstance = null;
+        let trendChartInstance = null;
+        let globalChartData = null; // 🆕 儲存全域資料以供切換
+
+        function renderCharts(chartData) {
+            globalChartData = chartData; // 存入全域
+            const chartSection = document.getElementById('chart-section');
+
+            if (!chartData || (!chartData.distributions && !chartData.trend)) {
+                chartSection.style.display = 'none';
+                return;
+            }
+
+            chartSection.style.display = 'block';
+
+            // === 1. 初始化下拉選單並渲染分佈圖 ===
+            const selector = document.getElementById('examSelector');
+            selector.innerHTML = '';
+
+            if (chartData.distributions && chartData.distributions.length > 0) {
+                // 填充選項
+                chartData.distributions.forEach((dist, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.innerText = dist.examName;
+                    selector.appendChild(opt);
+                });
+
+                // 顯示下拉選單
+                selector.style.display = 'block';
+
+                // 預設選取最後一個（最新考試）
+                selector.value = chartData.distributions.length - 1;
+
+                // 渲染分佈圖
+                updateDistributionChart();
+            } else {
+                // 無分佈資料
+                selector.style.display = 'none';
+                // 清空畫布或顯示無資料
+                if (distributionChartInstance) distributionChartInstance.destroy();
+            }
+
+            // === 2. 渲染個人成績趨勢圖 ===
+            renderTrendChart(chartData.trend);
+        }
+
+        // 🆕 更新分佈圖 (On Change)
+        function updateDistributionChart() {
+            if (!globalChartData || !globalChartData.distributions) return;
+
+            const selector = document.getElementById('examSelector');
+            const index = parseInt(selector.value);
+            const distData = globalChartData.distributions[index];
+
+            if (!distData) return;
+
+            const distCtx = document.getElementById('distributionChart').getContext('2d');
+
+            // Starlux 配色
+            const colors = {
+                earthGold: '#9B8A5E',
+                earthGoldLight: 'rgba(155, 138, 94, 0.6)',
+                highlight: '#FFB554',
+                obsidian: '#45464D'
+            };
+
+            // 銷毀舊實例
+            if (distributionChartInstance) {
+                distributionChartInstance.destroy();
+            }
+
+            // 標記學生所在區間
+            const backgroundColors = distData.labels.map((label, idx) => {
+                return idx === distData.myRangeIndex
+                    ? colors.highlight
+                    : colors.earthGoldLight;
+            });
+
+            distributionChartInstance = new Chart(distCtx, {
+                type: 'bar',
+                data: {
+                    labels: distData.labels,
+                    datasets: [{
+                        label: '人數',
+                        data: distData.data,
+                        backgroundColor: backgroundColors,
+                        borderColor: colors.earthGold,
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false }, // 標題已在卡片標題列
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function (context) {
+                                    if (context.dataIndex === distData.myRangeIndex) {
+                                        return '⬅️ 你的成績區間';
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                color: colors.obsidian
+                            },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: {
+                            ticks: { color: colors.obsidian },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 🆕 渲染趨勢圖 (分離出來以保持程式碼整潔)
+        function renderTrendChart(trendData) {
+            if (!trendData || trendData.labels.length === 0) return;
+
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            const colors = {
+                earthGold: '#9B8A5E',
+                earthGoldLight: 'rgba(155, 138, 94, 0.6)',
+                roseGold: '#B4745A',
+                roseGoldLight: 'rgba(180, 116, 90, 0.6)',
+                obsidian: '#45464D'
+            };
+
+            // 銷毀舊實例
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+            }
+
+            trendChartInstance = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: trendData.labels,
+                    datasets: [
+                        {
+                            label: '我的成績',
+                            data: trendData.myScores,
+                            borderColor: colors.earthGold,
+                            backgroundColor: colors.earthGoldLight,
+                            borderWidth: 3,
+                            pointRadius: 6,
+                            pointBackgroundColor: colors.earthGold,
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: '班級平均',
+                            data: trendData.classAvg,
+                            borderColor: colors.roseGoldLight,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 4,
+                            pointBackgroundColor: colors.roseGold,
+                            tension: 0.3,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: colors.obsidian,
+                                usePointStyle: true,
+                                padding: 12
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                color: colors.obsidian
+                            },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: {
+                            ticks: { color: colors.obsidian },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>
