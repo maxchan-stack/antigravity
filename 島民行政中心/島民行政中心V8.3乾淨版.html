@@ -8151,7 +8151,7 @@
                 { id: 'cert', label: '獎狀產生器', icon: Medal, component: CertificateTool, scripts: ['html2canvas', 'pdflib'] },
                 ],
                 'LAB': [
-                    { id: 'lab', label: '實驗繪圖板', icon: Activity, component: LabPlotterTool, scripts: ['chart'] },
+                    { id: 'lab', label: '實驗繪圖板', icon: Activity, component: LabPlotterTool, scripts: ['chart', 'xlsx'] },
                     // 加入判斷：如果 showPhysics 為 true 才顯示物理沙盒
                     ...(showPhysics ? [{ id: 'physics', label: '物理沙盒', icon: Dice5, component: PhysicsSandboxTool, scripts: ['matter'] }] : []),
                     { id: 'mindmap', label: '島民靈感板', icon: GitBranch, component: MindMapTool }
