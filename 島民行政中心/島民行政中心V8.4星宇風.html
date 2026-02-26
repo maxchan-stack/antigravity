@@ -39,6 +39,12 @@
          ========================================== -->
     <!-- Heavy libraries removed for Lazy Loading in V8.3 Clean Version -->
 
+    <!-- 照片轉換功能所需函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+
     <!-- ==========================================
          4. 自定義樣式 (Custom CSS)
          ========================================== -->
@@ -974,7 +980,7 @@
             throw new Error("React not loaded");
         }
 
-        const { useState, useRef, useEffect, Component, useMemo } = React;
+        const { useState, useRef, useEffect, useCallback, Component, useMemo } = React;
 
         /**
          * 全域錯誤邊界 (Error Boundary)
@@ -5059,6 +5065,396 @@
             );
         };
 
+        // ==========================================
+        // 📸 照片轉換工作站 (Photo Converter Tool)
+        // ==========================================
+        const PhotoConverterTool = () => {
+            const [files, setFiles] = useState([]);
+            const [convertedFiles, setConvertedFiles] = useState([]);
+            const [targetFormat, setTargetFormat] = useState('jpeg');
+            const [quality, setQuality] = useState(85);
+            const [isConverting, setIsConverting] = useState(false);
+            const [progress, setProgress] = useState(0);
+            const [currentFile, setCurrentFile] = useState('');
+            const [namingPattern, setNamingPattern] = useState('original');
+            const [namePrefix, setNamePrefix] = useState('photo');
+
+            const supportedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp', 'image/gif', 'image/heic', 'image/heif'];
+
+            const handleFileDrop = (droppedFiles) => {
+                const validFiles = Array.from(droppedFiles).filter(file => {
+                    const isImage = supportedFormats.some(format => file.type === format) || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+                    return isImage;
+                });
+
+                if (validFiles.length === 0) {
+                    alert('請上傳支援的圖片格式：JPG, PNG, WebP, BMP, GIF, HEIC/HEIF');
+                    return;
+                }
+
+                const newFiles = validFiles.map((file, idx) => ({
+                    id: Date.now() + idx,
+                    file: file,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type || (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif') ? 'image/heic' : 'unknown'),
+                    preview: URL.createObjectURL(file)
+                }));
+
+                setFiles(prev => [...prev, ...newFiles]);
+            };
+
+            const removeFile = (id) => {
+                setFiles(prev => prev.filter(f => f.id !== id));
+            };
+
+            const clearAllFiles = () => {
+                files.forEach(f => URL.revokeObjectURL(f.preview));
+                setFiles([]);
+                setConvertedFiles([]);
+                setProgress(0);
+                setCurrentFile('');
+            };
+
+            const convertHeicToStandard = async (file) => {
+                try {
+                    if (typeof heic2any === 'undefined') {
+                        throw new Error('HEIC 轉換函式庫未載入');
+                    }
+                    const blob = await heic2any({
+                        blob: file,
+                        toType: 'image/jpeg',
+                        quality: quality / 100
+                    });
+                    return blob;
+                } catch (error) {
+                    console.error('HEIC 轉換失敗:', error);
+                    throw error;
+                }
+            };
+
+            const convertImage = (imageFile, targetType, targetQuality) => {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.src = URL.createObjectURL(imageFile);
+
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+
+                        canvas.toBlob((blob) => {
+                            URL.revokeObjectURL(img.src);
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('轉換失敗'));
+                            }
+                        }, targetType, targetQuality / 100);
+                    };
+
+                    img.onerror = () => {
+                        URL.revokeObjectURL(img.src);
+                        reject(new Error('圖片載入失敗'));
+                    };
+                });
+            };
+
+            const generateFileName = (originalName, index, extension) => {
+                const baseName = originalName.split('.').slice(0, -1).join('.');
+
+                switch (namingPattern) {
+                    case 'prefix':
+                        return `${namePrefix}_${String(index + 1).padStart(3, '0')}.${extension}`;
+                    case 'datetime':
+                        const now = new Date();
+                        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+                        const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
+                        return `${dateStr}_${timeStr}_${index + 1}.${extension}`;
+                    default:
+                        return `${baseName}.${extension}`;
+                }
+            };
+
+            const handleBatchConvert = async () => {
+                if (files.length === 0) {
+                    alert('請先上傳照片');
+                    return;
+                }
+
+                setIsConverting(true);
+                setProgress(0);
+                setConvertedFiles([]);
+
+                const results = [];
+                const targetMimeType = `image/${targetFormat}`;
+                const extension = targetFormat === 'jpeg' ? 'jpg' : targetFormat;
+
+                for (let i = 0; i < files.length; i++) {
+                    const fileData = files[i];
+                    setCurrentFile(fileData.name);
+                    setProgress(Math.round(((i + 1) / files.length) * 100));
+
+                    try {
+                        let processedBlob;
+
+                        if (fileData.type === 'image/heic' || fileData.type === 'image/heif' ||
+                            fileData.name.toLowerCase().endsWith('.heic') || fileData.name.toLowerCase().endsWith('.heif')) {
+                            const heicBlob = await convertHeicToStandard(fileData.file);
+
+                            if (targetFormat !== 'jpeg') {
+                                processedBlob = await convertImage(heicBlob, targetMimeType, quality);
+                            } else {
+                                processedBlob = heicBlob;
+                            }
+                        } else {
+                            processedBlob = await convertImage(fileData.file, targetMimeType, quality);
+                        }
+
+                        const newFileName = generateFileName(fileData.name, i, extension);
+                        results.push({
+                            name: newFileName,
+                            blob: processedBlob,
+                            size: processedBlob.size,
+                            url: URL.createObjectURL(processedBlob)
+                        });
+
+                    } catch (error) {
+                        console.error(`轉換失敗: ${fileData.name}`, error);
+                        alert(`轉換失敗: ${fileData.name}\n錯誤: ${error.message}`);
+                    }
+                }
+
+                setConvertedFiles(results);
+                setIsConverting(false);
+                setCurrentFile('');
+            };
+
+            const downloadSingle = (file) => {
+                const a = document.createElement('a');
+                a.href = file.url;
+                a.download = file.name;
+                a.click();
+            };
+
+            const downloadAllAsZip = async () => {
+                if (convertedFiles.length === 0) return;
+
+                if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
+                    alert('ZIP 打包功能未載入，請重新整理頁面');
+                    return;
+                }
+
+                try {
+                    const zip = new JSZip();
+
+                    convertedFiles.forEach(file => {
+                        zip.file(file.name, file.blob);
+                    });
+
+                    const content = await zip.generateAsync({ type: 'blob' });
+                    saveAs(content, `converted_photos_${Date.now()}.zip`);
+                } catch (error) {
+                    console.error('打包失敗:', error);
+                    alert('打包失敗，請稍後再試');
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* 標題卡片 - 星宇風格 */}
+                    <div className="bg-gradient-to-r from-[#C9A86C] to-[#98694c] p-6 rounded-[24px] border-4 border-white shadow-lg">
+                        <div className="flex items-center gap-3 text-white">
+                            <div className="text-4xl">📸</div>
+                            <div>
+                                <h2 className="text-2xl font-black">照片轉換工作站</h2>
+                                <p className="text-sm opacity-90 font-bold">Island Photo Studio - 批次轉換 • 支援 HEIC</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {files.length === 0 ? (
+                        <DropZone
+                            accept="image/*,.heic,.heif"
+                            multiple={true}
+                            onDrop={handleFileDrop}
+                            label="支援 JPG / PNG / WebP / BMP / GIF / HEIC"
+                        />
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="bg-[#ECEAE5] p-4 rounded-[20px] border-3 border-white">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="text-lg font-bold text-[#41464b]">已上傳檔案 ({files.length})</h3>
+                                    <button
+                                        onClick={clearAllFiles}
+                                        className="text-sm font-bold text-[#FF9A8B] hover:underline flex items-center gap-1"
+                                    >
+                                        <X size={16} /> 清除全部
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {files.map(file => (
+                                        <div key={file.id} className="relative bg-white rounded-xl p-2 border-2 border-[#D4CFC6] hover:border-[#C9A86C] transition-colors group">
+                                            <button
+                                                onClick={() => removeFile(file.id)}
+                                                className="absolute -top-2 -right-2 bg-[#FF9A8B] text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                            <div className="aspect-square bg-[#F0EDE8] rounded-lg mb-2 overflow-hidden flex items-center justify-center">
+                                                {file.type.includes('heic') || file.type.includes('heif') ? (
+                                                    <div className="text-4xl">🖼️</div>
+                                                ) : (
+                                                    <img src={file.preview} alt={file.name} className="w-full h-full object-cover" />
+                                                )}
+                                            </div>
+                                            <p className="text-xs font-bold text-[#86754d] truncate">{file.name}</p>
+                                            <p className="text-[10px] text-[#98694c]">{Utils.formatBytes(file.size)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-[#FFF9C4] p-6 rounded-[24px] border-4 border-[#FBC02D]">
+                                <h3 className="text-lg font-bold text-[#F9A825] mb-4 flex items-center gap-2">
+                                    <Settings size={20} /> 轉換設定
+                                </h3>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-[#86754d] mb-2">目標格式</label>
+                                        <div className="flex gap-2">
+                                            {['jpeg', 'png', 'webp'].map(format => (
+                                                <button
+                                                    key={format}
+                                                    onClick={() => setTargetFormat(format)}
+                                                    className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${targetFormat === format
+                                                        ? 'bg-[#C9A86C] text-white shadow-md'
+                                                        : 'bg-white text-[#86754d] hover:bg-[#F0EDE8]'
+                                                        }`}
+                                                >
+                                                    {format.toUpperCase()}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="flex justify-between text-sm font-bold text-[#86754d] mb-2">
+                                            <span>品質</span>
+                                            <span>{quality}%</span>
+                                        </label>
+                                        <input
+                                            type="range"
+                                            min="10"
+                                            max="100"
+                                            value={quality}
+                                            onChange={(e) => setQuality(Number(e.target.value))}
+                                            className="w-full h-2 bg-white rounded-lg appearance-none cursor-pointer"
+                                            style={{
+                                                background: `linear-gradient(to right, #C9A86C 0%, #C9A86C ${quality}%, #fff ${quality}%, #fff 100%)`
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-[#86754d] mb-2">批次命名</label>
+                                        <select
+                                            value={namingPattern}
+                                            onChange={(e) => setNamingPattern(e.target.value)}
+                                            className="w-full px-3 py-2 bg-white border-2 border-[#D4CFC6] rounded-xl font-bold text-sm focus:outline-none focus:border-[#C9A86C]"
+                                        >
+                                            <option value="original">保留原檔名</option>
+                                            <option value="prefix">前綴 + 流水號</option>
+                                            <option value="datetime">日期時間 + 序號</option>
+                                        </select>
+                                        {namingPattern === 'prefix' && (
+                                            <input
+                                                type="text"
+                                                value={namePrefix}
+                                                onChange={(e) => setNamePrefix(e.target.value)}
+                                                placeholder="輸入前綴..."
+                                                className="w-full px-3 py-2 mt-2 bg-white border-2 border-[#D4CFC6] rounded-xl font-bold text-sm focus:outline-none focus:border-[#C9A86C]"
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {isConverting && (
+                                <div className="bg-white p-6 rounded-[24px] border-3 border-[#C9A86C]">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="animate-spin text-2xl">⚙️</div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-[#41464b]">轉換中... {progress}%</p>
+                                            <p className="text-sm text-[#86754d]">{currentFile}</p>
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-[#D4CFC6] rounded-full h-3 overflow-hidden">
+                                        <div
+                                            className="bg-gradient-to-r from-[#C9A86C] to-[#98694c] h-full transition-all duration-300"
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <Button
+                                onClick={handleBatchConvert}
+                                disabled={isConverting}
+                                variant="primary"
+                                className="w-full text-lg"
+                                icon={RotateCw}
+                            >
+                                {isConverting ? '轉換中...' : '🎨 開始轉換'}
+                            </Button>
+
+                            {convertedFiles.length > 0 && (
+                                <div className="bg-gradient-to-br from-[#C9A86C] to-[#98694c] p-6 rounded-[24px] border-4 border-white shadow-lg">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                            📦 已轉換檔案 ({convertedFiles.length})
+                                        </h3>
+                                        <Button
+                                            onClick={downloadAllAsZip}
+                                            variant="secondary"
+                                            className="text-sm"
+                                            icon={Download}
+                                        >
+                                            全部打包下載 (.zip)
+                                        </Button>
+                                    </div>
+
+                                    <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                                        {convertedFiles.map((file, idx) => (
+                                            <div key={idx} className="flex items-center justify-between bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <div className="text-2xl">✅</div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-bold text-white truncate">{file.name}</p>
+                                                        <p className="text-xs text-white/80">{Utils.formatBytes(file.size)}</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => downloadSingle(file)}
+                                                    className="ml-2 bg-white/30 hover:bg-white/50 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-1"
+                                                >
+                                                    <Download size={16} /> 下載
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         // --- ★ 新增功能：PDF/圖片 OCR 文字辨識工具 (V2.0 高精度/大視窗版) ★ ---
         const PdfOcrTool = () => {
             const [file, setFile] = useState(null);
@@ -6035,6 +6431,211 @@
                             <p className="text-3xl md:text-4xl font-extrabold text-[#F57F17] tracking-wide break-words">
                                 {result}
                             </p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- 正計時器 (StopwatchTool) ---
+        /**
+         * @function StopwatchTool
+         * @description 正計時器（碼錶），從 0 開始往上計時。
+         * 支援電腦空白鍵控制開始/暫停、分圈紀錄、毫秒精度顯示。
+         * 圓環進度條每 60 秒轉一圈，營造視覺節奏感。
+         */
+        const StopwatchTool = () => {
+            // NOTE: elapsed 以毫秒為單位儲存，確保精度
+            const [elapsed, setElapsed] = useState(0);
+            const [isRunning, setIsRunning] = useState(false);
+            const [laps, setLaps] = useState([]);
+            const startTimeRef = useRef(null);
+            const intervalRef = useRef(null);
+            const elapsedBeforePauseRef = useRef(0);
+
+            // NOTE: 使用 ref 追蹤 isRunning 最新狀態，避免 keydown 閉包問題
+            const isRunningRef = useRef(false);
+            useEffect(() => { isRunningRef.current = isRunning; }, [isRunning]);
+
+            const startStopwatch = useCallback(() => {
+                startTimeRef.current = Date.now();
+                intervalRef.current = setInterval(() => {
+                    setElapsed(Date.now() - startTimeRef.current + elapsedBeforePauseRef.current);
+                }, 10);
+                setIsRunning(true);
+            }, []);
+
+            const pauseStopwatch = useCallback(() => {
+                clearInterval(intervalRef.current);
+                elapsedBeforePauseRef.current = elapsed;
+                setIsRunning(false);
+            }, [elapsed]);
+
+            const toggleStopwatch = useCallback(() => {
+                if (isRunningRef.current) {
+                    pauseStopwatch();
+                } else {
+                    startStopwatch();
+                }
+            }, [startStopwatch, pauseStopwatch]);
+
+            const resetStopwatch = () => {
+                clearInterval(intervalRef.current);
+                setElapsed(0);
+                setIsRunning(false);
+                setLaps([]);
+                startTimeRef.current = null;
+                elapsedBeforePauseRef.current = 0;
+            };
+
+            const addLap = () => {
+                if (!isRunning) return;
+                const prevTotal = laps.length > 0 ? laps[0].total : 0;
+                setLaps(prev => [{ lap: prev.length + 1, split: elapsed - prevTotal, total: elapsed }, ...prev]);
+            };
+
+            // NOTE: 空白鍵快捷鍵 — 排除焦點在表單元素上的情況
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.code !== 'Space') return;
+                    const tag = document.activeElement?.tagName?.toLowerCase();
+                    if (['input', 'textarea', 'select', 'button'].includes(tag)) return;
+                    e.preventDefault();
+                    toggleStopwatch();
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [toggleStopwatch]);
+
+            // 元件卸載時清理 interval
+            useEffect(() => {
+                return () => clearInterval(intervalRef.current);
+            }, []);
+
+            /**
+             * 格式化毫秒為 mm:ss.cc 格式
+             * @param {number} ms 毫秒數
+             * @returns {object} { main: 'mm:ss', cents: '.cc' }
+             */
+            const formatTime = (ms) => {
+                const totalSeconds = Math.floor(ms / 1000);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                const centiseconds = Math.floor((ms % 1000) / 10);
+                return {
+                    main: `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
+                    cents: `.${centiseconds.toString().padStart(2, '0')}`
+                };
+            };
+
+            const formatLapTime = (ms) => {
+                const totalSeconds = Math.floor(ms / 1000);
+                const m = Math.floor(totalSeconds / 60);
+                const s = totalSeconds % 60;
+                const cs = Math.floor((ms % 1000) / 10);
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${cs.toString().padStart(2, '0')}`;
+            };
+
+            // 圓環進度：每 60 秒一圈
+            const progress = (elapsed % 60000) / 60000 * 100;
+            const display = formatTime(elapsed);
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* 圓環計時顯示 */}
+                    <div className="flex flex-col items-center justify-center py-6 relative">
+                        <div className="w-56 h-56 rounded-full border-[6px] border-[#ECEAE5] flex items-center justify-center relative bg-white shadow-inner">
+                            {/* 進度圓環 SVG — STARLUX 金棕色 */}
+                            <svg viewBox="0 0 224 224" className="absolute top-0 left-0 w-full h-full transform -rotate-90 pointer-events-none">
+                                <circle
+                                    cx="112" cy="112" r="109"
+                                    stroke="#C9A86C" strokeWidth="6" fill="none"
+                                    strokeDasharray={2 * Math.PI * 109}
+                                    strokeDashoffset={2 * Math.PI * 109 * (1 - progress / 100)}
+                                    strokeLinecap="round"
+                                    className="transition-none"
+                                />
+                            </svg>
+
+                            <div className="text-center z-10">
+                                <div className={`font-black font-mono tabular-nums tracking-tighter ${isRunning ? 'text-[#C9A86C]' : 'text-[#41464b]'}`}>
+                                    <span className="text-5xl">{display.main}</span>
+                                    <span className="text-3xl opacity-70">{display.cents}</span>
+                                </div>
+                            </div>
+
+                            <div className="absolute -bottom-3 bg-[#ECEAE5] px-3 py-1 rounded-full text-xs font-bold text-[#86754d] border border-[#D4CFC6]">
+                                {isRunning ? '⏱ 計時中' : elapsed > 0 ? '⏸ 已暫停' : '準備就緒'}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 空白鍵提示 */}
+                    <div className="text-center">
+                        <span className="inline-flex items-center gap-2 bg-[#ECEAE5] px-4 py-2 rounded-xl text-xs font-bold text-[#86754d] border border-[#D4CFC6]">
+                            <kbd className="bg-white px-2 py-0.5 rounded-md border border-[#D4CFC6] text-[#41464b] shadow-sm font-mono">Space</kbd>
+                            按空白鍵 開始 / 暫停
+                        </span>
+                    </div>
+
+                    {/* 控制按鈕 */}
+                    <div className="flex gap-3">
+                        <Button
+                            onClick={toggleStopwatch}
+                            variant={isRunning ? "danger" : "primary"}
+                            className="flex-1 text-lg"
+                            icon={isRunning ? Pause : Play}
+                        >
+                            {isRunning ? "暫停" : elapsed > 0 ? "繼續" : "開始"}
+                        </Button>
+
+                        {isRunning ? (
+                            <Button
+                                onClick={addLap}
+                                variant="secondary"
+                                className="px-6"
+                                icon={Clock}
+                            >
+                                分圈
+                            </Button>
+                        ) : (
+                            <Button
+                                onClick={resetStopwatch}
+                                variant="secondary"
+                                className="px-6"
+                                icon={RotateCcw}
+                                disabled={elapsed === 0}
+                            />
+                        )}
+                    </div>
+
+                    {/* 分圈紀錄列表 */}
+                    {laps.length > 0 && (
+                        <div className="bg-[#ECEAE5] rounded-2xl border border-[#D4CFC6] overflow-hidden">
+                            <div className="grid grid-cols-3 gap-2 px-4 py-2 text-xs font-bold text-[#86754d] border-b border-[#D4CFC6]">
+                                <span>圈數</span>
+                                <span className="text-center">分段</span>
+                                <span className="text-right">累計</span>
+                            </div>
+                            <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                                {laps.map((lap, i) => {
+                                    // NOTE: 標記最快與最慢分段（至少 2 圈才顯示）
+                                    const splits = laps.map(l => l.split);
+                                    const fastest = laps.length >= 2 ? Math.min(...splits) : null;
+                                    const slowest = laps.length >= 2 ? Math.max(...splits) : null;
+                                    let rowColor = '';
+                                    if (lap.split === fastest) rowColor = 'text-[#C9A86C]';
+                                    else if (lap.split === slowest) rowColor = 'text-[#FF9A8B]';
+
+                                    return (
+                                        <div key={lap.lap} className={`grid grid-cols-3 gap-2 px-4 py-2 text-sm font-mono font-bold border-b border-[#D4CFC6] last:border-b-0 ${rowColor || 'text-[#41464b]'}`}>
+                                            <span className="font-sans">#{lap.lap}</span>
+                                            <span className="text-center">{formatLapTime(lap.split)}</span>
+                                            <span className="text-right">{formatLapTime(lap.total)}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -7748,14 +8349,15 @@
                 {
                     title: "轉換服務",
                     icon: "🎨",
-                    color: "bg-[#6D4C41]",
-                    textColor: "text-[#E0F7FA]",
-                    desc: "數位格式轉換中心",
+                    color: "bg-[#2F3032]",
+                    textColor: "text-[#F0EDE8]",
+                    desc: "把素材變成你要的樣子",
                     apps: [
-                        { name: "文字辨識", sub: "OCR 圖片轉文字", cat: 'ORGANIZE', id: 'ocr' },
-                        { name: "圖片壓縮", sub: "節省載重", cat: 'CONVERT', id: 'compress' },
+                        { name: "照片轉換工作站", sub: "批次格式轉換 (含HEIC)", cat: 'CONVERT', id: 'photo-convert' },
+                        { name: "文字辨識機", sub: "OCR 圖片轉文字", cat: 'ORGANIZE', id: 'ocr' },
+                        { name: "圖片壓縮機", sub: "節省儲存空間", cat: 'CONVERT', id: 'compress' },
                         { name: "JPG ↔ PDF", sub: "雙向轉檔", cat: 'ORGANIZE', id: 'img2pdf' },
-                        { name: "數字轉大寫", sub: "金額標準化", cat: 'CONVERT', id: 'num2chi' }
+                        { name: "數字轉大寫", sub: "支票金額轉換", cat: 'CONVERT', id: 'num2chi' }
                     ]
                 },
                 {
@@ -7769,6 +8371,7 @@
                         { name: "隨身筆記", sub: "自動存檔", cat: 'DAILY', id: 'notepad' },
                         { name: "待辦清單", sub: "任務管理", cat: 'DAILY', id: 'todo' },
                         { name: "計時與蕃茄鐘", sub: "專注工作", cat: 'DAILY', id: 'timer' },
+                        { name: "計時器", sub: "空白鍵控制", cat: 'DAILY', id: 'stopwatch' },
                         { name: "決策轉盤", sub: "隨機決策", cat: 'DAILY', id: 'random' }
                     ]
                 },
@@ -7998,6 +8601,7 @@
                     { id: 'encrypt', label: 'PDF 加密', icon: Lock, component: PDFEncrypt, scripts: ['pdflib'] }
                 ],
                 'CONVERT': [
+                    { id: 'photoconverter', label: '照片轉換工作站', icon: ImageIcon, component: PhotoConverterTool },
                     { id: 'compress', label: '圖片壓縮機', icon: Settings, component: ImageCompressorTool },
                     { id: 'num2chi', label: '數字轉大寫', icon: Type, component: NumToChiTool }
                 ],
@@ -8024,6 +8628,7 @@
                     { id: 'dal', label: '傳輸小工具', icon: Plane, component: DALDeliveryTool, scripts: ['qrcode'] },
                     { id: 'random', label: '亂數抽籤', icon: Dice5, component: RandomPickerTool },
                     { id: 'timer', label: '倒數計時', icon: Timer, component: CountdownTool },
+                    { id: 'stopwatch', label: '計時器', icon: Clock, component: StopwatchTool },
                     { id: 'pomodoro', label: '蕃茄鬧鐘', icon: AlarmClock, component: PomodoroTool },
                     { id: 'notepad', label: '隨身筆記', icon: StickyNote, component: NotepadTool },
                     { id: 'todo', label: '待辦清單', icon: ClipboardList, component: TodoListTool },
