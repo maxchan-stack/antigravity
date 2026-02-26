@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 文章檢測分析器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rufina:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --earth-gold: #9B8A5E;
+            --earth-gold-light: #F9C78B;
+            --earth-gold-bright: #FFB554;
+            --rose-gold: #B4745A;
+            --rose-gold-deep: #794425;
+            --rose-gold-light: #C9917A;
+            --obsidian-grey: #45464D;
+            --obsidian-deep: #0F2D3C;
+            --obsidian-light: #5A5B63;
+            --cream-bg: #F3F1E5;
+            --cream-dark: #E8E6DA;
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --success: #32D74B;
+            --error: #FF453A;
+            --warning: #FFD60A;
+            --info: #0A84FF;
+            --radius-s: 8px;
+            --radius-m: 16px;
+            --radius-l: 24px;
+            --radius-pill: 50px;
+            --space-xs: 4px;
+            --space-s: 8px;
+            --space-m: 16px;
+            --space-l: 24px;
+            --space-xl: 32px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--rose-gold-deep) 0%, var(--rose-gold) 50%, var(--rose-gold-deep) 100%);
+            border-radius: var(--radius-m);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 8px 24px rgba(180, 116, 90, 0.4);
+        }
+
+        h1 {
+            font-family: 'Rufina', Georgia, serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--earth-gold-light) 0%, var(--earth-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .main-card {
+            background: var(--obsidian-grey);
+            border: 1px solid rgba(155, 138, 94, 0.15);
+            border-radius: var(--radius-l);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 24px rgba(69, 70, 77, 0.3);
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--earth-gold-light);
+            font-size: 0.9rem;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(155, 138, 94, 0.2);
+            border-radius: var(--radius-s);
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--rose-gold);
+            box-shadow: 0 0 0 3px rgba(180, 116, 90, 0.2);
+        }
+
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+            line-height: 1.7;
+        }
+
+        .char-count {
+            text-align: right;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: var(--radius-pill);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--rose-gold-deep) 0%, var(--rose-gold) 50%, var(--rose-gold-deep) 100%);
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 24px rgba(180, 116, 90, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(180, 116, 90, 0.55);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--rose-gold-light);
+            border: 1.5px solid var(--rose-gold);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(180, 116, 90, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(155, 138, 94, 0.2);
+            border-left-color: var(--earth-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-left: 1rem;
+            color: var(--earth-gold-light);
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .score-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(155, 138, 94, 0.15);
+            border-radius: var(--radius-m);
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .score-card h3 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 0.75rem;
+            position: relative;
+        }
+
+        .score-circle svg {
+            transform: rotate(-90deg);
+        }
+
+        .score-circle .bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 8;
+        }
+
+        .score-circle .progress {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.5s ease;
+        }
+
+        .score-circle .value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .score-card.ai .progress {
+            stroke: var(--rose-gold);
+        }
+
+        .score-card.ai .value {
+            color: var(--rose-gold-light);
+        }
+
+        .score-card.plagiarism .progress {
+            stroke: var(--earth-gold);
+        }
+
+        .score-card.plagiarism .value {
+            color: var(--earth-gold-light);
+        }
+
+        .indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .indicator.high {
+            background: rgba(255, 69, 58, 0.2);
+            color: #fca5a5;
+        }
+
+        .indicator.medium {
+            background: rgba(255, 214, 10, 0.2);
+            color: #fcd34d;
+        }
+
+        .indicator.low {
+            background: rgba(50, 215, 75, 0.2);
+            color: #6ee7b7;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius-s);
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--earth-gold-light);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .analysis-section {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: var(--radius-m);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .analysis-section h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--earth-gold-light);
+        }
+
+        .analysis-content {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        .analysis-content p {
+            margin-bottom: 0.75rem;
+        }
+
+        .analysis-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .analysis-content li {
+            padding: 0.5rem 0;
+            padding-left: 1.25rem;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .analysis-content li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--rose-gold);
+        }
+
+        .analysis-content li:last-child {
+            border-bottom: none;
+        }
+
+        .source-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius-s);
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid var(--rose-gold);
+        }
+
+        .source-item .paragraph {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-style: italic;
+        }
+
+        .source-item .link {
+            color: var(--info);
+            text-decoration: none;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        .source-item .link:hover {
+            text-decoration: underline;
+        }
+
+        .history-panel {
+            margin-top: 1.5rem;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius-s);
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .history-item .date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .history-item .scores {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .error-message {
+            background: rgba(255, 69, 58, 0.1);
+            border: 1px solid rgba(255, 69, 58, 0.3);
+            border-radius: var(--radius-s);
+            padding: 1rem;
+            color: #fca5a5;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error-message.active {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            border: 1px solid rgba(155, 138, 94, 0.3);
+            border-radius: var(--radius-pill);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--rose-gold);
+            border-color: var(--rose-gold);
+            color: #fff;
+        }
+
+        .tab:hover:not(.active) {
+            border-color: var(--rose-gold);
+            color: var(--rose-gold-light);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--rose-gold-light);
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .main-card {
+                padding: 1rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <svg width="0" height="0">
+        <defs>
+            <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#794425" />
+                <stop offset="100%" style="stop-color:#B4745A" />
+            </linearGradient>
+            <linearGradient id="plagiarismGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#9B8A5E" />
+                <stop offset="100%" style="stop-color:#F9C78B" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🔍</div>
+                <div>
+                    <h1>AI 文章檢測分析器</h1>
+                    <p class="subtitle">快速檢測文章是否由 AI 撰寫，並評估內容原創性</p>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="main-card">
+                <div class="error-message" id="errorMessage"><span>⚠️</span><span id="errorText"></span></div>
+                <div class="input-group">
+                    <label for="apiKey">🔑 Gemini API Key</label>
+                    <input type="password" id="apiKey" placeholder="輸入您的 Gemini API Key...">
+                </div>
+                <div class="input-group">
+                    <label for="articleText">📝 待分析文章</label>
+                    <textarea id="articleText" placeholder="請在此貼上您想要檢測的文章內容..."></textarea>
+                    <div class="char-count"><span id="charCount">0</span> 字元</div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeArticle()"><span>🚀</span>
+                        開始分析</button>
+                    <button class="btn btn-secondary" onclick="clearAll()"><span>🗑️</span> 清除</button>
+                    <button class="btn btn-secondary" onclick="loadSample()"><span>📝</span> 載入範例</button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div><span class="loading-text">正在使用 Gemini AI 深度分析中...</span>
+            </div>
+
+            <div class="results" id="results">
+                <div class="main-card" id="reportContent">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h2 style="font-family: 'Rufina', serif; color: var(--earth-gold-light);">📊 分析結果</h2>
+                        <button class="btn btn-secondary" onclick="exportPDF()"><span>📥</span> 匯出 PDF</button>
+                    </div>
+
+                    <div class="score-cards">
+                        <div class="score-card ai">
+                            <h3>AI 撰寫可能性</h3>
+                            <div class="score-circle">
+                                <svg width="120" height="120" viewBox="0 0 120 120">
+                                    <circle class="bg" cx="60" cy="60" r="50" />
+                                    <circle class="progress" id="aiProgress" cx="60" cy="60" r="50"
+                                        stroke-dasharray="314" stroke-dashoffset="314" />
+                                </svg>
+                                <span class="value" id="aiScore">0%</span>
+                            </div>
+                            <div id="aiIndicator" class="indicator low">✓ 人類撰寫</div>
+                        </div>
+                        <div class="score-card plagiarism">
+                            <h3>抄襲風險評估</h3>
+                            <div class="score-circle">
+                                <svg width="120" height="120" viewBox="0 0 120 120">
+                                    <circle class="bg" cx="60" cy="60" r="50" />
+                                    <circle class="progress" id="plagiarismProgress" cx="60" cy="60" r="50"
+                                        stroke-dasharray="314" stroke-dashoffset="314" />
+                                </svg>
+                                <span class="value" id="plagiarismScore">0%</span>
+                            </div>
+                            <div id="plagiarismIndicator" class="indicator low">✓ 原創性高</div>
+                        </div>
+                    </div>
+
+                    <h3 style="color: var(--earth-gold-light); margin-bottom: 0.75rem;">📈 文本統計</h3>
+                    <div class="stats-grid" id="statsGrid"></div>
+
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('ai')">🤖 AI 分析</button>
+                        <button class="tab" onclick="switchTab('plagiarism')">📋 抄襲分析</button>
+                        <button class="tab" onclick="switchTab('sources')">🔗 來源追蹤</button>
+                        <button class="tab" onclick="switchTab('suggestions')">💡 改進建議</button>
+                    </div>
+
+                    <div class="tab-content active" id="tab-ai">
+                        <div class="analysis-section">
+                            <div class="analysis-content" id="aiAnalysis"></div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="tab-plagiarism">
+                        <div class="analysis-section">
+                            <div class="analysis-content" id="plagiarismAnalysis"></div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="tab-sources">
+                        <div class="analysis-section">
+                            <h3>🎯 疑似 AI 生成段落與可能來源</h3>
+                            <div id="sourcesContent"></div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="tab-suggestions">
+                        <div class="analysis-section">
+                            <div class="analysis-content" id="suggestions"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="main-card history-panel">
+                    <h3 style="color: var(--earth-gold-light); margin-bottom: 1rem;">📚 歷史紀錄</h3>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+        </main>
+        <footer>
+            <p>Powered by <a href="https://ai.google.dev/" target="_blank">Google Gemini AI</a> | 星宇航空設計風格</p>
+        </footer>
+    </div>
+
+    <script>
+        const articleText = document.getElementById('articleText');
+        const charCount = document.getElementById('charCount');
+        articleText.addEventListener('input', () => { charCount.textContent = articleText.value.length; });
+
+        function clearAll() {
+            articleText.value = ''; charCount.textContent = '0';
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('errorMessage').classList.remove('active');
+        }
+
+        function loadSample() {
+            const sample = `人工智慧（Artificial Intelligence，簡稱AI）是一種模擬人類智慧行為的技術。它涵蓋了機器學習、深度學習、自然語言處理等多個領域。\n\n近年來，AI技術取得了突破性進展。從語音助手到自動駕駛，從醫療診斷到金融分析，AI的應用已滲透到我們生活的方方面面。\n\n然而，AI的發展也帶來了一些挑戰。例如，隱私保護、就業影響以及倫理問題等議題，都需要我們認真思考和應對。\n\n總的來說，人工智慧是一把雙刃劍。我們需要在享受其便利的同時，謹慎應對其可能帶來的風險。`;
+            articleText.value = sample; charCount.textContent = sample.length;
+        }
+
+        function showError(msg) { document.getElementById('errorText').textContent = msg; document.getElementById('errorMessage').classList.add('active'); }
+        function hideError() { document.getElementById('errorMessage').classList.remove('active'); }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+            document.getElementById(`tab-${name}`).classList.add('active');
+        }
+
+        function getTextStats(text) {
+            const chars = text.length;
+            const charsNoSpace = text.replace(/\s/g, '').length;
+            const sentences = text.split(/[。！？.!?]+/).filter(s => s.trim()).length;
+            const paragraphs = text.split(/\n\n+/).filter(p => p.trim()).length;
+            const words = text.split(/[\s，、；：]+/).filter(w => w.trim()).length;
+            const avgSentLen = sentences > 0 ? Math.round(charsNoSpace / sentences) : 0;
+            return { chars, charsNoSpace, sentences, paragraphs, words, avgSentLen };
+        }
+
+        function updateScore(elemId, progId, score, indId, type) {
+            const scoreEl = document.getElementById(elemId);
+            const progEl = document.getElementById(progId);
+            const indEl = document.getElementById(indId);
+            let cur = 0;
+            const interval = setInterval(() => { if (cur >= score) { clearInterval(interval); return; } cur++; scoreEl.textContent = cur + '%'; }, 15);
+            const circumference = 2 * Math.PI * 50;
+            progEl.style.strokeDashoffset = circumference - (score / 100) * circumference;
+            let cls, txt;
+            if (type === 'ai') {
+                if (score >= 70) { cls = 'high'; txt = '⚠️ 高度疑似 AI'; }
+                else if (score >= 40) { cls = 'medium'; txt = '⚡ 可能含 AI'; }
+                else { cls = 'low'; txt = '✓ 人類撰寫'; }
+            } else {
+                if (score >= 60) { cls = 'high'; txt = '⚠️ 高抄襲風險'; }
+                else if (score >= 30) { cls = 'medium'; txt = '⚡ 部分重複'; }
+                else { cls = 'low'; txt = '✓ 原創性高'; }
+            }
+            indEl.className = `indicator ${cls}`; indEl.textContent = txt;
+        }
+
+        function saveHistory(result, text) {
+            let history = JSON.parse(localStorage.getItem('ai_detector_history') || '[]');
+            history.unshift({ date: new Date().toLocaleString('zh-TW'), aiScore: result.aiScore, plagiarismScore: result.plagiarismScore, preview: text.substring(0, 50) + '...' });
+            if (history.length > 10) history = history.slice(0, 10);
+            localStorage.setItem('ai_detector_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('ai_detector_history') || '[]');
+            const container = document.getElementById('historyList');
+            if (history.length === 0) { container.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">尚無歷史紀錄</p>'; return; }
+            container.innerHTML = history.map(h => `<div class="history-item"><div><div style="font-weight: 500; margin-bottom: 0.25rem;">${h.preview}</div><div class="date">${h.date}</div></div><div class="scores"><span style="color: var(--rose-gold-light);">AI: ${h.aiScore}%</span><span style="color: var(--earth-gold-light);">抄襲: ${h.plagiarismScore}%</span></div></div>`).join('');
+        }
+
+        async function analyzeArticle() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const text = articleText.value.trim();
+            hideError();
+            if (!apiKey) { showError('請輸入 Gemini API Key'); return; }
+            if (!text) { showError('請輸入要分析的文章內容'); return; }
+            if (text.length < 50) { showError('文章內容太短，請至少輸入 50 個字元'); return; }
+
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('analyzeBtn').disabled = true;
+
+            try {
+                const prompt = `你是專業文本分析專家。分析以下中文文章並以 JSON 格式回傳：
+{
+  "aiScore": <0-100 AI撰寫可能性>,
+  "plagiarismScore": <0-100 抄襲風險>,
+  "aiAnalysis": { "summary": "<2-3句總評>", "indicators": ["<特徵1>", "<特徵2>", "<特徵3>"] },
+  "plagiarismAnalysis": { "summary": "<2-3句總評>", "concerns": ["<問題1>", "<問題2>"] },
+  "suggestions": ["<建議1>", "<建議2>", "<建議3>"],
+  "suspiciousParagraphs": [
+    { "text": "<最可疑的AI段落原文，30字以內>", "reason": "<為何可疑>", "searchQuery": "<用於搜尋的關鍵詞>" }
+  ]
+}
+
+分析重點：
+1. AI特徵：結構工整、制式轉折詞、缺乏個人觀點、用詞過於精準
+2. 抄襲風險：常見網路片段、維基百科式描述、缺乏原創觀點
+3. 標記最可疑的1-3個段落
+
+文章：
+"""
+${text}
+"""`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+                    })
+                });
+
+                if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || '請求失敗'); }
+                const data = await response.json();
+                let resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!resultText) throw new Error('未收到有效回應');
+                const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) throw new Error('無法解析分析結果');
+                const result = JSON.parse(jsonMatch[0]);
+                displayResults(result, text);
+                saveHistory(result, text);
+            } catch (error) {
+                showError(`分析失敗：${error.message}`);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        function displayResults(result, text) {
+            updateScore('aiScore', 'aiProgress', result.aiScore, 'aiIndicator', 'ai');
+            updateScore('plagiarismScore', 'plagiarismProgress', result.plagiarismScore, 'plagiarismIndicator', 'plagiarism');
+
+            const stats = getTextStats(text);
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-item"><div class="stat-value">${stats.chars}</div><div class="stat-label">總字元</div></div>
+                <div class="stat-item"><div class="stat-value">${stats.charsNoSpace}</div><div class="stat-label">不含空白</div></div>
+                <div class="stat-item"><div class="stat-value">${stats.sentences}</div><div class="stat-label">句子數</div></div>
+                <div class="stat-item"><div class="stat-value">${stats.paragraphs}</div><div class="stat-label">段落數</div></div>
+                <div class="stat-item"><div class="stat-value">${stats.avgSentLen}</div><div class="stat-label">平均句長</div></div>
+            `;
+
+            document.getElementById('aiAnalysis').innerHTML = `<p>${result.aiAnalysis.summary}</p><ul>${result.aiAnalysis.indicators.map(i => `<li>${i}</li>`).join('')}</ul>`;
+            document.getElementById('plagiarismAnalysis').innerHTML = `<p>${result.plagiarismAnalysis.summary}</p><ul>${result.plagiarismAnalysis.concerns.map(c => `<li>${c}</li>`).join('')}</ul>`;
+            document.getElementById('suggestions').innerHTML = `<ul>${result.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>`;
+
+            const sourcesHtml = (result.suspiciousParagraphs || []).map(p => `
+                <div class="source-item">
+                    <div class="paragraph">「${p.text}」</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">📌 ${p.reason}</div>
+                    <a class="link" href="https://www.google.com/search?q=${encodeURIComponent(p.searchQuery)}" target="_blank">🔍 搜尋相關內容: ${p.searchQuery}</a>
+                </div>
+            `).join('') || '<p style="color: var(--text-secondary);">未發現高度可疑的 AI 生成段落</p>';
+            document.getElementById('sourcesContent').innerHTML = sourcesHtml;
+
+            window.lastResult = result; window.lastArticle = text; window.lastStats = stats;
+            document.getElementById('results').classList.add('active');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const content = document.getElementById('reportContent');
+            const canvas = await html2canvas(content, { scale: 2, backgroundColor: '#45464D' });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgWidth = 190;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            pdf.save(`AI分析報告_${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
+
+        window.addEventListener('load', () => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) document.getElementById('apiKey').value = savedKey;
+            renderHistory();
+        });
+        document.getElementById('apiKey').addEventListener('change', e => {
+            if (e.target.value.trim()) localStorage.setItem('gemini_api_key', e.target.value.trim());
+        });
+    </script>
+</body>
+
+</html>
