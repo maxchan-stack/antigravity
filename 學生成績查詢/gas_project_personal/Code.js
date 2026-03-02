@@ -71,6 +71,13 @@ function include(filename) {
 // --- App Module: Core Logic ---
 var App = {
     doGet: function (e) {
+        // System Access Toggle Check
+        const props = PropertiesService.getDocumentProperties();
+        const status = props.getProperty('system_status');
+        if (status === 'CLOSED') {
+            return this.renderMessage('🛑 系統維護中', '目前老師正在更新成績，查詢功能暫時關閉。請稍後再試。');
+        }
+
         // Time Limit Check
         const now = new Date();
         if (CONFIG.SYSTEM_OPEN_TIME && now < new Date(CONFIG.SYSTEM_OPEN_TIME)) {
@@ -387,3 +394,33 @@ var Utils = {
         return parseInt(v) || 0;
     }
 };
+
+// ==========================================
+// Admin Menu & System Toggle
+// ==========================================
+function onOpen() {
+    SpreadsheetApp.getUi()
+        .createMenu('⭐ 成績查詢系統')
+        .addItem('⚙️ 開啟管理員介面', 'openAdminSidebar')
+        .addSeparator()
+        .addItem('▶️ 開放學生查詢', 'enableQuerySystem')
+        .addItem('⏸️ 關閉學生查詢 (維護中)', 'disableQuerySystem')
+        .addToUi();
+}
+
+function openAdminSidebar() {
+    const html = HtmlService.createHtmlOutputFromFile('Sidebar')
+        .setTitle('系統管理介面')
+        .setWidth(300);
+    SpreadsheetApp.getUi().showSidebar(html);
+}
+
+function enableQuerySystem() {
+    PropertiesService.getDocumentProperties().setProperty('system_status', 'OPEN');
+    SpreadsheetApp.getUi().alert('系統狀態已更新', '目前學生【可以】查詢成績！', SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function disableQuerySystem() {
+    PropertiesService.getDocumentProperties().setProperty('system_status', 'CLOSED');
+    SpreadsheetApp.getUi().alert('系統狀態已更新', '系統已進入【維護中】！\n學生若開啟網址，將被阻擋並看到維護提示。', SpreadsheetApp.getUi().ButtonSet.OK);
+}
