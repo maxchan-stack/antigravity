@@ -139,6 +139,16 @@ var Auth = {
     },
 
     login: function (studentId, password, captchaToken, captchaAnswer, seatNumber, sessionId) {
+        // [New V10.3] System Toggle Check - Protect API Endpoint too
+        const props = PropertiesService.getDocumentProperties();
+        if (props.getProperty('system_status') === 'CLOSED') {
+            return {
+                success: false,
+                message: '🛑 系統維護中：目前老師正在更新成績，查詢功能暫時關閉。請稍後再試。',
+                locked: true
+            };
+        }
+
         const cache = CacheService.getScriptCache();
         const userCache = CacheService.getUserCache();
         studentId = String(studentId).trim();
