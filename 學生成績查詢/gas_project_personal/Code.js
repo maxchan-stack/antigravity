@@ -13,6 +13,9 @@ var CONFIG = {
     LOCKOUT_DURATION: 600,
     SESSION_TIMEOUT: 1800,
 
+    // Internal System Version
+    SYSTEM_VERSION: '1.0.0',
+
     // Global DDoS Protection
     GLOBAL_FAIL_LIMIT: 120,
     GLOBAL_WINDOW: 60,
