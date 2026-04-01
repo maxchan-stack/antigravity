@@ -147,11 +147,14 @@
             btn.disabled = true;
             btn.textContent = '產生中...';
 
-            // 呼叫後端函式
+            // 呼叫後端函式，將目前視窗內容替換為成績單 HTML
             google.script.run
-                .withSuccessHandler(function () {
-                    // 成功後不要呼叫 google.script.host.close()，
-                    // 因為這會把後端剛剛開好的「新成績證明」對話框給關掉！
+                .withSuccessHandler(function (html) {
+                    google.script.host.setWidth(800);
+                    google.script.host.setHeight(800);
+                    document.open();
+                    document.write(html);
+                    document.close();
                 })
                 .withFailureHandler(function (error) {
                     // 失敗時顯示錯誤並恢復按鈕
@@ -159,7 +162,7 @@
                     btn.disabled = false;
                     btn.textContent = '產生證明';
                 })
-                .showCertificate(studentId, examType);
+                .getCertificateHtml(studentId, examType);
         }
     </script>
 </body>

@@ -1382,26 +1382,21 @@ function showCertificateDialog() {
 }
 
 /**
- * 產生並顯示證明頁面
+ * 產生並回傳證明頁面 HTML (用於前端直接替換畫面)
  * @param {string} studentId - 學生學號
  * @param {string} examType - 段考類型
  */
-function showCertificate(studentId, examType) {
+function getCertificateHtml(studentId, examType) {
     const result = getCertificateData(studentId, examType);
 
     if (!result.success) {
-        SpreadsheetApp.getUi().alert('❌ 錯誤', result.message, SpreadsheetApp.getUi().ButtonSet.OK);
-        return;
+        throw new Error(result.message);
     }
 
     const template = HtmlService.createTemplateFromFile('Certificate');
     template.data = result.data;
 
-    const html = template.evaluate()
-        .setWidth(800)
-        .setHeight(1000);
-
-    SpreadsheetApp.getUi().showModalDialog(html, '📄 成績證明 - ' + result.data.studentName);
+    return template.evaluate().getContent();
 }
 
 function showSidebar() {
