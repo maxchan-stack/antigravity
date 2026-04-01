@@ -1418,10 +1418,22 @@ function showSidebar() {
 function onOpen() {
     // 若開啟者有權限，則建立選單 (避免權限不足報錯)
     try {
+        checkSheetPermissions();  // 🆕 自動檢查權限
         SpreadsheetApp.getUi()
             .createMenu('⭐ 系統控制台')
             .addItem('▶️ 學生查詢狀態：開啟', 'enableQuerySystem')
             .addItem('⏸️ 學生查詢狀態：關閉', 'disableQuerySystem')
+            .addSeparator()
+            .addItem('🎓 列印學生成績證明', 'showCertificateDialog')
+            .addSeparator()
+            .addItem('🔑 產生所有查詢碼 (5碼)', 'generatePasswordsForAllSheets')
+            .addItem('📧 寄送查詢碼 (Email)', 'sendQueryCodesToStudents')
+            .addSeparator()
+            .addItem('📊 查看安全日誌', 'viewSecurityLog')
+            .addItem('🔓 解除特定學號鎖定', 'unlockSpecificStudent')
+            .addItem('⚠️ 緊急解除全部鎖定', 'emergencyUnlockAll')
+            .addSeparator()
+            .addItem('🔒 檢查試算表權限', 'checkSheetPermissions')
             .addToUi();
     } catch (e) {
         console.warn('onOpen Error (Usually readonly user):', e);
