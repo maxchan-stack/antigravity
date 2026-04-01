@@ -46,7 +46,8 @@
         }
 
         input,
-        select {
+        select,
+        textarea {
             width: 100%;
             padding: 12px 16px;
             border: 1px solid rgba(155, 138, 94, 0.3);
@@ -57,8 +58,13 @@
             transition: all 0.2s ease;
         }
 
+        textarea {
+            resize: vertical;
+        }
+
         input:focus,
-        select:focus {
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: #9B8A5E;
             box-shadow: 0 0 0 3px rgba(155, 138, 94, 0.1);
@@ -108,8 +114,8 @@
 
         <div class="form-group">
             <label>學生學號</label>
-            <input type="text" id="studentId" placeholder="請輸入學號" autofocus>
-            <div class="hint">例如：114001</div>
+            <textarea id="studentId" placeholder="請輸入學號，多筆請用換行、逗號或空格隔開" rows="4" autofocus></textarea>
+            <div class="hint">例如：<br>114001<br>114002</div>
         </div>
 
         <div class="form-group">
@@ -125,20 +131,23 @@
     </div>
 
     <script>
-        // 按下 Enter 鍵時觸發產生
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                generate();
-            }
-        });
+        // 不再綁定 Enter 鍵觸發產生，因為 Textarea 需要 Enter 換行
 
         function generate() {
-            const studentId = document.getElementById('studentId').value.trim();
+            const rawStudentIds = document.getElementById('studentId').value.trim();
             const examType = document.getElementById('examType').value;
 
-            if (!studentId) {
+            if (!rawStudentIds) {
                 alert('請輸入學號');
                 document.getElementById('studentId').focus();
+                return;
+            }
+
+            // 支援使用換行、逗號、空白分割學號
+            const studentIds = rawStudentIds.split(/[\s,]+/).filter(id => id.trim() !== '');
+
+            if (studentIds.length === 0) {
+                alert('請輸入有效的學號');
                 return;
             }
 
@@ -162,7 +171,7 @@
                     btn.disabled = false;
                     btn.textContent = '產生證明';
                 })
-                .getCertificateHtml(studentId, examType);
+                .getCertificateHtml(studentIds, examType);
         }
     </script>
 </body>

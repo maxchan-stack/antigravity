@@ -1382,19 +1382,32 @@ function showCertificateDialog() {
 }
 
 /**
- * 產生並回傳證明頁面 HTML (用於前端直接替換畫面)
- * @param {string} studentId - 學生學號
+ * 產生並回傳多筆證明頁面 HTML (用於前端直接替換畫面)
+ * @param {Array<string>} studentIds - 學生學號陣列
  * @param {string} examType - 段考類型
  */
-function getCertificateHtml(studentId, examType) {
-    const result = getCertificateData(studentId, examType);
+function getCertificateHtml(studentIds, examType) {
+    if (!Array.isArray(studentIds)) {
+        studentIds = [studentIds];
+    }
+    
+    let validCertificates = [];
+    
+    for (let i = 0; i < studentIds.length; i++) {
+        const id = String(studentIds[i]).trim();
+        if (!id) continue;
+        const result = getCertificateData(id, examType);
+        if (result.success && result.data) {
+            validCertificates.push(result.data);
+        }
+    }
 
-    if (!result.success) {
-        throw new Error(result.message);
+    if (validCertificates.length === 0) {
+        throw new Error('抱歉，沒有任何一個學號查詢成功，或缺乏該次成績。');
     }
 
     const template = HtmlService.createTemplateFromFile('Certificate');
-    template.data = result.data;
+    template.certificates = validCertificates;
 
     return template.evaluate().getContent();
 }
