@@ -147,11 +147,11 @@
             btn.disabled = true;
             btn.textContent = '產生中...';
 
-            // 呼叫後端函式，等待成功後才關閉
+            // 呼叫後端函式
             google.script.run
                 .withSuccessHandler(function () {
-                    // 成功後關閉輸入對話框
-                    google.script.host.close();
+                    // 成功後不要呼叫 google.script.host.close()，
+                    // 因為這會把後端剛剛開好的「新成績證明」對話框給關掉！
                 })
                 .withFailureHandler(function (error) {
                     // 失敗時顯示錯誤並恢復按鈕
