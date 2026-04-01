@@ -63,10 +63,11 @@
 
         .school-name {
             font-size: 28px;
-            font-weight: 700;
+            font-weight: bold;
             color: #45464D;
             margin: 0 0 12px 0;
             letter-spacing: 4px;
+            font-family: "標楷體", BiauKai, "DFKai-SB", serif;
         }
 
         .doc-title {
@@ -150,6 +151,32 @@
             border: 2px dashed #9B8A5E;
             display: inline-block;
             position: relative;
+            background-color: transparent;
+        }
+
+        /* 🆕 紅色印章（純 CSS 立體印章效果） */
+        .red-seal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-5deg);
+            width: 80px;
+            height: 80px;
+            border: 4px solid #c9302c;
+            border-radius: 8px;
+            color: #c9302c;
+            font-family: "標楷體", BiauKai, "DFKai-SB", serif;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: 2px;
+            padding: 4px;
+            opacity: 0.85; /* 模擬印泥半透明感 */
+            z-index: 10;
         }
 
         .stamp-label {
@@ -264,7 +291,13 @@
                     <?= data.generateDate ?>
                 </div>
                 <div class="stamp-container">
-                    <div class="stamp-box"></div>
+                    <div class="stamp-box">
+                        <!-- 預設：CSS 繪製的紅色印章 -->
+                        <!-- 💡 若要更換成您的真實照片圖案，可以把下面這行刪掉，改成：
+                             <img src="https://您的圖片網址" style="width: 100px; position:absolute; top:50%; left:50%; transform: translate(-50%, -50%); opacity: 0.9;">
+                        -->
+                        <div class="red-seal">物理<br>專屬</div>
+                    </div>
                     <div class="stamp-label">教師簽章</div>
                 </div>
             </div>
