@@ -72,6 +72,10 @@
             transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
         }
 
+        html.dark {
+            color-scheme: dark;
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -135,7 +139,7 @@
 
             /* Print friendly list */
             .bg-white,
-            .dark\:bg-starlux-obsidianLight {
+            .dark\:bg-premium-obsidianLight {
                 box-shadow: none !important;
                 border: 1px solid #ddd !important;
                 border-radius: 0 !important;
@@ -295,7 +299,34 @@
             const dragItem = useRef(null);
             const dragOverItem = useRef(null);
 
+            // V9.2: Auto Update for Cross-Day
+            const [realToday, setRealToday] = useState(formatDate(new Date()));
 
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    const nowStr = formatDate(new Date());
+                    if (nowStr !== realToday) {
+                        setRealToday(nowStr);
+                        setForm(f => f.date === realToday ? { ...f, date: nowStr } : f);
+                    }
+                }, 60000); // Check every minute
+
+                const handleVisibility = () => {
+                    if (document.visibilityState === 'visible') {
+                        const nowStr = formatDate(new Date());
+                        if (nowStr !== realToday) {
+                            setRealToday(nowStr);
+                            setForm(f => f.date === realToday ? { ...f, date: nowStr } : f);
+                        }
+                    }
+                };
+                document.addEventListener('visibilitychange', handleVisibility);
+
+                return () => {
+                    clearInterval(interval);
+                    document.removeEventListener('visibilitychange', handleVisibility);
+                };
+            }, [realToday]);
 
             useEffect(() => {
                 const load = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) || def; } catch { return def; } };
@@ -424,8 +455,7 @@
             const currentYearRecords = useMemo(() => records.filter(r => r.year === currentYear), [records, currentYear]);
 
             const isClassDoneToday = (className) => {
-                const today = formatDate(new Date());
-                return currentYearRecords.some(r => r.className === className && r.date === today);
+                return currentYearRecords.some(r => r.className === className && r.date === realToday);
             };
 
             // V9 Optimization #2: Improved calculateSessions algorithm (O(1) complexity)
@@ -474,7 +504,7 @@
                 const target = currentYearClasses.find(c => c.name === form.className);
                 if (!target?.days?.length) return null;
 
-                let startDate = new Date();
+                let startDate = new Date(realToday);
                 if (isClassDoneToday(form.className)) {
                     startDate.setDate(startDate.getDate() + 1);
                 }
@@ -500,14 +530,13 @@
 
             const todayClasses = useMemo(() => {
                 const day = new Date().getDay();
-                const todayStr = formatDate(new Date());
                 // V9.1: 也檢查彈性假期
-                if (holidays.includes(todayStr) || customHolidays.includes(todayStr)) return [];
-                const doneClasses = currentYearRecords.filter(r => r.date === todayStr).map(r => r.className);
+                if (holidays.includes(realToday) || customHolidays.includes(realToday)) return [];
+                const doneClasses = currentYearRecords.filter(r => r.date === realToday).map(r => r.className);
                 return currentYearClasses
                     .filter(c => c.days && c.days.includes(day))
                     .map(c => ({ ...c, isDone: doneClasses.includes(c.name) }));
-            }, [currentYearClasses, currentYearRecords, holidays, customHolidays]);
+            }, [currentYearClasses, currentYearRecords, holidays, customHolidays, realToday]);
 
             const handleExport = () => {
                 let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Add BOM
@@ -548,7 +577,7 @@
                 const target = classes.find(c => c.name === clsName);
                 if (!target?.days?.length) return null;
 
-                let startDate = new Date();
+                let startDate = new Date(realToday);
                 if (isClassDoneToday(clsName)) {
                     startDate.setDate(startDate.getDate() + 1);
                 }
@@ -755,7 +784,7 @@
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="hidden md:flex items-center bg-white/10 rounded-full px-4 py-2">
-                                    <select value={currentYear} onChange={e => setCurrentYear(e.target.value)} className="bg-transparent text-white font-bold text-lg outline-none cursor-pointer [&>option]:text-black">{academicYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
+                                    <select value={currentYear} onChange={e => setCurrentYear(e.target.value)} className="bg-transparent text-white font-bold text-lg outline-none cursor-pointer [&>option]:text-black dark:[&>option]:text-white dark:[&>option]:bg-[#45464D]">{academicYears.map(y => <option key={y} value={y}>{y}</option>)}</select>
                                 </div>
                                 <AppleButton onClick={() => setDarkMode(!darkMode)} iconName={darkMode ? "Sun" : "Moon"} variant="header" size="sm" className="!px-3" />
                                 <div className="hidden md:block w-px h-8 bg-white/20"></div>
@@ -798,9 +827,9 @@
                             {todayClasses.length > 0 ? (
                                 <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
                                     {todayClasses.map(c => (
-                                        <div key={c.name} onClick={() => setForm(f => ({ ...f, className: c.name }))} className={`snap-start shrink-0 w-40 p-4 rounded-2xl border cursor-pointer transition-all micro-interaction ${form.className === c.name ? 'bg-[#9B8A5E] border-[#9B8A5E] dark:bg-[#B4745A] dark:border-[#B4745A] shadow-xl text-white' : c.isDone ? 'bg-gray-100 border-transparent dark:bg-white/5 text-gray-400' : 'bg-white border-gray-100 dark:border-white/10 dark:bg-starlux-obsidianLight text-gray-900 dark:text-white'}`}>
+                                        <div key={c.name} onClick={() => setForm(f => ({ ...f, className: c.name }))} className={`snap-start shrink-0 w-40 p-4 rounded-2xl border cursor-pointer transition-all micro-interaction ${form.className === c.name ? 'bg-[#9B8A5E] border-[#9B8A5E] dark:bg-[#B4745A] dark:border-[#B4745A] shadow-xl text-white' : c.isDone ? 'bg-gray-100 border-transparent dark:bg-white/5 text-gray-400' : 'bg-white border-gray-100 dark:border-white/10 dark:bg-premium-obsidianLight text-gray-900 dark:text-white'}`}>
                                             <div className="flex justify-between items-start mb-2">
-                                                <span className={`text-xs font-black px-2 py-1 rounded-md ${form.className === c.name ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-white/10 text-gray-500'}`}>{weekDays[new Date().getDay() - 1]}</span>
+                                                <span className={`text-xs font-black px-2 py-1 rounded-md ${form.className === c.name ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-white/10 text-gray-500'}`}>{weekDays[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]}</span>
                                                 {c.isDone && <LucideIcon name="Check" size={16} className={`${form.className === c.name ? 'text-white' : 'text-gray-400'}`} />}
                                             </div>
                                             <div className="text-xl font-black">{c.name}</div>
@@ -819,7 +848,7 @@
                                 <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-3"><LucideIcon name="Plus" size={32} className="text-[#9B8A5E] dark:text-[#B4745A]" /> 新增進度</h2>
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     <div className="relative">
-                                        <select name="className" value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} required className="w-full bg-gray-100 dark:bg-black/20 text-gray-900 dark:text-white font-bold text-2xl p-4 rounded-2xl outline-none focus:ring-4 focus:ring-[#9B8A5E]/20 appearance-none">
+                                        <select name="className" value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} required className="w-full bg-gray-100 dark:bg-black/20 text-gray-900 dark:text-white font-bold text-2xl p-4 rounded-2xl outline-none focus:ring-4 focus:ring-[#9B8A5E]/20 appearance-none dark:[&>option]:bg-[#45464D]">
                                             <option value="" disabled>選擇班級...</option>
                                             {currentYearClasses.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                                         </select>
@@ -873,7 +902,7 @@
                                                 #{t}
                                             </button>
                                         ))}
-                                        <button type="button" onClick={() => { const t = prompt('輸入新標籤'); if (t && !tags.includes(t)) setTags([...tags, t]) }} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-200 text-gray-500 dark:bg-white/10 hover:bg-gray-300">+</button>
+                                        <button type="button" onClick={() => { const t = prompt('輸入新標籤'); if (t && !tags.includes(t)) setTags([...tags, t]) }} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-200 text-gray-500 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-white/20">+</button>
                                     </div>
 
                                     <div className="flex items-center justify-between pt-2">
@@ -899,71 +928,68 @@
                                         </div>
                                     </div>
 
-                                    {currentYearClasses.map((cls, idx) => {
-                                        const items = currentYearRecords.filter(r => r.className === cls.name && (r.progress.includes(filter) || r.date.includes(filter) || (r.tags && r.tags.some(t => t.includes(filter)))));
-                                        if (!items.length && filter) return null;
-                                        const isOpen = expandedClasses[cls.name] !== false;
-                                        const remain = getRemainingForClass(cls.name);
-                                        return (
-                                            <div
-                                                key={cls.name}
-                                                className="bg-white dark:bg-starlux-obsidianLight rounded-[2rem] shadow-sm overflow-hidden border border-transparent dark:border-white/10 mb-6 break-inside-avoid"
-                                                draggable
-                                                onDragStart={(e) => {
-                                                    dragItem.current = idx;
-                                                    e.target.classList.add('opacity-50');
-                                                }}
-                                                onDragEnter={(e) => {
-                                                    dragOverItem.current = idx;
-                                                }}
-                                                onDragEnd={(e) => {
-                                                    e.target.classList.remove('opacity-50');
-                                                    handleSort();
-                                                }}
-                                                onDragOver={(e) => e.preventDefault()}
-                                                style={{ animationDelay: `${idx * 0.05}s` }}
-                                            >
-                                                <div onClick={() => setExpandedClasses(p => ({ ...p, [cls.name]: !p[cls.name] }))} className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors micro-interaction select-none">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-1" onMouseDown={e => e.stopPropagation()}>
-                                                            <LucideIcon name="GripVertical" size={20} />
+                                    {(() => {
+                                        // V9.3: Dynamic Auto-Sorting by remaining classes (desc)
+                                        const classesWithMeta = currentYearClasses.map((cls, originalIndex) => {
+                                            const r = getRemainingForClass(cls.name);
+                                            return { ...cls, remain: r !== null ? r : -1, originalIndex };
+                                        });
+
+                                        const sortedClasses = classesWithMeta.sort((a, b) => {
+                                            if (b.remain !== a.remain) return b.remain - a.remain;
+                                            return a.originalIndex - b.originalIndex; // Tie-breaker: original class order
+                                        });
+
+                                        return sortedClasses.map((cls, displayIdx) => {
+                                            const items = currentYearRecords.filter(r => r.className === cls.name && (r.progress.includes(filter) || r.date.includes(filter) || (r.tags && r.tags.some(t => t.includes(filter)))));
+                                            if (!items.length && filter) return null;
+                                            const isOpen = expandedClasses[cls.name] === true;
+                                            const remain = cls.remain > -1 ? cls.remain : null;
+                                            return (
+                                                <div
+                                                    key={cls.name}
+                                                    className="bg-white dark:bg-premium-obsidianLight rounded-[2rem] shadow-sm overflow-hidden border border-transparent dark:border-white/10 mb-6 break-inside-avoid"
+                                                    style={{ animationDelay: `${displayIdx * 0.05}s` }}
+                                                >
+                                                    <div onClick={() => setExpandedClasses(p => ({ ...p, [cls.name]: !p[cls.name] }))} className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors micro-interaction select-none">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform ${isOpen ? 'bg-[#9B8A5E] dark:bg-[#B4745A] text-white rotate-90' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}><LucideIcon name="ChevronRight" size={18} /></div>
+                                                            <div><h3 className="text-2xl font-black text-gray-900 dark:text-white">{cls.name}</h3><p className="text-sm font-bold text-gray-400">{items.length} 筆紀錄</p></div>
                                                         </div>
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform ${isOpen ? 'bg-[#9B8A5E] dark:bg-[#B4745A] text-white rotate-90' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}><LucideIcon name="ChevronRight" size={18} /></div>
-                                                        <div><h3 className="text-2xl font-black text-gray-900 dark:text-white">{cls.name}</h3><p className="text-sm font-bold text-gray-400">{items.length} 筆紀錄</p></div>
+                                                        {remain !== null && (
+                                                            <div className="bg-[#9B8A5E] dark:bg-[#B4745A] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                                                                <span className="text-xs font-bold opacity-80 uppercase">剩</span><span className="text-xl font-black leading-none">{remain}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {remain !== null && (
-                                                        <div className="bg-[#9B8A5E] dark:bg-[#B4745A] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
-                                                            <span className="text-xs font-bold opacity-80 uppercase">剩</span><span className="text-xl font-black leading-none">{remain}</span>
+                                                    {isOpen && (
+                                                        <div className="bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-white/5">
+                                                            {items.map((r, i) => (
+                                                                <div key={r.id} className={`p-6 flex gap-6 group relative ${i !== items.length - 1 ? 'border-b border-gray-200/50 dark:border-white/5' : ''}`}>
+                                                                    <div className="w-24 text-right">
+                                                                        <div className="font-mono text-xl font-black text-gray-900 dark:text-white opacity-80">{r.date.slice(5)}</div>
+                                                                        <div className="text-xs font-bold text-gray-400 mt-1">{r.subject}</div>
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <p className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">{r.progress}</p>
+                                                                        <div className="flex gap-2 flex-wrap">
+                                                                            {r.homework && <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold">作業: {r.homework}</span>}
+                                                                            {r.quiz && <span className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-bold">小考</span>}
+                                                                            {r.tags && r.tags.map(t => <span key={t} className="px-3 py-1 bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 rounded-lg text-xs font-bold">#{t}</span>)}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
+                                                                        <button onClick={(e) => { e.stopPropagation(); setEditingRecord(r); }} className="text-gray-300 hover:text-blue-500"><LucideIcon name="Pencil" size={20} /></button>
+                                                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(r.id); }} className="text-gray-300 hover:text-red-500"><LucideIcon name="Trash2" size={20} /></button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     )}
                                                 </div>
-                                                {isOpen && (
-                                                    <div className="bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-white/5">
-                                                        {items.map((r, i) => (
-                                                            <div key={r.id} className={`p-6 flex gap-6 group relative ${i !== items.length - 1 ? 'border-b border-gray-200/50 dark:border-white/5' : ''}`}>
-                                                                <div className="w-24 text-right">
-                                                                    <div className="font-mono text-xl font-black text-gray-900 dark:text-white opacity-80">{r.date.slice(5)}</div>
-                                                                    <div className="text-xs font-bold text-gray-400 mt-1">{r.subject}</div>
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <p className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">{r.progress}</p>
-                                                                    <div className="flex gap-2 flex-wrap">
-                                                                        {r.homework && <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold">作業: {r.homework}</span>}
-                                                                        {r.quiz && <span className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-bold">小考</span>}
-                                                                        {r.tags && r.tags.map(t => <span key={t} className="px-3 py-1 bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 rounded-lg text-xs font-bold">#{t}</span>)}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
-                                                                    <button onClick={(e) => { e.stopPropagation(); setEditingRecord(r); }} className="text-gray-300 hover:text-blue-500"><LucideIcon name="Pencil" size={20} /></button>
-                                                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(r.id); }} className="text-gray-300 hover:text-red-500"><LucideIcon name="Trash2" size={20} /></button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
+                                            );
+                                        });
+                                    })()}
 
                                     {/* V8.6 Print Footer */}
                                     <div className="print-footer">
@@ -996,7 +1022,7 @@
                                             >
                                                 {day.date && (
                                                     <>
-                                                        <div className={`text-right text-sm font-black mb-1 ${day.date === formatDate(new Date()) ? 'text-[#9B8A5E] dark:text-[#B4745A]' : 'text-gray-400'}`}>{day.dayNum}</div>
+                                                        <div className={`text-right text-sm font-black mb-1 ${day.date === realToday ? 'text-[#9B8A5E] dark:text-[#B4745A]' : 'text-gray-400'}`}>{day.dayNum}</div>
                                                         {day.records.map(r => (
                                                             <div key={r.id} onClick={(e) => { e.stopPropagation(); alert(`${r.className}: ${r.progress}`); }} className="cursor-pointer bg-white dark:bg-[#3A3A3C] p-1 sm:px-2 rounded-lg shadow-sm border-l-4 border-[#9B8A5E] dark:border-[#B4745A] text-[10px] sm:text-xs truncate font-bold dark:text-gray-200">{r.className}</div>
                                                         ))}
@@ -1045,7 +1071,7 @@
                                             <div>
                                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">新增班級</h4>
                                                 <div className="flex gap-2 mb-3">
-                                                    <input id="newClass" placeholder="班級名稱" className="flex-1 bg-gray-50 dark:bg-black/20 p-4 rounded-2xl font-bold dark:text-white outline-none" />
+                                                    <input id="newClass" placeholder="班級名稱" className="flex-1 bg-gray-50 dark:bg-black/20 p-4 rounded-2xl font-bold text-gray-900 dark:text-white outline-none" />
                                                     <AppleButton onClick={() => {
                                                         const n = document.getElementById('newClass').value;
                                                         const days = Array.from(document.querySelectorAll('.day-sel:checked')).map(x => parseInt(x.value));
@@ -1090,9 +1116,9 @@
                                             <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border-2 border-[#9B8A5E]/30 dark:border-[#B4745A]/30">
                                                 <label className="text-xs font-black text-[#9B8A5E] dark:text-[#B4745A] uppercase tracking-widest block mb-2">📅 學期起訖日期</label>
                                                 <div className="flex gap-2 items-center">
-                                                    <input type="date" value={currentExams.semesterStart || ''} onChange={e => { const newExams = { ...currentExams, semesterStart: e.target.value }; setExams(prev => ({ ...prev, [currentYear]: newExams })); }} className="flex-1 bg-white dark:bg-[#505159] p-3 rounded-xl font-bold dark:text-white outline-none" placeholder="開學日" />
+                                                    <input type="date" value={currentExams.semesterStart || ''} onChange={e => { const newExams = { ...currentExams, semesterStart: e.target.value }; setExams(prev => ({ ...prev, [currentYear]: newExams })); }} className="flex-1 bg-white dark:bg-[#505159] p-3 rounded-xl font-bold text-gray-900 dark:text-white outline-none" placeholder="開學日" />
                                                     <LucideIcon name="ArrowRight" size={20} className="text-gray-300" />
-                                                    <input type="date" value={currentExams.semesterEnd || ''} onChange={e => { const newExams = { ...currentExams, semesterEnd: e.target.value }; setExams(prev => ({ ...prev, [currentYear]: newExams })); }} className="flex-1 bg-white dark:bg-[#505159] p-3 rounded-xl font-bold dark:text-white outline-none" placeholder="結業日" />
+                                                    <input type="date" value={currentExams.semesterEnd || ''} onChange={e => { const newExams = { ...currentExams, semesterEnd: e.target.value }; setExams(prev => ({ ...prev, [currentYear]: newExams })); }} className="flex-1 bg-white dark:bg-[#505159] p-3 rounded-xl font-bold text-gray-900 dark:text-white outline-none" placeholder="結業日" />
                                                 </div>
                                                 <p className="text-xs text-gray-400 mt-2">設定後，剩餘堂數計算將以此為範圍，避免多算假期後的課程</p>
                                             </div>
@@ -1101,9 +1127,9 @@
                                                 <div key={ex} className="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl">
                                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">{['第一次段考', '第二次段考', '期末考'][i]}</label>
                                                     <div className="flex gap-2 items-center">
-                                                        <input type="date" value={currentExams[ex].start} onChange={e => { const newExams = { ...currentExams, [ex]: { ...currentExams[ex], start: e.target.value } }; setExams(prev => ({ ...prev, [currentYear]: newExams })); }} className="flex-1 bg-white dark:bg-[#505159] p-3 rounded-xl font-bold dark:text-white outline-none" />
+                                                        <input type="date" value={currentExams[ex].start} onChange={e => { const newExams = { ...currentExams, [ex]: { ...currentExams[ex], start: e.target.value } }; setExams(prev => ({ ...prev, [currentYear]: newExams })); }} className="flex-1 bg-white dark:bg-[#505159] p-3 rounded-xl font-bold text-gray-900 dark:text-white outline-none" />
                                                         <LucideIcon name="ChevronRight" size={20} className="text-gray-300" />
-                                                        <input type="date" value={currentExams[ex].end} onChange={e => { const newExams = { ...currentExams, [ex]: { ...currentExams[ex], end: e.target.value } }; setExams(prev => ({ ...prev, [currentYear]: newExams })); }} className="flex-1 bg-white dark:bg-[#505159] p-3 rounded-xl font-bold dark:text-white outline-none" />
+                                                        <input type="date" value={currentExams[ex].end} onChange={e => { const newExams = { ...currentExams, [ex]: { ...currentExams[ex], end: e.target.value } }; setExams(prev => ({ ...prev, [currentYear]: newExams })); }} className="flex-1 bg-white dark:bg-[#505159] p-3 rounded-xl font-bold text-gray-900 dark:text-white outline-none" />
                                                     </div>
                                                 </div>
                                             ))}
@@ -1192,7 +1218,7 @@
                                             <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-white/10">
                                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">學年管理</h4>
                                                 <div className="flex gap-2">
-                                                    <input id="newYearInput" placeholder="輸入學年 (e.g. 115-1)" className="flex-1 bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold dark:text-white outline-none" />
+                                                    <input id="newYearInput" placeholder="輸入學年 (e.g. 115-1)" className="flex-1 bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold text-gray-900 dark:text-white outline-none" />
                                                     <AppleButton onClick={() => {
                                                         const val = document.getElementById('newYearInput').value;
                                                         if (val && !academicYears.includes(val)) {
@@ -1233,7 +1259,7 @@
                                                             placeholder="Google Apps Script URL"
                                                             value={cloudSettings.gasUrl}
                                                             onChange={e => setCloudSettings({ ...cloudSettings, gasUrl: e.target.value })}
-                                                            className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold dark:text-white outline-none text-sm"
+                                                            className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold text-gray-900 dark:text-white outline-none text-sm"
                                                         />
                                                         <div className="flex gap-2">
                                                             <AppleButton
@@ -1280,7 +1306,7 @@
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="text-xs font-bold text-gray-400 block mb-1">日期</label>
-                                                <input type="date" value={editingRecord.date} onChange={e => setEditingRecord({ ...editingRecord, date: e.target.value })} className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold dark:text-white" required />
+                                                <input type="date" value={editingRecord.date} onChange={e => setEditingRecord({ ...editingRecord, date: e.target.value })} className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold text-gray-900 dark:text-white" required />
                                             </div>
                                             <div>
                                                 <label className="text-xs font-bold text-gray-400 block mb-1">班級</label>
@@ -1289,15 +1315,15 @@
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold text-gray-400 block mb-1">科目</label>
-                                            <input type="text" value={editingRecord.subject} onChange={e => setEditingRecord({ ...editingRecord, subject: e.target.value })} className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold dark:text-white" required />
+                                            <input type="text" value={editingRecord.subject} onChange={e => setEditingRecord({ ...editingRecord, subject: e.target.value })} className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold text-gray-900 dark:text-white" required />
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold text-gray-400 block mb-1">進度內容</label>
-                                            <textarea value={editingRecord.progress} onChange={e => setEditingRecord({ ...editingRecord, progress: e.target.value })} rows={3} className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold dark:text-white resize-none" required />
+                                            <textarea value={editingRecord.progress} onChange={e => setEditingRecord({ ...editingRecord, progress: e.target.value })} rows={3} className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold text-gray-900 dark:text-white resize-none" required />
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold text-gray-400 block mb-1">作業</label>
-                                            <input type="text" value={editingRecord.homework || ''} onChange={e => setEditingRecord({ ...editingRecord, homework: e.target.value })} className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold dark:text-white" placeholder="無" />
+                                            <input type="text" value={editingRecord.homework || ''} onChange={e => setEditingRecord({ ...editingRecord, homework: e.target.value })} className="w-full bg-gray-50 dark:bg-black/20 p-3 rounded-xl font-bold text-gray-900 dark:text-white" placeholder="無" />
                                         </div>
                                         <div className="flex items-center gap-4 py-2 border-t border-gray-100 dark:border-white/10 mt-2">
                                             <label className="flex items-center gap-2 cursor-pointer">

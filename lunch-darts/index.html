@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今天吃什麼？午餐射飛鏢！</title>
+    <!-- 引入極簡風格字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+    <!-- 引入 Canvas Confetti 用於獲勝特效 -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f4f0; /* 無印風米白 */
+            --card-bg: #ffffff;
+            --muji-red: #7f1d1d; /* 無印經典深紅 */
+            --muji-accent: #d4c5b3; /* 溫和木質調/沙色 */
+            --text-main: #333333; /* 柔和深灰 */
+            --text-muted: #7f7f7f;
+            --border-color: #e6e6e2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Space Grotesk', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 2rem;
+        }
+
+        header {
+            margin-top: 3rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--muji-red);
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 1rem;
+            gap: 2.5rem;
+        }
+
+        /* 無印風極簡面板 */
+        .muji-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px; /* 偏向方正，符合無印風格 */
+            padding: 1.5rem;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        /* 控制面板樣式 */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-main);
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-filter {
+            background: #fcfcfc;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.5rem 1.25rem;
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 400;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-filter:hover {
+            background: #f5f5f5;
+            border-color: var(--text-muted);
+        }
+
+        .btn-filter.active {
+            background: var(--muji-red);
+            border-color: var(--muji-red);
+            color: #ffffff;
+        }
+
+        /* 遊戲區域 */
+        .game-area {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            background: #ffffff;
+            border-radius: 50%;
+            border: 8px solid #ffffff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 瞄準與發射提示 */
+        .instruction-overlay {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        /* 結果顯示彈窗 */
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .result-modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .result-content {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 3rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-modal.active .result-content {
+            transform: translateY(0);
+        }
+
+        .result-label {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .food-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--muji-red);
+            margin-bottom: 1.5rem;
+        }
+
+        .food-meta {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 2.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .meta-tag {
+            background: #f5f5f0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2px;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-retry {
+            background: var(--muji-red);
+            border: 1px solid var(--muji-red);
+            color: #ffffff;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .btn-retry:hover {
+            background: #6b1818;
+            border-color: #6b1818;
+        }
+
+        /* 虛擬飛鏢樣式（無印極簡風） */
+        #dart-cursor {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 50;
+            transform: translate(-50%, -50%) rotate(45deg);
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .game-area { width: 300px; height: 300px; }
+            .control-group { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            label { width: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>今天吃什麼？</h1>
+        <p class="subtitle">極簡決定，不再煩惱</p>
+    </header>
+
+    <main>
+        <!-- 篩選面板 -->
+        <div class="muji-panel controls">
+            <div class="control-group">
+                <label>料理種類</label>
+                <div class="btn-group" id="cuisine-filters">
+                    <button class="btn-filter active" data-value="all">全部</button>
+                    <button class="btn-filter" data-value="chinese">中式</button>
+                    <button class="btn-filter" data-value="western">西式</button>
+                    <button class="btn-filter" data-value="asian">日韓</button>
+                    <button class="btn-filter" data-value="other">其他</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>價位區間</label>
+                <div class="btn-group" id="price-filters">
+                    <button class="btn-filter active" data-value="all">全部</button>
+                    <button class="btn-filter" data-value="budget">平價</button>
+                    <button class="btn-filter" data-value="mid">中價</button>
+                    <button class="btn-filter" data-value="premium">高價</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 遊戲區域 -->
+        <div class="game-area">
+            <canvas id="dartboard" width="400" height="400"></canvas>
+            <div class="instruction-overlay">點擊畫盤進行選擇</div>
+        </div>
+    </main>
+
+    <!-- 結果彈窗 -->
+    <div class="result-modal" id="result-modal">
+        <div class="result-content">
+            <div class="result-label">今日推薦</div>
+            <div class="food-name" id="winner-name">---</div>
+            <div class="food-meta">
+                <span class="meta-tag" id="winner-cuisine">---</span>
+                <span class="meta-tag" id="winner-price">---</span>
+            </div>
+            <button class="btn-retry" id="btn-retry">重新選擇</button>
+        </div>
+    </div>
+
+    <!-- 自訂飛鏢游標（簡約紅箭頭） -->
+    <svg id="dart-cursor" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M21 3L3 10.5L10.5 13.5L13.5 21L21 3Z" fill="#7f1d1d" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+
+    <script>
+        // NOTE: 午餐資料集
+        const lunchData = [
+            { id: 1, name: '滷肉飯', cuisine: 'chinese', price: 'budget', cuisineText: '中式', priceText: '平價' },
+            { id: 2, name: '牛肉麵', cuisine: 'chinese', price: 'mid', cuisineText: '中式', priceText: '中價' },
+            { id: 3, name: '排骨便當', cuisine: 'chinese', price: 'budget', cuisineText: '中式', priceText: '平價' },
+            { id: 4, name: '水餃', cuisine: 'chinese', price: 'budget', cuisineText: '中式', priceText: '平價' },
+            { id: 5, name: '小籠包', cuisine: 'chinese', price: 'premium', cuisineText: '中式', priceText: '高價' },
+            { id: 6, name: '炒飯', cuisine: 'chinese', price: 'budget', cuisineText: '中式', priceText: '平價' },
+            
+            { id: 7, name: '義大利麵', cuisine: 'western', price: 'mid', cuisineText: '西式', priceText: '中價' },
+            { id: 8, name: '美式漢堡', cuisine: 'western', price: 'mid', cuisineText: '西式', priceText: '中價' },
+            { id: 9, name: '披薩', cuisine: 'western', price: 'mid', cuisineText: '西式', priceText: '中價' },
+            { id: 10, name: '早午餐', cuisine: 'western', price: 'premium', cuisineText: '西式', priceText: '高價' },
+            { id: 11, name: '潛艇堡', cuisine: 'western', price: 'budget', cuisineText: '西式', priceText: '平價' },
+            { id: 12, name: '頂級牛排', cuisine: 'western', price: 'premium', cuisineText: '西式', priceText: '高價' },
+
+            { id: 13, name: '日式拉麵', cuisine: 'asian', price: 'mid', cuisineText: '日韓', priceText: '中價' },
+            { id: 14, name: '韓式炸雞', cuisine: 'asian', price: 'premium', cuisineText: '日韓', priceText: '高價' },
+            { id: 15, name: '豚骨定食', cuisine: 'asian', price: 'mid', cuisineText: '日韓', priceText: '中價' },
+            { id: 16, name: '韓式泡菜鍋', cuisine: 'asian', price: 'budget', cuisineText: '日韓', priceText: '平價' },
+            { id: 17, name: '迴轉壽司', cuisine: 'asian', price: 'mid', cuisineText: '日韓', priceText: '中價' },
+
+            { id: 18, name: '泰式打拋豬', cuisine: 'other', price: 'budget', cuisineText: '其他', priceText: '平價' },
+            { id: 19, name: '印度咖哩', cuisine: 'other', price: 'mid', cuisineText: '其他', priceText: '中價' },
+            { id: 20, name: '越式河粉', cuisine: 'other', price: 'budget', cuisineText: '其他', priceText: '平價' },
+            { id: 21, name: '健康餐盒', cuisine: 'other', price: 'mid', cuisineText: '其他', priceText: '中價' }
+        ];
+
+        // 狀態管理
+        let currentCuisine = 'all';
+        let currentPrice = 'all';
+        let filteredList = [...lunchData];
+        let rotationAngle = 0;
+        let isSpinning = true;
+        let isDying = false; 
+        let animationId = null;
+
+        const canvas = document.getElementById('dartboard');
+        const ctx = canvas.getContext('2d');
+        const dartCursor = document.getElementById('dart-cursor');
+
+        // 無印風配色盤（低飽和度、自然色調）
+        const colors = [
+            '#e6e6e2', '#d4c5b3', '#ebdcd0', '#d8d0c5', 
+            '#e2d7cc', '#e5dfd3', '#dfd7ca', '#e1d9ce'
+        ];
+
+        function init() {
+            setupFilters();
+            setupInteraction();
+            startLoop();
+            document.addEventListener('mousemove', updateDartCursor);
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        function resizeCanvas() {
+            const size = Math.min(window.innerWidth - 40, 400);
+            if (canvas.width !== size) {
+                canvas.width = size;
+                canvas.height = size;
+            }
+        }
+
+        function setupFilters() {
+            const cuisineBtns = document.querySelectorAll('#cuisine-filters .btn-filter');
+            const priceBtns = document.querySelectorAll('#price-filters .btn-filter');
+
+            cuisineBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    cuisineBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentCuisine = btn.dataset.value;
+                    updateList();
+                });
+            });
+
+            priceBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    priceBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentPrice = btn.dataset.value;
+                    updateList();
+                });
+            });
+        }
+
+        function updateList() {
+            filteredList = lunchData.filter(item => {
+                const cuisineMatch = currentCuisine === 'all' || item.cuisine === currentCuisine;
+                const priceMatch = currentPrice === 'all' || item.price === currentPrice;
+                return cuisineMatch && priceMatch;
+            });
+
+            if (filteredList.length === 0) {
+                filteredList = [{ id: 0, name: '無相符項目', cuisineText: '-', priceText: '-' }];
+            }
+        }
+
+        // 繪製極簡飛鏢盤
+        function drawDartboard() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const radius = canvas.width * 0.45;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (filteredList.length === 0) return;
+
+            const sliceAngle = (Math.PI * 2) / filteredList.length;
+
+            filteredList.forEach((item, index) => {
+                const startAngle = rotationAngle + index * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
+
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius, startAngle, endAngle);
+                ctx.closePath();
+                
+                // 使用低飽和度的自然色
+                const colorIdx = index % colors.length;
+                ctx.fillStyle = colors[colorIdx];
+                ctx.fill();
+
+                // 細緻的灰色邊框
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 繪製文字
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                
+                ctx.fillStyle = '#333333';
+                ctx.font = `500 ${canvas.width * 0.035}px 'Noto Sans TC'`;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+
+                ctx.fillText(item.name, radius - 20, 0);
+                ctx.restore();
+            });
+
+            // 靶心（無印紅點綴）
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.05, 0, Math.PI * 2);
+            ctx.fillStyle = '#7f1d1d';
+            ctx.fill();
+
+            // 外圈細線
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#e6e6e2';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        function startLoop() {
+            function loop() {
+                if (isSpinning) {
+                    rotationAngle += 0.003; // 更慢、更優雅的旋轉
+                    if (rotationAngle >= Math.PI * 2) rotationAngle -= Math.PI * 2;
+                }
+                drawDartboard();
+                animationId = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        function updateDartCursor(e) {
+            const gameArea = document.querySelector('.game-area');
+            const rect = gameArea.getBoundingClientRect();
+            
+            if (e.clientX >= rect.left && e.clientX <= rect.right && 
+                e.clientY >= rect.top && e.clientY <= rect.bottom && !isDying) {
+                dartCursor.style.display = 'block';
+                dartCursor.style.left = e.clientX + 'px';
+                dartCursor.style.top = e.clientY + 'px';
+                document.body.style.cursor = 'none';
+            } else {
+                dartCursor.style.display = 'none';
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        function setupInteraction() {
+            canvas.addEventListener('click', (e) => {
+                if (isDying) return;
+
+                isDying = true;
+                isSpinning = false;
+                
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                playDartAnimation(clickX, clickY);
+            });
+
+            document.getElementById('btn-retry').addEventListener('click', () => {
+                document.getElementById('result-modal').classList.remove('active');
+                isSpinning = true;
+                isDying = false;
+            });
+        }
+
+        function playDartAnimation(targetX, targetY) {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            
+            const dx = targetX - cx;
+            const dy = targetY - cy;
+            let clickAngle = Math.atan2(dy, dx);
+            if (clickAngle < 0) clickAngle += Math.PI * 2;
+
+            let relativeAngle = clickAngle - rotationAngle;
+            while (relativeAngle < 0) relativeAngle += Math.PI * 2;
+            relativeAngle = relativeAngle % (Math.PI * 2);
+
+            const sliceAngle = (Math.PI * 2) / filteredList.length;
+            const winnerIndex = Math.floor(relativeAngle / sliceAngle);
+            const winner = filteredList[winnerIndex];
+
+            setTimeout(() => {
+                showResult(winner);
+                triggerConfetti();
+            }, 500); 
+        }
+
+        function showResult(winner) {
+            document.getElementById('winner-name').innerText = winner.name;
+            document.getElementById('winner-cuisine').innerText = winner.cuisineText;
+            document.getElementById('winner-price').innerText = winner.priceText;
+            document.getElementById('result-modal').classList.add('active');
+            dartCursor.style.display = 'none';
+            document.body.style.cursor = 'default';
+        }
+
+        function triggerConfetti() {
+            // 溫和的紙花配色，符合極簡風
+            confetti({
+                particleCount: 50,
+                spread: 60,
+                origin: { y: 0.6 },
+                colors: ['#7f1d1d', '#d4c5b3', '#e6e6e2']
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

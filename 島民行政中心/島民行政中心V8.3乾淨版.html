@@ -1120,6 +1120,7 @@
             qrcode: { src: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js', global: 'QRCode' },
             html2canvas: { src: 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', global: 'html2canvas' },
             pdflib: { src: 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js', global: 'PDFLib' },
+            jspdf: { src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', global: 'jspdf' },
             jszip: { src: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', global: 'JSZip' },
             xlsx: { src: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', global: 'XLSX' },
             chart: { src: 'https://cdn.jsdelivr.net/npm/chart.js', global: 'Chart' },
@@ -4661,36 +4662,82 @@
         };
 
         /**
-         * PDF 加密工具 (PDF Encrypt)
-         * 設定開啟密碼保護 PDF
+         * PDF 加密工具 (PDF Encrypt) - 修正版
+         * NOTE: pdf-lib 不支援加密功能，改用 jsPDF（內建 AES-128 加密）
+         *       搭配 pdf.js 渲染原始頁面後重新打包為加密 PDF
          */
         const PDFEncrypt = ({ ready }) => {
             const [file, setFile] = useState(null);
             const [password, setPassword] = useState('');
             const [processing, setProcessing] = useState(false);
+            const [progress, setProgress] = useState(0);
 
             const handleEncrypt = async () => {
-                if (!file || !password || !window.PDFLib) return;
+                if (!file || !password || !window.pdfjsLib || !window.jspdf) return;
                 setProcessing(true);
+                setProgress(0);
 
                 try {
                     const fileBuffer = await Utils.readFileAsArrayBuffer(file);
-                    const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer);
-                    const pdfBytes = await pdfDoc.save({
-                        userPassword: password,
-                        ownerPassword: password
+                    const pdf = await window.pdfjsLib.getDocument({ data: fileBuffer }).promise;
+                    const totalPages = pdf.numPages;
+
+                    // 取得第一頁尺寸以決定初始頁面方向
+                    const firstPage = await pdf.getPage(1);
+                    const firstVp = firstPage.getViewport({ scale: 1 });
+                    const orientation = firstVp.width > firstVp.height ? 'landscape' : 'portrait';
+
+                    // 使用 jsPDF 建立帶密碼保護的新 PDF
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({
+                        orientation,
+                        unit: 'pt',
+                        format: [firstVp.width, firstVp.height],
+                        encryption: {
+                            userPassword: password,
+                            ownerPassword: password + '_owner_key',
+                            userPermissions: ['print']
+                        }
                     });
 
-                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `encrypted_${Date.now()}.pdf`;
-                    a.click();
+                    // 逐頁渲染並加入加密 PDF
+                    for (let i = 1; i <= totalPages; i++) {
+                        const page = await pdf.getPage(i);
+                        // 以 2x 縮放渲染確保清晰度
+                        const renderScale = 2.0;
+                        const viewport = page.getViewport({ scale: renderScale });
+                        const canvas = document.createElement('canvas');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        const ctx = canvas.getContext('2d');
+
+                        await page.render({ canvasContext: ctx, viewport }).promise;
+
+                        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                        const pageVp = page.getViewport({ scale: 1 });
+
+                        // 第二頁起需新增頁面（第一頁在建構時已自動建立）
+                        if (i > 1) {
+                            const pgOrientation = pageVp.width > pageVp.height ? 'landscape' : 'portrait';
+                            doc.addPage([pageVp.width, pageVp.height], pgOrientation);
+                        }
+
+                        const pgW = doc.internal.pageSize.getWidth();
+                        const pgH = doc.internal.pageSize.getHeight();
+                        doc.addImage(imgData, 'JPEG', 0, 0, pgW, pgH);
+
+                        // 更新進度
+                        setProgress(Math.round((i / totalPages) * 100));
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+
+                    doc.save(`encrypted_${file.name}`);
                 } catch (e) {
                     console.error(e);
+                    alert('加密失敗，請確認 PDF 格式正確且非已加密檔案');
                 } finally {
                     setProcessing(false);
+                    setProgress(0);
                 }
             };
 
@@ -4707,7 +4754,7 @@
                         <div className="space-y-4">
                             <FileItem
                                 file={file}
-                                onRemove={() => setFile(null)}
+                                onRemove={() => { setFile(null); setProgress(0); }}
                             />
 
                             <div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-white">
@@ -4724,6 +4771,18 @@
                                 />
                             </div>
 
+                            {processing && (
+                                <div className="bg-[#F2F4E6] rounded-full h-4 w-full overflow-hidden relative">
+                                    <div
+                                        className="h-full bg-[#FF9A8B] transition-all duration-300"
+                                        style={{ width: `${progress}%` }}
+                                    ></div>
+                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[#797365]">
+                                        {progress}%
+                                    </div>
+                                </div>
+                            )}
+
                             <Button
                                 onClick={handleEncrypt}
                                 disabled={processing || !password}
@@ -4731,7 +4790,7 @@
                                 className="w-full text-base md:text-lg"
                                 icon={processing ? Loader2 : Lock}
                             >
-                                {processing ? '處理中...' : '加密 PDF'}
+                                {processing ? '加密處理中...' : '加密 PDF'}
                             </Button>
                         </div>
                     )}
@@ -8760,7 +8819,7 @@
                     { id: 'img2pdf', label: 'JPG 轉 PDF', icon: ImageIcon, component: ImageToPDF, scripts: ['pdflib'] },
                     { id: 'pdf2jpg', label: 'PDF 轉 JPG', icon: FileOutput, component: PDFToImage, style: 'danger', scripts: ['pdf', 'pdflib', 'jszip'] },
                     { id: 'pagenum', label: 'PDF 添加頁碼', icon: Hash, component: PDFPageNumber, scripts: ['pdflib'] },
-                    { id: 'encrypt', label: 'PDF 加密', icon: Lock, component: PDFEncrypt, scripts: ['pdflib'] }
+                    { id: 'encrypt', label: 'PDF 加密', icon: Lock, component: PDFEncrypt, scripts: ['pdf', 'jspdf'] }
                 ],
                 'CONVERT': [
                     { id: 'photoconverter', label: '照片轉換工作站', icon: ImageIcon, component: PhotoConverterTool },

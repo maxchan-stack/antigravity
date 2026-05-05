@@ -1,0 +1,500 @@
+﻿                // 撱箇?撌乩?銵刻???                const wsData = [['蝯', '?']];
+                groups.forEach((group, idx) => {
+                    group.forEach((name, i) => {
+                        wsData.push([i === 0 ? `蝚?${idx + 1} 蝯 : '', name]);
+                    });
+                });
+                const ws = window.XLSX.utils.aoa_to_sheet(wsData);
+                const wb = window.XLSX.utils.book_new();
+                window.XLSX.utils.book_append_sheet(wb, ws, '??蝯?');
+                window.XLSX.writeFile(wb, `??蝯?_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-[#F8F9F0] p-4 rounded-[24px] border-[3px] border-white">
+                            <label className="text-sm font-bold text-[#797365] mb-2 block">? (瘥?銝??</label>
+                            <textarea value={namesStr} onChange={(e) => setNamesStr(e.target.value)} className="w-full h-32 p-3 rounded-xl border-none text-[#797365] font-bold bg-white focus:ring-4 focus:ring-[#88C9A1]/30 resize-none" placeholder="靘?嚗?#10;撠?&#10;撠&#10;撠?" />
+                            <div className="mt-2 relative">
+                                <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                <div className="bg-white border-2 border-dashed border-[#E0E4CC] text-[#9CA38F] font-bold py-2 rounded-xl text-center hover:bg-[#F2F4E6] transition-colors text-sm">???Excel (霈?洵銝甈?</div>
+                            </div>
+                        </div>
+                        <div className="bg-[#F8F9F0] p-4 rounded-[24px] border-[3px] border-white flex flex-col justify-center gap-4">
+                            <div>
+                                <label className="text-sm font-bold text-[#797365] mb-2 block">瘥?鈭箸</label>
+                                <input type="number" value={groupSize} onChange={e => setGroupSize(Number(e.target.value))} className="w-full p-3 rounded-xl border-none bg-white text-[#797365] font-bold" />
+                            </div>
+                            <div className="bg-[#FFF9C4] p-3 rounded-xl border-2 border-[#FBC02D] text-xs font-bold text-[#797365] opacity-80">
+                                撠?蝷綽??乩犖?貊瘜?歹??敺?蝯犖?豢?頛???                            </div>
+                        </div>
+                    </div>
+
+                    <Button onClick={handleGenerate} variant="primary" className="w-full text-lg" icon={Grid}>???冽???</Button>
+
+                    {groups.length > 0 && (
+                        <div className="bg-white p-4 rounded-[24px] border-[4px] border-[#E0E4CC] overflow-auto">
+                            <div className="flex justify-end items-center gap-2 mb-4">
+                                <Button onClick={handleExportExcel} variant="secondary" className="px-4 py-2 text-sm" icon={Download}>?臬 Excel</Button>
+                                <Button onClick={handleExportPDF} disabled={isExporting} variant="secondary" className="px-4 py-2 text-sm" icon={Download}>{isExporting ? "?臬銝?.." : "?臬??銵?PDF"}</Button>
+                            </div>
+                            <div ref={chartRef} className="bg-white p-8 min-w-[600px] grid grid-cols-2 md:grid-cols-3 gap-8">
+                                {groups.map((group, idx) => (
+                                    <div key={idx} className="flex flex-col items-center">
+                                        <div className="mb-2 text-[#8B4513] font-bold tracking-widest text-sm uppercase">Table {idx + 1}</div>
+                                        <div className="w-full aspect-square wood-pattern-light rounded-[20px] shadow-lg border-[4px] border-[#8B4513] relative flex items-center justify-center p-4">
+                                            <div className="text-center">
+                                                {group.map((name, i) => (
+                                                    <div key={i} className="text-[#8B4513] font-bold text-lg leading-relaxed drop-shadow-md">{name}</div>
+                                                ))}
+                                            </div>
+                                            {/* Table details */}
+                                            <div className="absolute top-2 right-2 w-2 h-2 bg-[#8B4513] rounded-full opacity-30"></div>
+                                            <div className="absolute top-2 left-2 w-2 h-2 bg-[#8B4513] rounded-full opacity-30"></div>
+                                            <div className="absolute bottom-2 right-2 w-2 h-2 bg-[#8B4513] rounded-full opacity-30"></div>
+                                            <div className="absolute bottom-2 left-2 w-2 h-2 bg-[#8B4513] rounded-full opacity-30"></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        /**
+         * PDF ?蔥撌亙 (PDF Merger)
+         * 雿輻 pdf-lib ?脰?蝝?蝡臬?雿?         * ?舀?????瑼???         */
+        /**
+         * PDF ?蔥撌亙 (PDF Merger)
+         * 雿輻 pdf-lib ?脰?蝝?蝡臬?雿?         * ?舀?????瑼???         * [V8.5] ?啣?嚗脣漲璇＊蝷?         */
+        const PDFMerger = ({ ready }) => {
+            const [files, setFiles] = useState([]);
+            const [processing, setProcessing] = useState(false);
+            const [progress, setProgress] = useState(0);
+
+            const handleMerge = async () => {
+                if (files.length < 2 || !window.PDFLib) return;
+                setProcessing(true);
+                setProgress(0);
+
+                // 蝯虫? UI 銝暺?????                await new Promise(r => setTimeout(r, 50));
+
+                try {
+                    const mergedPdf = await window.PDFLib.PDFDocument.create();
+
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const fileBuffer = await Utils.readFileAsArrayBuffer(file);
+                        const pdf = await window.PDFLib.PDFDocument.load(fileBuffer);
+                        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                        copiedPages.forEach((page) => mergedPdf.addPage(page));
+
+                        // ?湔?脣漲
+                        setProgress(Math.round(((i + 1) / files.length) * 100));
+                        // 霈蝺?隞交??UI
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+
+                    const pdfBytes = await mergedPdf.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `merged_${Date.now()}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    alert('?蔥憭望?');
+                } finally {
+                    setProcessing(false);
+                    setProgress(0);
+                }
+            };
+
+            return (
+                <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <DropZone
+                        accept=".pdf"
+                        multiple={true}
+                        onDrop={(fs) => setFiles(prev => [...prev, ...fs.filter(f => f.type === 'application/pdf')])}
+                        label="?舀憭?PDF 瑼?"
+                    />
+
+                    {files.length > 0 && (
+                        <div className="space-y-3 bg-white p-4 md:p-6 rounded-[24px] md:rounded-[30px] border-[3px] md:border-[4px] border-[#F2F4E6]">
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                {files.map((file, idx) => (
+                                    <FileItem
+                                        key={idx}
+                                        file={file}
+                                        onRemove={() => setFiles(files.filter((_, i) => i !== idx))}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {processing && (
+                        <div className="bg-[#F2F4E6] rounded-full h-4 w-full overflow-hidden relative">
+                            <div
+                                className="h-full bg-[#7FD1B9] transition-all duration-300"
+                                style={{ width: `${progress}% ` }}
+                            ></div>
+                            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[#797365]">
+                                {progress}%
+                            </div>
+                        </div>
+                    )}
+
+                    <Button
+                        onClick={handleMerge}
+                        disabled={files.length < 2 || processing}
+                        variant="primary"
+                        className="w-full text-base md:text-lg"
+                        icon={processing ? Loader2 : Layers}
+                    >
+                        {processing ? '??銝?..' : '???蔥 PDF'}
+                    </Button>
+                </div>
+            );
+        };
+
+        /**
+         * PDF ?撌亙 (PDF Splitter)
+         * 撠???PDF ??箏?蒂????ZIP 銝?
+         * 雿輻 JSZip ??
+         * [V8.5] ?啣?嚗脣漲璇＊蝷?         */
+        const PDFSplitter = ({ ready }) => {
+            const [file, setFile] = useState(null);
+            const [processing, setProcessing] = useState(false);
+            const [progress, setProgress] = useState(0);
+
+            const handleSplit = async () => {
+                if (!file || !window.PDFLib || !window.JSZip) return;
+                setProcessing(true);
+                setProgress(0);
+
+                // 蝯虫? UI 銝暺?????                await new Promise(r => setTimeout(r, 50));
+
+                try {
+                    const fileBuffer = await Utils.readFileAsArrayBuffer(file);
+                    const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer);
+                    const pageCount = pdfDoc.getPageCount();
+                    const zip = new window.JSZip();
+
+                    for (let i = 0; i < pageCount; i++) {
+                        const newPdf = await window.PDFLib.PDFDocument.create();
+                        const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
+                        newPdf.addPage(copiedPage);
+                        const pdfBytes = await newPdf.save();
+                        zip.file(`${file.name.replace('.pdf', '')}_p${(i + 1).toString().padStart(3, '0')}.pdf`, pdfBytes);
+
+                        // ?湔?脣漲 (?寞活??憿舐內?芸?)
+                        if (i % 2 === 0 || i === pageCount - 1) {
+                            setProgress(Math.round(((i + 1) / pageCount) * 100));
+                            await new Promise(r => setTimeout(r, 0));
+                        }
+                    }
+
+                    const zipContent = await zip.generateAsync({ type: "blob" }, (metadata) => {
+                        // ZIP ?????脣漲銋?嚗??ㄐ蝪∪??
+                    });
+
+                    const url = URL.createObjectURL(zipContent);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `split_${Date.now()}.zip`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    setProcessing(false);
+                    setProgress(0);
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {!file ? (
+                        <DropZone
+                            accept=".pdf"
+                            multiple={false}
+                            onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])}
+                            label="?桐? PDF"
+                        />
+                    ) : (
+                        <div className="space-y-4">
+                            <FileItem
+                                file={file}
+                                onRemove={() => setFile(null)}
+                            />
+
+                            {processing && (
+                                <div className="bg-[#F2F4E6] rounded-full h-4 w-full overflow-hidden relative">
+                                    <div
+                                        className="h-full bg-[#7ACBD5] transition-all duration-300"
+                                        style={{ width: `${progress}% ` }}
+                                    ></div>
+                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[#797365]">
+                                        {progress}%
+                                    </div>
+                                </div>
+                            )}
+
+                            <Button
+                                onClick={handleSplit}
+                                disabled={processing}
+                                variant="blue"
+                                className="w-full text-base md:text-lg"
+                                icon={processing ? Loader2 : Scissors}
+                            >
+                                {processing ? '??銝?..' : '?銝虫?頛?ZIP'}
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        /**
+         * PDF ?蝘駁撌亙 (PDF Page Remover)
+         * 頛詨?Ⅳ (憒?1, 3-5) 蝘駁?孵??
+         * ????啁? PDF
+         */
+        const PDFPageRemover = ({ ready }) => {
+            const [file, setFile] = useState(null);
+            const [pagesToRemove, setPagesToRemove] = useState('');
+            const [processing, setProcessing] = useState(false);
+
+            const handleRemove = async () => {
+                if (!file || !pagesToRemove || !window.PDFLib) return;
+                setProcessing(true);
+
+                try {
+                    const fileBuffer = await Utils.readFileAsArrayBuffer(file);
+                    const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer);
+                    const newPdf = await window.PDFLib.PDFDocument.create();
+                    const totalPages = pdfDoc.getPageCount();
+                    const removeIndices = new Set();
+
+                    pagesToRemove.split(',').forEach(part => {
+                        const range = part.trim().split('-').map(Number);
+                        if (range.length === 1 && !isNaN(range[0])) {
+                            removeIndices.add(range[0] - 1);
+                        } else if (range.length === 2) {
+                            for (let i = range[0]; i <= range[1]; i++) {
+                                removeIndices.add(i - 1);
+                            }
+                        }
+                    });
+
+                    const keepIndices = [];
+                    for (let i = 0; i < totalPages; i++) {
+                        if (!removeIndices.has(i)) {
+                            keepIndices.push(i);
+                        }
+                    }
+
+                    if (keepIndices.length === 0) throw new Error("銝蝘駁?????);
+
+                    const copiedPages = await newPdf.copyPages(pdfDoc, keepIndices);
+                    copiedPages.forEach(page => newPdf.addPage(page));
+
+                    const pdfBytes = await newPdf.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `removed_pages_${Date.now()}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    alert('??憭望?: ' + err.message);
+                } finally {
+                    setProcessing(false);
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {!file ? (
+                        <DropZone
+                            accept=".pdf"
+                            multiple={false}
+                            onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])}
+                            label="?桐? PDF"
+                        />
+                    ) : (
+                        <div className="space-y-4">
+                            <FileItem
+                                file={file}
+                                onRemove={() => setFile(null)}
+                            />
+
+                            <div className="bg-[#F8F9F0] p-4 md:p-6 rounded-[20px] md:rounded-[30px] border-[3px] md:border-[4px] border-white">
+                                <label className="text-sm md:text-base font-bold text-[#797365] flex items-center gap-2">
+                                    <Trash2 className="w-4 h-4" />
+                                    閬宏?斤??Ⅳ (靘?: 1, 3-5)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={pagesToRemove}
+                                    onChange={(e) => setPagesToRemove(e.target.value)}
+                                    className="w-full p-3 md:p-4 rounded-xl md:rounded-2xl border-none mt-2 md:mt-3 text-[#797365] bg-white focus:ring-4 focus:ring-[#88C9A1]/30 font-bold"
+                                    placeholder="頛詨?Ⅳ..."
+                                />
+                            </div>
+
+                            <Button
+                                onClick={handleRemove}
+                                disabled={processing}
+                                variant="danger"
+                                className="w-full text-base md:text-lg"
+                                icon={processing ? Loader2 : Trash2}
+                            >
+                                {processing ? '??銝?..' : '蝘駁???'}
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        /**
+         * PDF ??撌亙 (PDF Rotator)
+         * 撠隞?PDF ??? 90 摨?         */
+        const PDFRotator = ({ ready }) => {
+            const [file, setFile] = useState(null);
+            const [processing, setProcessing] = useState(false);
+
+            const handleRotate = async () => {
+                if (!file || !window.PDFLib) return;
+                setProcessing(true);
+
+                try {
+                    const fileBuffer = await Utils.readFileAsArrayBuffer(file);
+                    const pdfDoc = await window.PDFLib.PDFDocument.load(fileBuffer);
+                    const pages = pdfDoc.getPages();
+
+                    pages.forEach(page => {
+                        const rotation = page.getRotation();
+                        page.setRotation(window.PDFLib.degrees(rotation.angle + 90));
+                    });
+
+                    const pdfBytes = await pdfDoc.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `rotated_${Date.now()}.pdf`;
+                    a.click();
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    setProcessing(false);
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {!file ? (
+                        <DropZone
+                            accept=".pdf"
+                            multiple={false}
+                            onDrop={(fs) => fs[0].type === 'application/pdf' && setFile(fs[0])}
+                            label="?桐? PDF"
+                        />
+                    ) : (
+                        <div className="space-y-4">
+                            <FileItem
+                                file={file}
+                                onRemove={() => setFile(null)}
+                            />
+
+                            <Button
+                                onClick={handleRotate}
+                                disabled={processing}
+                                variant="primary"
+                                className="w-full text-base md:text-lg"
+                                icon={processing ? Loader2 : RotateCw}
+                            >
+                                {processing ? '??銝?..' : '?券??? 90簞'}
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        /**
+         * ??頧?PDF 撌亙 (Image to PDF)
+         * ?舀憭撐???蔥?箔?隞?PDF
+         * ?舀 PNG, JPG
+         */
+        const ImageToPDF = ({ ready }) => {
+            const [files, setFiles] = useState([]);
+            const [processing, setProcessing] = useState(false);
+
+            const handleConvert = async () => {
+                if (files.length === 0 || !window.PDFLib) return;
+                setProcessing(true);
+
+                try {
+                    const pdfDoc = await window.PDFLib.PDFDocument.create();
+
+                    for (const file of files) {
+                        const fileBuffer = await Utils.readFileAsArrayBuffer(file);
+                        let image;
+
+                        if (file.type === 'image/png') {
+                            image = await pdfDoc.embedPng(fileBuffer);
+                        } else if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+                            image = await pdfDoc.embedJpg(fileBuffer);
+                        } else {
+                            continue;
+                        }
+
+                        const page = pdfDoc.addPage([image.width, image.height]);
+                        page.drawImage(image, {
+                            x: 0,
+                            y: 0,
+                            width: image.width,
+                            height: image.height
+                        });
+                    }
+
+                    const pdfBytes = await pdfDoc.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `images_to_pdf_${Date.now()}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (err) {
+                    alert("頧?憭望?");
+                } finally {
+                    setProcessing(false);
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <DropZone
+                        accept="image/png, image/jpeg, image/jpg"
+                        multiple={true}
+                        onDrop={(fs) => setFiles(prev => [...prev, ...fs.filter(f => ['image/png', 'image/jpeg', 'image/jpg'].includes(f.type))])}
+                        label="?舀 JPG / PNG"
+                    />
+
+                    {files.length > 0 && (
+                        <div className="space-y-3 bg-white p-6 rounded-[30px] border-[4px] border-[#F2F4E6]">
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                {files.map((file, idx) => (
+                                    <FileItem
+                                        key={`img - ${idx} `}
+                                        file={file}

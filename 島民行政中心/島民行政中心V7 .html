@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>島民行政中心 v7.9.9 </title>
+    <title>島民行政中心 v7.9 </title>
     
     <!-- 0. 全域錯誤捕捉 -->
     <script>
@@ -38,13 +38,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-/* --- Fix: 修復「服務總覽」標籤在夜間模式看不見的問題 --- */
-/* Tailwind 的 /60 會產生特殊符號，CSS 中需要用 \ 轉義 */
-[data-theme="dark"] .bg-white\/60 {
-    background-color: var(--sidebar-bg) !important; /* 改為深灰背景 */
-    border-color: var(--border-color) !important;   /* 深色邊框 */
-    color: var(--text-main) !important;             /* 白色文字 */
-}
 /* 隱藏 Chrome, Safari, Edge, Opera 的數字輸入箭頭 */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
@@ -101,16 +94,6 @@ body {
     background-color: var(--card-bg) !important; 
     border-color: var(--border-color) !important;
 }
-/* [Fix] 修復「數字轉大寫」結果區在夜間模式的背景色 */
-        [data-theme="dark"] .bg-\[\#FFF8DC\] {
-            background-color: var(--sidebar-bg) !important; /* 改為深灰 */
-            border-color: var(--border-color) !important;   /* 改為深色邊框 */
-        }
-        
-        /* [Fix] 修復結果區的邊框顏色 (原本是亮黃色) */
-        [data-theme="dark"] .border-\[\#F4E798\] {
-            border-color: var(--border-color) !important;
-        }
 [data-theme="dark"] .bg-\[\#F8F9F0\], 
 [data-theme="dark"] .bg-\[\#F9F5E3\],
 [data-theme="dark"] .bg-\[\#F0F5F1\],
@@ -853,38 +836,17 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
             readFileAsArrayBuffer: (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsArrayBuffer(file); }),
             readImageAsDataURL: (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }),
             loadImage: (src) => new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = src; }),
-            // [V7.9.9 Fix] 修正版：數字轉中文大寫 (解決 undefined 問題)
-        numberToChinese: (num) => {
-            if (!/^(0|[1-9]\d*)(\.\d+)?$/.test(num)) return ""; // 非數字直接回傳空
-
-            const unit = "仟佰拾億仟佰拾萬仟佰拾元角分";
-            let str = "";
-            num += "00"; // 補零，確保有小數可切
-            
-            // 核心修正：不進行數學運算，直接操作字串
-            const pointIdx = num.indexOf('.');
-            if (pointIdx >= 0) {
-                // 有小數點：取整數部分 + 小數點後兩位
-                num = num.substring(0, pointIdx) + num.substr(pointIdx + 1, 2);
+            numberToChinese: (n) => {
+                const digits = ['零', '壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖'];
+                const units = ['', '拾', '佰', '仟', '萬'];
+                let str = n.toString();
+                let result = '';
+                for (let i = 0; i < str.length; i++) {
+                    result += digits[parseInt(str[i])];
+                    if (str.length - i - 1 > 0) result += units[str.length - i - 1];
+                }
+                return result;
             }
-            
-            // 截取對應的單位長度
-            const currentUnit = unit.substr(unit.length - num.length);
-
-            for (let i = 0; i < num.length; i++) {
-                // 將每個數字轉成中文 (0~9 對應 零~玖)
-                str += '零壹貳參肆伍陸柒捌玖'.charAt(num.charAt(i)) + currentUnit.charAt(i);
-            }
-
-            // --- 傳統中文大寫的文法修飾 (Regex) ---
-            return str
-                .replace(/零(仟|佰|拾|角)/g, "零") // 零佰 -> 零
-                .replace(/(零)+/g, "零")          // 零零零 -> 零
-                .replace(/零(萬|億|元)/g, "$1")    // 零萬 -> 萬
-                .replace(/(億)萬|壹(拾)/g, "$1$2") // 億萬 -> 億
-                .replace(/^元零?|零分/g, "")       // 去除開頭多餘的元或結尾的零分
-                .replace(/元$/g, "元整");          // 如果沒有角分，加上"整"
-        },
         };
 
         // --- UI Components ---
@@ -1401,386 +1363,298 @@ const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/>
         };
 // --- 傅達的實驗繪圖板 V4.2 (自動標題+圓鈕優化版) ---
         const LabPlotterTool = () => {
-    const defaultRows = Array(20).fill(null).map((_, i) => 
-        i < 5 ? { x: (i+1).toString(), y: (4.9 * (i+1)*(i+1)).toFixed(1) } : { x: "", y: "" }
-    );
+            const defaultRows = Array(20).fill(null).map((_, i) => 
+                i < 5 ? { x: (i+1).toString(), y: (4.9 * (i+1)*(i+1)).toFixed(1) } : { x: "", y: "" }
+            );
 
-    const [dataRows, setDataRows] = useState(defaultRows);
-    const [xLabel, setXLabel] = useState("時間 t (s)");
-    const [yLabel, setYLabel] = useState("位移 S (m)");
-    const [fitType, setFitType] = useState("poly2"); 
-    const [showEq, setShowEq] = useState(true);
-    const [stats, setStats] = useState(null);
-    const [renderTrigger, setRenderTrigger] = useState(0); 
-    const canvasRef = useRef(null);
+            const [dataRows, setDataRows] = useState(defaultRows);
+            const [xLabel, setXLabel] = useState("時間 t (s)");
+            const [yLabel, setYLabel] = useState("位移 S (m)");
+            const [fitType, setFitType] = useState("poly2"); 
+            const [showEq, setShowEq] = useState(true);
+            const [stats, setStats] = useState(null);
+            const [renderTrigger, setRenderTrigger] = useState(0); 
+            const canvasRef = useRef(null);
 
-    // ☆☆☆ 新增:處理貼上事件的核心函數 ☆☆☆
-    const handlePaste = (e) => {
-        e.preventDefault();
-        const pastedText = e.clipboardData.getData('text');
-        const lines = pastedText.trim().split('\n');
-        const newRows = [...dataRows];
-        
-        lines.forEach((line, i) => {
-            if (i < newRows.length) {
-                // 支援多種分隔符:Tab, 逗號, 空格
-                const parts = line.split(/[\t,\s]+/);
-                newRows[i].x = parts[0] || "";
-                newRows[i].y = parts[1] || "";
-            }
-        });
-        
-        setDataRows(newRows);
-    };
+            const handleCellChange = (index, field, value) => {
+                const newRows = [...dataRows];
+                newRows[index][field] = value;
+                setDataRows(newRows);
+            };
 
-    // ☆☆☆ 新增:Excel 匯入功能 ☆☆☆
-    const handleExcelUpload = (e) => {
-        const file = e.target.files[0]; 
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            try {
-                const bstr = evt.target.result; 
-                if (!window.XLSX) { 
-                    alert("Excel 元件尚未載入,請稍後再試"); 
+            const clearAll = () => {
+                setDataRows(Array(20).fill(null).map(() => ({ x: "", y: "" })));
+                setStats(null);
+                setRenderTrigger(prev => prev + 1);
+            };
+
+            const handlePaste = async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    const lines = text.trim().split('\n');
+                    const newRows = [...dataRows];
+                    lines.forEach((line, i) => {
+                        if (i < newRows.length) {
+                            const parts = line.split(/[\t, ]+/);
+                            newRows[i].x = parts[0] || "";
+                            newRows[i].y = parts[1] || "";
+                        }
+                    });
+                    setDataRows(newRows);
+                } catch (err) { alert("請允許存取剪貼簿"); }
+            };
+
+            // --- 數學核心 ---
+            const solveLinear = (data) => {
+                const n = data.length;
+                let sumX=0, sumY=0, sumXY=0, sumXX=0;
+                data.forEach(p => { sumX+=p.x; sumY+=p.y; sumXY+=p.x*p.y; sumXX+=p.x*p.x; });
+                const slope = (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX);
+                const intercept = (sumY - slope*sumX) / n;
+                return { 
+                    eqStr: `y = ${slope.toFixed(4)}x + ${intercept.toFixed(4)}`, 
+                    predict: (x) => slope*x + intercept,
+                    params: { m: slope, c: intercept } 
+                };
+            };
+            const solvePoly2 = (data) => { 
+                let sX=0, sX2=0, sX3=0, sX4=0, sY=0, sXY=0, sX2Y=0; const n = data.length;
+                data.forEach(p => { const x = p.x, y = p.y, x2 = x*x; sX+=x; sX2+=x2; sX3+=x2*x; sX4+=x2*x2; sY+=y; sXY+=x*y; sX2Y+=x2*y; });
+                const det = n*(sX2*sX4 - sX3*sX3) - sX*(sX*sX4 - sX3*sX2) + sX2*(sX*sX3 - sX2*sX2);
+                if(Math.abs(det) < 1e-9) return null;
+                const detA = sY*(sX2*sX4 - sX3*sX3) - sX*(sXY*sX4 - sX3*sX2Y) + sX2*(sXY*sX3 - sX2*sX2Y); 
+                const detB = n*(sXY*sX4 - sX3*sX2Y) - sY*(sX*sX4 - sX3*sX2) + sX2*(sX*sX2Y - sXY*sX2); 
+                const detC = n*(sX2*sX2Y - sXY*sX3) - sX*(sX*sX2Y - sXY*sX2) + sY*(sX*sX3 - sX2*sX2); 
+                const c = detA/det, b = detB/det, a = detC/det;
+                return { 
+                    eqStr: `y = ${a.toFixed(4)}x² + ${b.toFixed(4)}x + ${c.toFixed(4)}`, 
+                    predict: (x) => a*x*x + b*x + c,
+                    params: { a, b, c }
+                };
+            };
+            const solvePower = (data) => { 
+                const logData = data.filter(p => p.x > 0 && p.y > 0).map(p => ({ x: Math.log(p.x), y: Math.log(p.y) }));
+                if (logData.length < 2) return null;
+                const linear = solveLinear(logData);
+                const b = linear.params.m; const a = Math.exp(linear.params.c);
+                return { 
+                    eqStr: `y = ${a.toFixed(4)} * x^${b.toFixed(4)}`, 
+                    predict: (x) => a * Math.pow(x, b),
+                    params: { a, b }
+                };
+            };
+            const solveExp = (data) => { 
+                const logData = data.filter(p => p.y > 0).map(p => ({ x: p.x, y: Math.log(p.y) }));
+                if (logData.length < 2) return null;
+                const linear = solveLinear(logData);
+                const b = linear.params.m; const a = Math.exp(linear.params.c);
+                return { 
+                    eqStr: `y = ${a.toFixed(4)} * e^(${b.toFixed(4)}x)`, 
+                    predict: (x) => a * Math.exp(b * x),
+                    params: { a, b }
+                };
+            };
+
+            const analyzeData = (customRows = null, customFitType = null) => {
+                const rowsToUse = customRows || dataRows;
+                const typeToUse = customFitType || fitType;
+                const validPoints = [];
+                rowsToUse.forEach(row => {
+                    const x = parseFloat(row.x), y = parseFloat(row.y);
+                    if (!isNaN(x) && !isNaN(y)) validPoints.push({x, y});
+                });
+
+                if (validPoints.length < 2) { 
+                    if(!customRows) alert("請至少輸入兩組有效數據"); 
+                    setStats(null);
+                    setRenderTrigger(prev => prev + 1);
                     return; 
                 }
+
+                let result = null;
+                try {
+                    if (typeToUse === 'linear') result = solveLinear(validPoints);
+                    else if (typeToUse === 'poly2') result = solvePoly2(validPoints);
+                    else if (typeToUse === 'power') result = solvePower(validPoints);
+                    else if (typeToUse === 'exp') result = solveExp(validPoints);
+                } catch(e) {}
+
+                if (!result && !customRows) { alert("無法擬合"); return; }
+
+                const meanY = validPoints.reduce((s, p) => s + p.y, 0) / validPoints.length;
+                const ssTot = validPoints.reduce((s, p) => s + Math.pow(p.y - meanY, 2), 0);
+                const ssRes = validPoints.reduce((s, p) => s + Math.pow(p.y - result.predict(p.x), 2), 0);
+                const rSquared = ssTot === 0 ? 1 : (1 - (ssRes / ssTot));
+
+                setStats({ ...result, rSquared, points: validPoints, type: typeToUse });
+                setRenderTrigger(prev => prev + 1);
+            };
+
+            // ★★★ 手繪 Canvas 核心 (自動標題 + 增加上方留白) ★★★
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
                 
-                const wb = window.XLSX.read(bstr, { type: 'binary' });
-                const wsname = wb.SheetNames[0];
-                const ws = wb.Sheets[wsname];
-                const data = window.XLSX.utils.sheet_to_json(ws, { header: 1 });
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                ctx.clearRect(0, 0, rect.width, rect.height);
+
+                if (!stats || !stats.points || stats.points.length === 0) {
+                    ctx.fillStyle = "#CCC"; ctx.font = "bold 20px sans-serif"; ctx.textAlign = "center";
+                    ctx.fillText("請輸入數據並點擊右側分析...", rect.width/2, rect.height/2);
+                    return;
+                }
+
+                // 邊界設定：上方留白增加到 80px 以容納兩行標題
+                const padding = { top: 80, right: 30, bottom: 50, left: 60 };
+                const plotW = rect.width - padding.left - padding.right;
+                const plotH = rect.height - padding.top - padding.bottom;
+
+                const xs = stats.points.map(p => p.x);
+                const ys = stats.points.map(p => p.y);
+                let minX = Math.min(...xs), maxX = Math.max(...xs);
+                let minY = Math.min(...ys), maxY = Math.max(...ys);
+                const rangeX = maxX - minX || 1;
+                const rangeY = maxY - minY || 1;
                 
-                const newRows = Array(20).fill(null).map(() => ({ x: "", y: "" }));
-                data.forEach((row, i) => {
-                    if (i < newRows.length && row.length >= 2) {
-                        newRows[i].x = String(row[0] || "");
-                        newRows[i].y = String(row[1] || "");
+                minX -= rangeX * 0.1; maxX += rangeX * 0.1;
+                minY -= rangeY * 0.1; maxY += rangeY * 0.1;
+
+                const mapX = (val) => padding.left + ((val - minX) / (maxX - minX)) * plotW;
+                const mapY = (val) => padding.top + plotH - ((val - minY) / (maxY - minY)) * plotH;
+
+                // 繪製格線
+                ctx.strokeStyle = "#EEEEEE"; ctx.lineWidth = 1;
+                ctx.fillStyle = "#795548"; ctx.font = "10px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+                for(let i=0; i<=5; i++) {
+                    const val = minX + ((maxX - minX) * i / 5); const cx = mapX(val);
+                    ctx.beginPath(); ctx.moveTo(cx, padding.top); ctx.lineTo(cx, padding.top + plotH); ctx.stroke();
+                    ctx.fillText(val.toFixed(1), cx, padding.top + plotH + 5);
+                }
+                ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                for(let i=0; i<=5; i++) {
+                    const val = minY + ((maxY - minY) * i / 5); const cy = mapY(val);
+                    ctx.beginPath(); ctx.moveTo(padding.left, cy); ctx.lineTo(padding.left + plotW, cy); ctx.stroke();
+                    ctx.fillText(val.toFixed(1), padding.left - 5, cy);
+                }
+
+                // 軸標題
+                ctx.fillStyle = "#5D4037"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
+                ctx.fillText(xLabel, padding.left + plotW/2, padding.top + plotH + 35);
+                ctx.save(); ctx.translate(20, padding.top + plotH/2); ctx.rotate(-Math.PI/2);
+                ctx.fillText(yLabel, 0, 0); ctx.restore();
+
+                // 外框
+                ctx.strokeStyle = "#5D4037"; ctx.lineWidth = 2; ctx.strokeRect(padding.left, padding.top, plotW, plotH);
+
+                // 趨勢線
+                ctx.beginPath(); ctx.strokeStyle = "#FF7043"; ctx.lineWidth = 3;
+                for(let i=0; i<=100; i++) {
+                    const xVal = minX + (maxX - minX)*(i/100); const yVal = stats.predict(xVal);
+                    if(yVal >= minY && yVal <= maxY) {
+                        const cx = mapX(xVal); const cy = mapY(yVal);
+                        if(i===0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
                     }
+                }
+                ctx.stroke();
+
+                // 數據點
+                stats.points.forEach(p => {
+                    const cx = mapX(p.x); const cy = mapY(p.y);
+                    ctx.beginPath(); ctx.fillStyle = "#8D6E63"; ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.stroke();
                 });
+
+                // ★ 自動標題繪製 ★
+                ctx.textAlign = "center";
+                // 1. 主標題 (Y vs X)
+                ctx.fillStyle = "#3E2723"; ctx.font = "bold 20px sans-serif";
+                ctx.fillText(`${yLabel} vs ${xLabel}`, rect.width/2, 30);
                 
-                setDataRows(newRows);
-            } catch (e) { 
-                console.error(e); 
-                alert("讀取 Excel 失敗,請確認檔案格式"); 
-            }
-        };
-        reader.readAsBinaryString(file); 
-        e.target.value = null;
-    };
+                // 2. 副標題 (方程式)
+                if (showEq) {
+                    ctx.fillStyle = "#E64A19"; ctx.font = "bold 14px sans-serif";
+                    ctx.fillText(`${stats.eqStr} (R²=${stats.rSquared.toFixed(4)})`, rect.width/2, 55);
+                }
 
-    const handleCellChange = (index, field, value) => {
-        const newRows = [...dataRows];
-        newRows[index][field] = value;
-        setDataRows(newRows);
-    };
+            }, [renderTrigger, stats, xLabel, yLabel, showEq]);
 
-    const clearAll = () => {
-        setDataRows(Array(20).fill(null).map(() => ({ x: "", y: "" })));
-        setStats(null);
-        setRenderTrigger(prev => prev + 1);
-    };
+            const loadExample = (type) => {
+                const newRows = Array(20).fill(null).map(() => ({ x: "", y: "" }));
+                let newX = "X", newY = "Y";
+                if (type === 'linear') { newX = "伸長量 x (cm)"; newY = "外力 F (gw)"; setFitType('linear'); [{x:"2.0", y:"10"}, {x:"4.1", y:"20"}, {x:"5.9", y:"30"}, {x:"8.2", y:"40"}, {x:"10.0", y:"50"}].forEach((d,i)=>newRows[i]=d); }
+                else if (type === 'poly2') { newX = "時間 t (s)"; newY = "位移 S (m)"; setFitType('poly2'); [{x:"0", y:"0"}, {x:"1", y:"4.9"}, {x:"2", y:"19.5"}, {x:"3", y:"44.2"}, {x:"4", y:"78.3"}].forEach((d,i)=>newRows[i]=d); }
+                else if (type === 'exp') { newX = "時間 t (s)"; newY = "電壓 V (V)"; setFitType('exp'); [{x:"0", y:"10.0"}, {x:"1", y:"6.1"}, {x:"2", y:"3.7"}, {x:"3", y:"2.2"}, {x:"4", y:"1.4"}].forEach((d,i)=>newRows[i]=d); }
+                setXLabel(newX); setYLabel(newY); setDataRows(newRows);
+                setTimeout(() => analyzeData(newRows, type), 50);
+            };
 
-    // ... (保留原本的數學核心函數: solveLinear, solvePoly2, solvePower, solveExp, analyzeData 等)
-    const solveLinear = (data) => {
-        const n = data.length;
-        let sumX=0, sumY=0, sumXY=0, sumXX=0;
-        data.forEach(p => { sumX+=p.x; sumY+=p.y; sumXY+=p.x*p.y; sumXX+=p.x*p.x; });
-        const slope = (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX);
-        const intercept = (sumY - slope*sumX) / n;
-        return { 
-            eqStr: `y = ${slope.toFixed(4)}x + ${intercept.toFixed(4)}`, 
-            predict: (x) => slope*x + intercept,
-            params: { m: slope, c: intercept } 
-        };
-    };
-    const solvePoly2 = (data) => { 
-        let sX=0, sX2=0, sX3=0, sX4=0, sY=0, sXY=0, sX2Y=0; const n = data.length;
-        data.forEach(p => { const x = p.x, y = p.y, x2 = x*x; sX+=x; sX2+=x2; sX3+=x2*x; sX4+=x2*x2; sY+=y; sXY+=x*y; sX2Y+=x2*y; });
-        const det = n*(sX2*sX4 - sX3*sX3) - sX*(sX*sX4 - sX3*sX2) + sX2*(sX*sX3 - sX2*sX2);
-        if(Math.abs(det) < 1e-9) return null;
-        const detA = sY*(sX2*sX4 - sX3*sX3) - sX*(sXY*sX4 - sX3*sX2Y) + sX2*(sXY*sX3 - sX2*sX2Y); 
-        const detB = n*(sXY*sX4 - sX3*sX2Y) - sY*(sX*sX4 - sX3*sX2) + sX2*(sX*sX2Y - sXY*sX2); 
-        const detC = n*(sX2*sX2Y - sXY*sX3) - sX*(sX*sX2Y - sXY*sX2) + sY*(sX*sX3 - sX2*sX2); 
-        const c = detA/det, b = detB/det, a = detC/det;
-        return { 
-            eqStr: `y = ${a.toFixed(4)}x² + ${b.toFixed(4)}x + ${c.toFixed(4)}`, 
-            predict: (x) => a*x*x + b*x + c,
-            params: { a, b, c }
-        };
-    };
-    const solvePower = (data) => { 
-        const logData = data.filter(p => p.x > 0 && p.y > 0).map(p => ({ x: Math.log(p.x), y: Math.log(p.y) }));
-        if (logData.length < 2) return null;
-        const linear = solveLinear(logData);
-        const b = linear.params.m; const a = Math.exp(linear.params.c);
-        return { 
-            eqStr: `y = ${a.toFixed(4)} * x^${b.toFixed(4)}`, 
-            predict: (x) => a * Math.pow(x, b),
-            params: { a, b }
-        };
-    };
-    const solveExp = (data) => { 
-        const logData = data.filter(p => p.y > 0).map(p => ({ x: p.x, y: Math.log(p.y) }));
-        if (logData.length < 2) return null;
-        const linear = solveLinear(logData);
-        const b = linear.params.m; const a = Math.exp(linear.params.c);
-        return { 
-            eqStr: `y = ${a.toFixed(4)} * e^(${b.toFixed(4)}x)`, 
-            predict: (x) => a * Math.exp(b * x),
-            params: { a, b }
-        };
-    };
+            useEffect(() => { setTimeout(() => analyzeData(defaultRows, "poly2"), 100); }, []);
 
-    const analyzeData = (customRows = null, customFitType = null) => {
-        const rowsToUse = customRows || dataRows;
-        const typeToUse = customFitType || fitType;
-        const validPoints = [];
-        rowsToUse.forEach(row => {
-            const x = parseFloat(row.x), y = parseFloat(row.y);
-            if (!isNaN(x) && !isNaN(y)) validPoints.push({x, y});
-        });
-
-        if (validPoints.length < 2) { 
-            if(!customRows) alert("請至少輸入兩組有效數據"); 
-            setStats(null);
-            setRenderTrigger(prev => prev + 1);
-            return; 
-        }
-
-        let result = null;
-        try {
-            if (typeToUse === 'linear') result = solveLinear(validPoints);
-            else if (typeToUse === 'poly2') result = solvePoly2(validPoints);
-            else if (typeToUse === 'power') result = solvePower(validPoints);
-            else if (typeToUse === 'exp') result = solveExp(validPoints);
-        } catch(e) {}
-
-        if (!result && !customRows) { alert("無法擬合"); return; }
-
-        const meanY = validPoints.reduce((s, p) => s + p.y, 0) / validPoints.length;
-        const ssTot = validPoints.reduce((s, p) => s + Math.pow(p.y - meanY, 2), 0);
-        const ssRes = validPoints.reduce((s, p) => s + Math.pow(p.y - result.predict(p.x), 2), 0);
-        const rSquared = ssTot === 0 ? 1 : (1 - (ssRes / ssTot));
-
-        setStats({ ...result, rSquared, points: validPoints, type: typeToUse });
-        setRenderTrigger(prev => prev + 1);
-    };
-
-    // ★★★ 手繪 Canvas 核心 (自動標題 + 增加上方留白) ★★★
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        
-        const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
-        ctx.clearRect(0, 0, rect.width, rect.height);
-
-        if (!stats || !stats.points || stats.points.length === 0) {
-            ctx.fillStyle = "#CCC"; ctx.font = "bold 20px sans-serif"; ctx.textAlign = "center";
-            ctx.fillText("請輸入數據並點擊右側分析...", rect.width/2, rect.height/2);
-            return;
-        }
-
-        const padding = { top: 80, right: 30, bottom: 50, left: 60 };
-        const plotW = rect.width - padding.left - padding.right;
-        const plotH = rect.height - padding.top - padding.bottom;
-
-        const xs = stats.points.map(p => p.x);
-        const ys = stats.points.map(p => p.y);
-        let minX = Math.min(...xs), maxX = Math.max(...xs);
-        let minY = Math.min(...ys), maxY = Math.max(...ys);
-        const rangeX = maxX - minX || 1;
-        const rangeY = maxY - minY || 1;
-        
-        minX -= rangeX * 0.1; maxX += rangeX * 0.1;
-        minY -= rangeY * 0.1; maxY += rangeY * 0.1;
-
-        const mapX = (val) => padding.left + ((val - minX) / (maxX - minX)) * plotW;
-        const mapY = (val) => padding.top + plotH - ((val - minY) / (maxY - minY)) * plotH;
-
-        ctx.strokeStyle = "#EEEEEE"; ctx.lineWidth = 1;
-        ctx.fillStyle = "#795548"; ctx.font = "10px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-        for(let i=0; i<=5; i++) {
-            const val = minX + ((maxX - minX) * i / 5); const cx = mapX(val);
-            ctx.beginPath(); ctx.moveTo(cx, padding.top); ctx.lineTo(cx, padding.top + plotH); ctx.stroke();
-            ctx.fillText(val.toFixed(1), cx, padding.top + plotH + 5);
-        }
-        ctx.textAlign = "right"; ctx.textBaseline = "middle";
-        for(let i=0; i<=5; i++) {
-            const val = minY + ((maxY - minY) * i / 5); const cy = mapY(val);
-            ctx.beginPath(); ctx.moveTo(padding.left, cy); ctx.lineTo(padding.left + plotW, cy); ctx.stroke();
-            ctx.fillText(val.toFixed(1), padding.left - 5, cy);
-        }
-
-        ctx.fillStyle = "#5D4037"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
-        ctx.fillText(xLabel, padding.left + plotW/2, padding.top + plotH + 35);
-        ctx.save(); ctx.translate(20, padding.top + plotH/2); ctx.rotate(-Math.PI/2);
-        ctx.fillText(yLabel, 0, 0); ctx.restore();
-
-        ctx.strokeStyle = "#5D4037"; ctx.lineWidth = 2; ctx.strokeRect(padding.left, padding.top, plotW, plotH);
-
-        ctx.beginPath(); ctx.strokeStyle = "#FF7043"; ctx.lineWidth = 3;
-        for(let i=0; i<=100; i++) {
-            const xVal = minX + (maxX - minX)*(i/100); const yVal = stats.predict(xVal);
-            if(yVal >= minY && yVal <= maxY) {
-                const cx = mapX(xVal); const cy = mapY(yVal);
-                if(i===0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
-            }
-        }
-        ctx.stroke();
-
-        stats.points.forEach(p => {
-            const cx = mapX(p.x); const cy = mapY(p.y);
-            ctx.beginPath(); ctx.fillStyle = "#8D6E63"; ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.stroke();
-        });
-
-        ctx.textAlign = "center";
-        ctx.fillStyle = "#3E2723"; ctx.font = "bold 20px sans-serif";
-        ctx.fillText(`${yLabel} vs ${xLabel}`, rect.width/2, 30);
-        
-        if (showEq) {
-            ctx.fillStyle = "#E64A19"; ctx.font = "bold 14px sans-serif";
-            ctx.fillText(`${stats.eqStr} (R²=${stats.rSquared.toFixed(4)})`, rect.width/2, 55);
-        }
-
-    }, [renderTrigger, stats, xLabel, yLabel, showEq]);
-
-    const loadExample = (type) => {
-        const newRows = Array(20).fill(null).map(() => ({ x: "", y: "" }));
-        let newX = "X", newY = "Y";
-        if (type === 'linear') { newX = "伸長量 x (cm)"; newY = "外力 F (gw)"; setFitType('linear'); [{x:"2.0", y:"10"}, {x:"4.1", y:"20"}, {x:"5.9", y:"30"}, {x:"8.2", y:"40"}, {x:"10.0", y:"50"}].forEach((d,i)=>newRows[i]=d); }
-        else if (type === 'poly2') { newX = "時間 t (s)"; newY = "位移 S (m)"; setFitType('poly2'); [{x:"0", y:"0"}, {x:"1", y:"4.9"}, {x:"2", y:"19.5"}, {x:"3", y:"44.2"}, {x:"4", y:"78.3"}].forEach((d,i)=>newRows[i]=d); }
-        else if (type === 'exp') { newX = "時間 t (s)"; newY = "電壓 V (V)"; setFitType('exp'); [{x:"0", y:"10.0"}, {x:"1", y:"6.1"}, {x:"2", y:"3.7"}, {x:"3", y:"2.2"}, {x:"4", y:"1.4"}].forEach((d,i)=>newRows[i]=d); }
-        setXLabel(newX); setYLabel(newY); setDataRows(newRows);
-        setTimeout(() => analyzeData(newRows, type), 50);
-    };
-
-    useEffect(() => { setTimeout(() => analyzeData(defaultRows, "poly2"), 100); }, []);
-
-    return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full">
-            <div className="flex flex-col lg:flex-row gap-6 lg:h-[600px] w-full">
-                {/* ☆☆☆ 修改後的左側:Excel風格表格 ☆☆☆ */}
-                <div className="w-full lg:w-[35%] flex flex-col h-[500px] lg:h-full bg-[#EFEBE9] p-4 rounded-[24px] border-[3px] border-[#D7CCC8] shrink-0 min-w-0">
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm font-bold text-[#5D4037] flex items-center gap-2">
-                            <Activity size={18}/> 實驗數據表
-                        </label>
-                        <div className="flex gap-2">
-                            {/* ☆ Excel匯入按鈕 ☆ */}
-                            <label className="text-xs bg-white border border-[#D7CCC8] px-3 py-1.5 rounded hover:bg-[#D7CCC8] cursor-pointer font-bold flex items-center gap-1">
-                                <Upload size={12}/> Excel
-                                <input type="file" accept=".xlsx,.xls" onChange={handleExcelUpload} className="hidden" />
-                            </label>
-                            <button onClick={clearAll} className="text-xs bg-white border border-[#D7CCC8] px-2 py-1 rounded hover:bg-red-50 text-red-500">🗑️</button>
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full">
+                    <div className="flex flex-col lg:flex-row gap-6 lg:h-[600px] w-full">
+                        {/* 左側輸入區 */}
+                        <div className="w-full lg:w-[35%] flex flex-col h-[500px] lg:h-full bg-[#EFEBE9] p-4 rounded-[24px] border-[3px] border-[#D7CCC8] shrink-0 min-w-0">
+                            <div className="flex items-center justify-between mb-2 text-[#5D4037] font-bold shrink-0">
+                                <div className="flex items-center gap-2"><div className="bg-[#5D4037] text-white p-1.5 rounded-lg"><Activity size={18}/></div><span>實驗數據表</span></div>
+                                <div className="flex gap-1"><button onClick={handlePaste} className="text-xs bg-white border border-[#D7CCC8] px-2 py-1 rounded hover:bg-[#D7CCC8] whitespace-nowrap">📋 貼上</button><button onClick={clearAll} className="text-xs bg-white border border-[#D7CCC8] px-2 py-1 rounded hover:bg-red-50 text-red-500">🗑️</button></div>
+                            </div>
+                            <div className="flex gap-2 mb-2 shrink-0">
+                                <input value={xLabel} onChange={e=>setXLabel(e.target.value)} className="w-1/2 p-1.5 rounded border border-[#D7CCC8] text-xs font-bold text-center text-[#5D4037] min-w-0" placeholder="X軸名稱"/><input value={yLabel} onChange={e=>setYLabel(e.target.value)} className="w-1/2 p-1.5 rounded border border-[#D7CCC8] text-xs font-bold text-center text-[#5D4037] min-w-0" placeholder="Y軸名稱"/>
+                            </div>
+                            <div className="flex-1 border-2 border-[#D7CCC8] rounded-lg overflow-hidden flex flex-col bg-white min-h-0">
+                                <div className="flex bg-[#D7CCC8] text-[#5D4037] text-xs font-black py-1.5 px-2 shrink-0"><div className="w-10 text-center opacity-50">#</div><div className="flex-1 text-center border-l border-[#5D4037]/20">X (自變項)</div><div className="flex-1 text-center border-l border-[#5D4037]/20">Y (應變項)</div></div>
+                                <div className="overflow-y-auto flex-1 custom-scrollbar">
+                                    {dataRows.map((row, i) => (
+                                        <div key={i} className="flex border-b border-[#EEE] last:border-none text-sm h-8 hover:bg-[#FFF8E1]"><div className="w-10 flex items-center justify-center bg-[#F5F5F5] text-[#999] text-xs font-bold select-none border-r border-[#EEE] shrink-0">{i + 1}</div><div className="flex-1 border-r border-[#EEE] min-w-0"><input type="number" value={row.x} onChange={e=>handleCellChange(i, 'x', e.target.value)} className="w-full h-full px-2 text-center text-[#5D4037] font-bold focus:bg-[#E3F2FD] focus:outline-none transition-colors"/></div><div className="flex-1 min-w-0"><input type="number" value={row.y} onChange={e=>handleCellChange(i, 'y', e.target.value)} className="w-full h-full px-2 text-center text-[#5D4037] font-bold focus:bg-[#E3F2FD] focus:outline-none transition-colors"/></div></div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-2 pt-2 border-t border-[#D7CCC8]/50 shrink-0 overflow-x-auto pb-1"><button onClick={()=>loadExample('linear')} className="flex-1 text-[10px] bg-[#EFEBE9] py-1.5 px-2 rounded text-[#8D6E63] font-bold hover:bg-[#D7CCC8] border border-[#D7CCC8] whitespace-nowrap">虎克 (線)</button><button onClick={()=>loadExample('poly2')} className="flex-1 text-[10px] bg-[#EFEBE9] py-1.5 px-2 rounded text-[#8D6E63] font-bold hover:bg-[#D7CCC8] border border-[#D7CCC8] whitespace-nowrap">自由落體 (拋)</button><button onClick={()=>loadExample('exp')} className="flex-1 text-[10px] bg-[#EFEBE9] py-1.5 px-2 rounded text-[#8D6E63] font-bold hover:bg-[#D7CCC8] border border-[#D7CCC8] whitespace-nowrap">電容 (指)</button></div>
                         </div>
-                    </div>
-                    
-                    {/* 軸名稱輸入 */}
-                    <div className="flex gap-2 mb-2 shrink-0">
-                        <input value={xLabel} onChange={e=>setXLabel(e.target.value)} className="w-1/2 p-1.5 rounded border border-[#D7CCC8] text-xs font-bold text-center text-[#5D4037] min-w-0" placeholder="X軸名稱"/>
-                        <input value={yLabel} onChange={e=>setYLabel(e.target.value)} className="w-1/2 p-1.5 rounded border border-[#D7CCC8] text-xs font-bold text-center text-[#5D4037] min-w-0" placeholder="Y軸名稱"/>
-                    </div>
 
-                    {/* ☆☆☆ Excel風格表格 (支援 Ctrl+V 貼上) ☆☆☆ */}
-                    <div 
-                        className="flex-1 border-2 border-[#D7CCC8] rounded-lg overflow-hidden flex flex-col bg-white min-h-0"
-                        onPaste={handlePaste}
-                    >
-                        {/* 表頭 */}
-                        <div className="flex bg-[#D7CCC8] text-[#5D4037] text-xs font-black py-1.5 px-2 shrink-0">
-                            <div className="w-10 text-center opacity-50">#</div>
-                            <div className="flex-1 text-center border-l border-[#5D4037]/20">X (自變項)</div>
-                            <div className="flex-1 text-center border-l border-[#5D4037]/20">Y (應變項)</div>
-                        </div>
-                        
-                        {/* 數據行 */}
-                        <div className="overflow-y-auto flex-1 custom-scrollbar">
-                            {dataRows.map((row, i) => (
-                                <div key={i} className="flex border-b border-[#EEE] last:border-none text-sm h-8 hover:bg-[#FFF8E1]">
-                                    <div className="w-10 flex items-center justify-center bg-[#F5F5F5] text-[#999] text-xs font-bold select-none border-r border-[#EEE] shrink-0">{i + 1}</div>
-                                    <div className="flex-1 border-r border-[#EEE] min-w-0">
-                                        <input 
-                                            type="number" 
-                                            value={row.x} 
-                                            onChange={e=>handleCellChange(i, 'x', e.target.value)} 
-                                            className="w-full h-full px-2 text-center text-[#5D4037] font-bold focus:bg-[#E3F2FD] focus:outline-none transition-colors"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <input 
-                                            type="number" 
-                                            value={row.y} 
-                                            onChange={e=>handleCellChange(i, 'y', e.target.value)} 
-                                            className="w-full h-full px-2 text-center text-[#5D4037] font-bold focus:bg-[#E3F2FD] focus:outline-none transition-colors"
-                                        />
+                        {/* 右側：圖表與分析 */}
+                        <div className="w-full lg:w-[65%] flex flex-col h-[500px] lg:h-full gap-4 min-w-0">
+                            {/* 控制列 (圓形按鈕版) */}
+                            <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-2xl border-2 border-[#E0E0E0] shadow-sm shrink-0">
+                                <div className="flex items-center gap-2 shrink-0"><span className="text-xs font-bold text-[#9CA38F] whitespace-nowrap">擬合模型:</span><select value={fitType} onChange={e=>setFitType(e.target.value)} className="p-2 rounded-lg border-2 border-[#E0E0E0] text-sm font-bold text-[#574E44] outline-none focus:border-[#8D6E63] min-w-[120px]"><option value="linear">線性回歸 (Linear)</option><option value="poly2">二次多項式 (Quadratic)</option><option value="power">冪次函數 (Power)</option><option value="exp">指數函數 (Exp)</option></select></div>
+                                <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0"><input type="checkbox" checked={showEq} onChange={e=>setShowEq(e.target.checked)} className="w-4 h-4 text-[#8D6E63] rounded focus:ring-[#8D6E63]" /><span className="text-sm font-bold text-[#574E44]">顯示方程式</span></label>
+                                
+                                {/* 彈性間隔 */}
+                                <div className="flex-1"></div>
+                                
+                                {/* ★ 圓形大按鈕 (播放鍵風格) ★ */}
+                                <button onClick={()=>analyzeData()} className="w-12 h-12 bg-[#8D6E63] hover:bg-[#6D4C41] rounded-full flex items-center justify-center text-white shadow-md hover:scale-110 active:scale-95 transition-all shrink-0 border-4 border-[#EFEBE9]" title="開始分析">
+                                    <Play size={20} fill="currentColor" className="ml-1"/>
+                                </button>
+                            </div>
+                            
+                            {/* 圖表容器 */}
+                            <div className="bg-white p-2 md:p-4 rounded-[24px] border-[3px] border-[#E0E0E0] flex-1 relative shadow-sm min-h-0 overflow-hidden w-full flex flex-col">
+                                <div className="flex-1 relative w-full h-full min-h-0">
+                                    <div className="absolute inset-0">
+                                        <canvas ref={canvasRef} style={{width: '100%', height: '100%'}}></canvas>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* 快速範例按鈕 */}
-                    <div className="flex gap-2 mt-2 pt-2 border-t border-[#D7CCC8]/50 shrink-0 overflow-x-auto pb-1">
-                        <button onClick={()=>loadExample('linear')} className="flex-1 text-[10px] bg-[#EFEBE9] py-1.5 px-2 rounded text-[#8D6E63] font-bold hover:bg-[#D7CCC8] border border-[#D7CCC8] whitespace-nowrap">虎克 (線)</button>
-                        <button onClick={()=>loadExample('poly2')} className="flex-1 text-[10px] bg-[#EFEBE9] py-1.5 px-2 rounded text-[#8D6E63] font-bold hover:bg-[#D7CCC8] border border-[#D7CCC8] whitespace-nowrap">自由落體 (拋)</button>
-                        <button onClick={()=>loadExample('exp')} className="flex-1 text-[10px] bg-[#EFEBE9] py-1.5 px-2 rounded text-[#8D6E63] font-bold hover:bg-[#D7CCC8] border border-[#D7CCC8] whitespace-nowrap">電容 (指)</button>
-                    </div>
-
-                    {/* ☆ 使用說明 ☆ */}
-                    <div className="mt-2 text-[9px] text-[#9CA38F] font-bold text-center bg-[#FFF9C4] py-1 px-2 rounded border border-[#FBC02D]">
-                        💡 提示:可從Excel複製後直接按 Ctrl+V 貼入表格
-                    </div>
-                </div>
-
-                {/* 右側:圖表與分析 (保持不變) */}
-                <div className="w-full lg:w-[65%] flex flex-col h-[500px] lg:h-full gap-4 min-w-0">
-                    <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-2xl border-2 border-[#E0E0E0] shadow-sm shrink-0">
-                        <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-xs font-bold text-[#9CA38F] whitespace-nowrap">擬合模型:</span>
-                            <select value={fitType} onChange={e=>setFitType(e.target.value)} className="p-2 rounded-lg border-2 border-[#E0E0E0] text-sm font-bold text-[#574E44] outline-none focus:border-[#8D6E63] min-w-[120px]">
-                                <option value="linear">線性回歸 (Linear)</option>
-                                <option value="poly2">二次多項式 (Quadratic)</option>
-                                <option value="power">冪次函數 (Power)</option>
-                                <option value="exp">指數函數 (Exp)</option>
-                            </select>
-                        </div>
-                        <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap shrink-0">
-                            <input type="checkbox" checked={showEq} onChange={e=>setShowEq(e.target.checked)} className="w-4 h-4 text-[#8D6E63] rounded focus:ring-[#8D6E63]" />
-                            <span className="text-sm font-bold text-[#574E44]">顯示方程式</span>
-                        </label>
-                        <div className="flex-1"></div>
-                        <button onClick={()=>analyzeData()} className="w-12 h-12 bg-[#8D6E63] hover:bg-[#6D4C41] rounded-full flex items-center justify-center text-white shadow-md hover:scale-110 active:scale-95 transition-all shrink-0 border-4 border-[#EFEBE9]" title="開始分析">
-                            <Play size={20} fill="currentColor" className="ml-1"/>
-                        </button>
-                    </div>
-                    
-                    <div className="bg-white p-2 md:p-4 rounded-[24px] border-[3px] border-[#E0E0E0] flex-1 relative shadow-sm min-h-0 overflow-hidden w-full flex flex-col">
-                        <div className="flex-1 relative w-full h-full min-h-0">
-                            <div className="absolute inset-0">
-                                <canvas ref={canvasRef} style={{width: '100%', height: '100%'}}></canvas>
+                                {/* 數據面板 */}
+                                {stats && (
+                                    <div className="mt-2 shrink-0 bg-[#FFF8E1] border-2 border-[#FFE082] rounded-xl p-3 grid grid-cols-3 gap-2 text-center shadow-inner">
+                                        <div><div className="text-[10px] text-[#FF8F00] font-bold uppercase tracking-wider">{stats.type === 'linear' ? '斜率 Slope (m)' : '參數 a'}</div><div className="text-lg font-black text-[#5D4037]">{stats.params.m ? stats.params.m.toFixed(4) : stats.params.a?.toFixed(4)}</div></div>
+                                        <div className="border-l border-[#FFE082]"><div className="text-[10px] text-[#FF8F00] font-bold uppercase tracking-wider">{stats.type === 'linear' ? '截距 Intercept (c)' : '參數 b'}</div><div className="text-lg font-black text-[#5D4037]">{stats.params.c ? stats.params.c.toFixed(4) : stats.params.b?.toFixed(4)}</div></div>
+                                        <div className="border-l border-[#FFE082]"><div className="text-[10px] text-[#FF8F00] font-bold uppercase tracking-wider">相關係數 R²</div><div className="text-lg font-black text-[#E64A19]">{stats.rSquared.toFixed(4)}</div></div>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        {stats && (
-                            <div className="mt-2 shrink-0 bg-[#FFF8E1] border-2 border-[#FFE082] rounded-xl p-3 grid grid-cols-3 gap-2 text-center shadow-inner">
-                                <div><div className="text-[10px] text-[#FF8F00] font-bold uppercase tracking-wider">{stats.type === 'linear' ? '斜率 Slope (m)' : '係數 a'}</div><div className="text-lg font-black text-[#5D4037]">{stats.params.m ? stats.params.m.toFixed(4) : stats.params.a?.toFixed(4)}</div></div>
-                                <div className="border-l border-[#FFE082]"><div className="text-[10px] text-[#FF8F00] font-bold uppercase tracking-wider">{stats.type === 'linear' ? '截距 Intercept (c)' : '係數 b'}</div><div className="text-lg font-black text-[#5D4037]">{stats.params.c ? stats.params.c.toFixed(4) : stats.params.b?.toFixed(4)}</div></div>
-                                <div className="border-l border-[#FFE082]"><div className="text-[10px] text-[#FF8F00] font-bold uppercase tracking-wider">相關係數 R²</div><div className="text-lg font-black text-[#E64A19]">{stats.rSquared.toFixed(4)}</div></div>
-                            </div>
-                        )}
                     </div>
                 </div>
-            </div>
-        </div>
-    );
-};
+            );
+        };
 // --- 狸克印刷廠 (獎狀產生器) - V3.6 極簡姓名版 ---
         const CertificateTool = () => {
             const [name, setName] = useState("陳小明");
@@ -6003,9 +5877,11 @@ const FeatureCatalog = () => {
             desc: "讓島嶼生活更便利",
             apps: [
                 { name: "DAL 數位快遞", sub: "QR Code & 短網址" },
+                { name: "星座運勢", sub: "每日幸運物" },
                 { name: "隨身筆記", sub: "自動存檔便條" },
                 { name: "待辦清單", sub: "任務管理" },
                 { name: "計時與蕃茄鐘", sub: "專注工作" },
+                { name: "島民適性測驗", sub: "MBTI 分析" },
                 { name: "幸運轉盤", sub: "隨機決策" }
             ]
         },
@@ -6017,8 +5893,6 @@ const FeatureCatalog = () => {
             desc: "工作累了休息一下",
             apps: [
                 { name: "冷爛笑話", sub: "降溫專用" },
-                { name: "星座運勢", sub: "每日幸運物" },  
-                { name: "島民適性測驗", sub: "MBTI 分析" },              
                 { name: "Nook 2048", sub: "益智小遊戲" }
             ]
         }
@@ -6088,7 +5962,7 @@ const FeatureCatalog = () => {
                 <div className="bg-[#574E44] text-[#F2D879] p-6 rounded-[30px] max-w-2xl border-[6px] border-[#7A5C3E] shadow-lg flex items-start gap-4 transform rotate-1 hover:rotate-0 transition-transform">
                     <div className="text-4xl">💰</div>
                     <div>
-                        <h4 className="font-black text-lg mb-1">麥斯社長提醒：</h4>
+                        <h4 className="font-black text-lg mb-1">MAXCHAN社長提醒：</h4>
                         <p className="text-sm font-bold opacity-90 leading-relaxed text-white">
                             本島行政中心提供的所有服務皆為<span className="text-[#F4E798] underline">免費</span>提供！<br/>
                             無需支付零錢，也無需償還房貸。請島民代表盡情使用，打造完美的島嶼（班級）生活！Yes, yes!
@@ -6314,10 +6188,11 @@ const DarkModeToggle = () => (
                 'CONVERT': [ { id: 'ocr', label: '文字辨識機', icon: ScanText, component: PdfOcrTool },{ id: 'img2pdf', label: 'JPG 轉 PDF', icon: ImageIcon, component: ImageToPDF },{ id: 'compress', label: '圖片壓縮機', icon: Settings, component: ImageCompressorTool }, { id: 'pdf2jpg', label: 'PDF 轉 JPG', icon: FileOutput, component: PDFToImage, style: 'danger' }, { id: 'num2chi', label: '數字轉大寫', icon: Type, component: NumToChiTool }, ],
                 'EDIT': [ { id: 'watermark', label: '圖片浮水印', icon: Stamp, component: WatermarkTool }, { id: 'pagenum', label: '添加頁碼', icon: Hash, component: PDFPageNumber }, ],
                 'CLASS': [ { id: 'worldcafe', label: '世界咖啡館', icon: Users, component: WorldCafeTool },{ id: 'seating', label: '座位大師', icon: Users, component: SeatingChartTool }, { id: 'grouping', label: '分組小幫手', icon: Grid, component: GroupMakerTool }, { id: 'grade', label: '成績分析', icon: BarChart, component: GradeAnalysisTool }, { id: 'cert', label: '獎狀產生器', icon: Medal, component: CertificateTool },],
-                'LAB': [ { id: 'lab', label: '實驗繪圖板', icon: Activity, component: LabPlotterTool },{ id: 'mindmap', label: '島民靈感板(心智圖)', icon: GitBranch, component: MindMapTool } ], // ★ 這裡現在是獨立的實驗分類
+                'LAB': [ { id: 'lab', label: '實驗繪圖板', icon: Activity, component: LabPlotterTool } ], // ★ 這裡現在是獨立的實驗分類
                 'SECURITY': [ { id: 'encrypt', label: 'PDF 加密', icon: Lock, component: PDFEncrypt }, { id: 'passgen', label: '密碼產生器', icon: Key, component: PasswordGeneratorTool } ],
-                'DAILY': [{ id: 'wheel', label: '幸運大轉盤', icon: PieChart, component: LuckyWheelTool },{ id: 'dal', label: 'QR code & 縮網址', icon: Plane, component: DALDeliveryTool },{ id: 'random', label: '亂數抽籤', icon: Dice5, component: RandomPickerTool }, { id: 'timer', label: '倒數計時', icon: Timer, component: CountdownTool }, { id: 'pomodoro', label: '蕃茄鬧鐘', icon: AlarmClock, component: PomodoroTool }, { id: 'notepad', label: '隨身筆記', icon: StickyNote, component: NotepadTool }, { id: 'todo', label: '待辦清單', icon: ClipboardList, component: TodoListTool }, ],
-                'FUN': [ { id: 'joke', label: '冷爛笑話', icon: Smile, component: JokeTool },{ id: 'mbti', label: '島民適性測驗', icon: ClipboardList, component: IslandMBTITool }, { id: '2048', label: 'Nook 2048', icon: Grid, component: Game2048Tool },{ id: 'horoscope', label: '星座運勢', icon: Sun, component: HoroscopeTool } ], 
+                'DAILY': [ { id: 'mbti', label: '島民適性測驗', icon: ClipboardList, component: IslandMBTITool },{ id: 'mindmap', label: '島民靈感板(心智圖)', icon: GitBranch, component: MindMapTool },
+{ id: 'wheel', label: '幸運大轉盤', icon: PieChart, component: LuckyWheelTool },{ id: 'dal', label: 'QR code & 縮網址', icon: Plane, component: DALDeliveryTool },{ id: 'horoscope', label: '星座運勢', icon: Sun, component: HoroscopeTool }, { id: 'random', label: '亂數抽籤', icon: Dice5, component: RandomPickerTool }, { id: 'timer', label: '倒數計時', icon: Timer, component: CountdownTool }, { id: 'pomodoro', label: '蕃茄鬧鐘', icon: AlarmClock, component: PomodoroTool }, { id: 'notepad', label: '隨身筆記', icon: StickyNote, component: NotepadTool }, { id: 'todo', label: '待辦清單', icon: ClipboardList, component: TodoListTool }, ],
+                'FUN': [ { id: 'joke', label: '冷爛笑話', icon: Smile, component: JokeTool }, { id: '2048', label: 'Nook 2048', icon: Grid, component: Game2048Tool } ], 
             };
 
             const currentCategoryColor = categories.find(c => c.id === activeCategory)?.color || 'bg-[#88C9A1]';
@@ -6338,7 +6213,7 @@ const DarkModeToggle = () => (
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h1 className="text-2xl md:text-4xl font-extrabold text-[#574E44] tracking-tight">島民行政中心</h1>
-                                        <span className="bg-[#F4E798] text-[#797365] text-[10px] md:text-xs font-bold px-2 py-0.5 md:px-3 md:py-1 rounded-full border-2 border-white shadow-sm">v7.9.9 忘記更新幾次了</span>
+                                        <span className="bg-[#F4E798] text-[#797365] text-[10px] md:text-xs font-bold px-2 py-0.5 md:px-3 md:py-1 rounded-full border-2 border-white shadow-sm">v7 忘記更新幾次了</span>
                                     </div>
                                     <div className="relative mt-1 md:mt-2 inline-block">
                                         <div className="bg-white px-3 py-1 md:px-4 md:py-2 rounded-2xl rounded-tl-none border-[2px] md:border-[3px] border-[#E0E4CC] shadow-sm">
