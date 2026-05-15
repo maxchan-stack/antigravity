@@ -194,7 +194,8 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
                 success: false,
                 message: res.message || (res.locked ? '帳號已鎖定。' : '學號或密碼錯誤。'),
                 locked: res.locked,
-                requireSeatNumber: res.requireSeatNumber
+                requireSeatNumber: res.requireSeatNumber,
+                waitSeconds: res.waitSeconds
             };
         }
 
@@ -223,7 +224,8 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
                 success: false,
                 message: res.message || (res.locked ? '帳號已鎖定。' : '學號或密碼錯誤。'),
                 locked: res.locked,
-                requireSeatNumber: res.requireSeatNumber
+                requireSeatNumber: res.requireSeatNumber,
+                waitSeconds: res.waitSeconds
             };
         }
 
@@ -934,7 +936,11 @@ function generatePasswordsForAllSheets() {
         const vals = [];
         for (let i = 1; i < d.length; i++) {
             let v = d[i][pIdx];
-            if (!v) { v = Math.floor(10000 + Math.random() * 90000); count++; }
+            if (!v) { 
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                v = Array.from({length: 6}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+                count++; 
+            }
             vals.push([v]);
         }
         if (vals.length > 0) s.getRange(2, pIdx + 1, vals.length, 1).setValues(vals);
