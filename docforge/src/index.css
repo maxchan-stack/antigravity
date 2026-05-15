@@ -1,0 +1,233 @@
+/* Starlux-Apple UI 設計系統 */
+@import url('https://fonts.googleapis.com/css2?family=Rufina:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Starlux-Apple 設計系統全域樣式 */
+:root {
+  /* Starlux Colors */
+  --starlux-earth-gold: #9B8A5E;
+  --starlux-rose-gold: #B4745A;
+  --starlux-obsidian: #45464D;
+  --starlux-bg-dark: #1A1A1D;
+  --starlux-bg-card: #2D2D30;
+  --starlux-bg-elevated: #3A3A3E;
+  --starlux-text-primary: #FFFFFF;
+  --starlux-text-secondary: #ADADB0;
+  --starlux-text-hint: #7C7C7F;
+
+  /* Shadows */
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-glow-gold: 0 0 20px rgba(155, 138, 94, 0.4);
+  --shadow-glow-rose: 0 0 20px rgba(180, 116, 90, 0.4);
+
+  /* Transition */
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--starlux-bg-dark);
+  color: var(--starlux-text-primary);
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Rufina', serif;
+}
+
+/* Starlux-Apple 風格捲軸 */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--starlux-bg-card);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--starlux-earth-gold), var(--starlux-rose-gold));
+  border-radius: 10px;
+  border: 2px solid var(--starlux-bg-card);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #B09968, #C58564);
+}
+
+/* Spotify 風格動畫 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Starlux-Apple 元件樣式 */
+@layer components {
+
+  /* 毛玻璃卡片 */
+  .glass-card {
+    @apply bg-starlux-bg-card/85 backdrop-blur-glass border border-white/10 rounded-xl shadow-glass;
+  }
+
+  /* 毛玻璃按鈕 */
+  .glass-button {
+    @apply bg-gradient-to-r from-starlux-earth-gold to-starlux-rose-gold text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-glow-gold;
+  }
+
+  /* 毛玻璃輸入框 */
+  .glass-input {
+    @apply bg-starlux-bg-elevated/60 backdrop-blur-glass border border-white/20 rounded-lg px-4 py-2 text-starlux-text-primary placeholder:text-starlux-text-hint focus:border-starlux-earth-gold focus:outline-none transition-colors;
+  }
+}
+
+/* Starlux-Apple 風格卡片 */
+.starlux-card {
+  background: linear-gradient(135deg, var(--starlux-bg-card) 0%, var(--starlux-bg-elevated) 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  transition: var(--transition-smooth);
+}
+
+/* Spotify 風格卡片 */
+.spotify-card {
+  background-color: var(--spotify-elevated);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: var(--transition-base);
+}
+
+.spotify-card:hover {
+  background-color: var(--spotify-gray);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Spotify 風格按鈕 */
+.spotify-button {
+  background-color: var(--spotify-green);
+  color: var(--spotify-white);
+  border: none;
+  border-radius: 500px;
+  padding: 12px 32px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.spotify-button:hover {
+  background-color: var(--spotify-green-hover);
+  transform: scale(1.04);
+}
+
+.spotify-button:active {
+  background-color: var(--spotify-green-active);
+  transform: scale(0.96);
+}
+
+/* Spotify 風格輸入框 */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--spotify-gray);
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--spotify-white);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--spotify-green);
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--spotify-white);
+  cursor: pointer;
+  border: none;
+}
+
+/* 工具提示樣式 */
+.tooltip {
+  position: relative;
+}
+
+.tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--spotify-elevated);
+  color: var(--spotify-white);
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  margin-bottom: 4px;
+  box-shadow: var(--shadow-base);
+}

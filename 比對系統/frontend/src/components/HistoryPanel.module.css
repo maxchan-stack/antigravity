@@ -1,0 +1,143 @@
+.panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: -5px 0 30px rgba(0, 0, 0, 0.1);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel.open {
+    transform: translateX(0);
+}
+
+.header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--color-earth-gold);
+}
+
+.header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.closeButton:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.empty {
+    text-align: center;
+    color: var(--color-text-tertiary);
+    margin-top: 50px;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.item {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border-color: var(--color-rose-gold);
+}
+
+.itemHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+}
+
+.filenames {
+    margin-bottom: 8px;
+}
+
+.file {
+    font-size: 13px;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+.vs {
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    margin: 2px 0;
+    font-style: italic;
+}
+
+.score {
+    font-size: 13px;
+    color: var(--color-earth-gold);
+    font-weight: 600;
+    text-align: right;
+}
+
+.clearButton {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    background: rgba(231, 76, 60, 0.05);
+    color: #e74c3c;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.clearButton:hover {
+    background: rgba(231, 76, 60, 0.1);
+}

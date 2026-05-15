@@ -1,0 +1,80 @@
+.container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    user-select: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.imageWrapper {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow: hidden;
+    border-right: 2px solid var(--color-earth-gold);
+    /* Ensure the overlay image aligns perfectly with the container */
+    width: 50%;
+    /* Default, will be overridden by inline style */
+}
+
+/* The image inside the overlay needs to maintain the full width of the container
+   to stay aligned with the background image */
+.overlayImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    /* Width needs to be strictly 100% of the CONTAINER, not the overlay wrapper */
+    /* This calculation is handled in JS usually, or by setting width to container's width */
+    max-width: unset;
+}
+
+.sliderHandle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    cursor: ew-resize;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sliderLine {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: var(--color-earth-gold);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.sliderButton {
+    width: 32px;
+    height: 32px;
+    background: var(--color-earth-gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 2px solid white;
+}

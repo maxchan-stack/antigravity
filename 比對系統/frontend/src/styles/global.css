@@ -1,0 +1,48 @@
+:root {
+    /* Starlux Light Theme Palette */
+    --color-obsidian: #f7f7f5;
+    /* Light Sand Background */
+    --color-obsidian-light: #ffffff;
+    /* Surface Color (White) */
+    --color-earth-gold: #bfa46f;
+    --color-rose-gold: #d4a5a5;
+    --color-text-primary: #2c2c2c;
+    /* Obsidian text */
+    --color-text-secondary: #5d5d5d;
+    --color-text-tertiary: #8b8b8b;
+
+    /* Glassmorphism Light */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(44, 44, 44, 0.1);
+    --blur-amt: 20px;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    --radius-md: 12px;
+    --radius-lg: 20px;
+}
+
+body {
+    margin: 0;
+    background-color: var(--color-obsidian);
+    color: var(--color-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* Utilities */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur-amt));
+    -webkit-backdrop-filter: blur(var(--blur-amt));
+    border: 1px solid var(--glass-border);
+}

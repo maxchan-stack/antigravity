@@ -1,0 +1,160 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    max-height: 600px;
+    /* Adjust as needed */
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.diffHeader {
+    display: flex;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.columnHeader {
+    flex: 1;
+    text-align: center;
+}
+
+.scrollContainer {
+    display: flex;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    /* Hide scrollbar strictly? Or style it? */
+}
+
+/* We scroll the container, but render two side-by-side contents */
+.diffContent {
+    display: flex;
+    width: 100%;
+}
+
+.pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
+    min-width: 0;
+    /* allows text truncation/wrapping */
+}
+
+.pane:last-child {
+    border-right: none;
+}
+
+.row {
+    display: flex;
+    min-height: 24px;
+    /* Ensure uniform height even for empty lines */
+    line-height: 1.5;
+    font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+/* Align rows left and right */
+.rowLeft,
+.rowRight {
+    flex: 1;
+    display: flex;
+    padding: 2px 0;
+}
+
+.row.equal {
+    background-color: transparent;
+}
+
+.row.replace {
+    background-color: rgba(241, 196, 15, 0.1);
+    /* Subtle Yellow */
+}
+
+/* Backgrounds for specific sides */
+.row.delete .rowLeft {
+    background-color: rgba(231, 76, 60, 0.15);
+    /* Red */
+}
+
+.row.delete .rowRight {
+    background-color: rgba(0, 0, 0, 0.02);
+    /* Grey out empty right side */
+}
+
+.row.insert .rowRight {
+    background-color: rgba(46, 204, 113, 0.15);
+    /* Green */
+}
+
+.row.insert .rowLeft {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.lineNumber {
+    width: 40px;
+    text-align: right;
+    padding-right: 10px;
+    color: var(--color-text-tertiary);
+    user-select: none;
+    font-size: 11px;
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.codeContent {
+    flex: 1;
+    white-space: pre-wrap;
+    /* Wrap text */
+    word-break: break-all;
+    color: var(--color-text-primary);
+    padding-right: 5px;
+}
+
+/* Granular Highlights */
+.highlightRemoved {
+    background-color: rgba(231, 76, 60, 0.4);
+    text-decoration: line-through;
+    border-radius: 2px;
+}
+
+.highlightAdded {
+    background-color: rgba(46, 204, 113, 0.4);
+    border-radius: 2px;
+}
+
+.navButton {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+}
+
+.navButton:hover:not(:disabled) {
+    background: var(--color-bg-secondary);
+    color: var(--color-primary);
+}
+
+.navButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

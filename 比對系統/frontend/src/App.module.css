@@ -1,0 +1,155 @@
+.app {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-obsidian);
+    color: var(--color-text-primary);
+}
+
+.header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacing-lg);
+    border-bottom: 1px solid var(--glass-border);
+    background: var(--color-obsidian-light);
+    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.05);
+    /* Softer shadow */
+}
+
+/* New Grid Layout */
+.main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    /* Fixed width Left, Flexible Right */
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    overflow: hidden;
+}
+
+/* Left Column: Stack for Inputs */
+.inputColumn {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    overflow-y: auto;
+}
+
+.inputCard {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    flex: 1;
+    /* Make them equal height if possible, or auto */
+}
+
+.inputCard h2 {
+    font-size: 14px;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    /* Lighter text for labels */
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+/* Right Column: Results */
+.resultColumn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    position: relative;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-earth-gold);
+    /* Earth Gold for Title */
+    letter-spacing: 0.5px;
+}
+
+.compareButton {
+    background: linear-gradient(135deg, var(--color-earth-gold), #8e743d);
+    color: #fff;
+    /* White text on Gold Button */
+    border: none;
+    padding: 12px 32px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(191, 164, 111, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.compareButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(191, 164, 111, 0.4);
+}
+
+.compareButton:active {
+    transform: translateY(0);
+}
+
+.compareButton.disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: #ccc;
+}
+
+.preview {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    border: 1px dashed var(--glass-border);
+    border-radius: var(--radius-md);
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Legend Box */
+.legend {
+    margin-top: auto;
+    /* Push to bottom of result column if empty */
+    padding: var(--spacing-md);
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    border-left: 3px solid var(--color-earth-gold);
+}
+
+.legend h4 {
+    margin: 0 0 8px 0;
+    color: var(--color-text-primary);
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}

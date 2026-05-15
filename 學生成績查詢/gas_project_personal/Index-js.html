@@ -1,25 +1,19 @@
 // Init
 let token = '';
 let sessionId = ''; // 🆕 追蹤碼
-// 🆕 綁定驗證碼點擊刷新（在 DOM 就緒後執行）
-setTimeout(function() {
-    try {
-        var capBox = document.getElementById('cap-box');
-        if (capBox) capBox.onclick = loadCaptcha;
-        loadCaptcha();
-        initSecurityInfo(); // 🆕 初始化安全資訊
-        setupEnterKeySupport(); // 🆕 支援 Enter 鍵送出
-    } catch(e) {
-        console.error("Init error:", e);
-        showToast("初始化失敗: " + e.message, 'error');
-    }
-}, 100);
+window.onload = function () {
+loadCaptcha();
+initSecurityInfo(); // 🆕 初始化安全資訊
+setupEnterKeySupport(); // 🆕 支援 Enter 鍵送出
+};
+const capBox = document.getElementById('cap-box');
+capBox.onclick = loadCaptcha;
 
 // 🆕 Enter 鍵送出支援（效能優化 - 提升 UX）
 function setupEnterKeySupport() {
-var inputs = document.querySelectorAll('#inp-id, #inp-pwd, #inp-cap');
-inputs.forEach(function(input) {
-input.addEventListener('keypress', function(e) {
+const inputs = document.querySelectorAll('#inp-id, #inp-pwd, #inp-cap');
+inputs.forEach(input => {
+input.addEventListener('keypress', (e) => {
 if (e.key === 'Enter') {
 e.preventDefault();
 doLogin();
@@ -30,53 +24,42 @@ doLogin();
 
 // 🆕 初始化安全資訊
 function initSecurityInfo() {
-try {
 // 生成 Session ID（真實的追蹤碼）
-var timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-var random = Math.random().toString(36).substring(2, 8);
-sessionId = timestamp + '-' + random;
+const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+const random = Math.random().toString(36).substring(2, 8);
+sessionId = `${timestamp}-${random}`;
 
 // 格式化時間
-var now = new Date();
-var timeStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2,
-'0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2,
-'0') + ':' + String(now.getSeconds()).padStart(2, '0');
+const now = new Date();
+const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2,
+'0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2,
+'0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
 // 🆕 更新顯示 (顯示真實 Email 與 IP)
 // ⚠️ 使用 window.SERVER_DATA 避免 GAS 模板語法錯誤
-var userEmail = (window.SERVER_DATA && window.SERVER_DATA.userEmail) ? window.SERVER_DATA.userEmail : 'Anonymous';
-document.getElementById('user-email').textContent = 'Email: ' + userEmail;
+const userEmail = (window.SERVER_DATA && window.SERVER_DATA.userEmail) ? window.SERVER_DATA.userEmail : 'Anonymous';
+document.getElementById('user-email').textContent = "Email: " + userEmail;
 
 document.getElementById('session-id').textContent = sessionId;
 document.getElementById('access-time').textContent = timeStr;
 
 // 🆕 取得客戶端 IP（使用第三方服務）
 fetch('https://api.ipify.org?format=json')
-.then(function(response) { return response.json(); })
-.then(function(data) {
-document.getElementById('user-ip').textContent = 'IP: ' + data.ip;
+.then(response => response.json())
+.then(data => {
+document.getElementById('user-ip').textContent = `IP: ${data.ip}`;
 })
-.catch(function() {
+.catch(() => {
 document.getElementById('user-ip').textContent = 'IP: 無法取得';
 });
-} catch (e) {
-console.warn('initSecurityInfo error:', e);
-}
 }
 
 function loadCaptcha() {
-var capBox = document.getElementById('cap-box');
-if (capBox) capBox.innerHTML = '<span style="color:#999;font-size:12px;">...</span>';
-google.script.run
-.withSuccessHandler(function(r) {
-if (capBox) capBox.innerHTML = r.svg;
+capBox.innerHTML = '<span style="color:#999;font-size:12px;">...</span>';
+google.script.run.withSuccessHandler(r => {
+capBox.innerHTML = r.svg;
 token = r.token;
-})
-.withFailureHandler(function(err) {
-console.warn('getCaptcha failed:', err);
-if (capBox) capBox.innerHTML = '<span style="color:#c00;font-size:12px;">載入失敗，點擊重試</span>';
-})
-.getCaptcha();
+}).getCaptcha();
 }
 
 function showToast(msg, type = 'normal') {
@@ -151,8 +134,7 @@ function doLogin() {
 const id = document.getElementById('inp-id').value;
 const pwd = document.getElementById('inp-pwd').value;
 const cap = document.getElementById('inp-cap').value;
-var seatEl = document.getElementById('inp-seat');
-const seat = seatEl ? seatEl.value : null; // 🆕 座號
+const seat = document.getElementById('inp-seat')?.value || null; // 🆕 座號
 if (!id || !pwd || !cap) return showToast('請填寫完整資訊');
 
 document.getElementById('loader').style.display = 'flex';
@@ -192,7 +174,7 @@ seatRow.innerHTML = `
 <input type="text" id="inp-seat" placeholder="請輸入您的座號" />
 `;
 
-const pwdRow = document.getElementById('inp-pwd').closest('.input-row');
+const pwdRow = document.querySelector('.input-row:has(#inp-pwd)');
 pwdRow.after(seatRow);
 
 // 自動聚焦座號輸入框
@@ -388,11 +370,10 @@ else if (diff < 0) trendHtml=`<div class="trend-pill down">▼ ${Math.abs(diff)}
     const estimated = data.failRisk.estimatedScore;
     const isAtRisk = data.failRisk.isAtRisk;
 
-    // 計算及格機率
-    var probability;
-    if (estimated >= 60) {
+    // 計算及格機率：>=60分=100%，<60分則按比例計算 let probability; if (estimated>= 60) {
         probability = 100;
         } else {
+        // 低於60分，按比例計算（0-59分 → 0%-99%）
         probability = Math.max(0, Math.round((estimated / 60) * 100));
         }
 

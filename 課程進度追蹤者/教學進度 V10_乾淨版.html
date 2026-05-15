@@ -251,7 +251,7 @@
             const DEFAULT_YEARS = ['113-1', '113-2', '114-1', '114-2'];
             const DEFAULT_CURRENT_YEAR = '114-1';
             const INITIAL_HOLIDAYS = ['2025-01-27', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-28', '2025-04-03', '2025-04-04', '2025-05-30', '2025-10-10', '2026-01-01'];
-            const GOV_API_URL = "https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/2025.json";
+
 
             const formatDate = (d) => {
                 const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
@@ -889,71 +889,84 @@
                                         </div>
                                     </div>
 
-                                    {currentYearClasses.map((cls, idx) => {
-                                        const items = currentYearRecords.filter(r => r.className === cls.name && (r.progress.includes(filter) || r.date.includes(filter) || (r.tags && r.tags.some(t => t.includes(filter)))));
-                                        if (!items.length && filter) return null;
-                                        const isOpen = expandedClasses[cls.name] !== false;
-                                        const remain = getRemainingForClass(cls.name);
-                                        return (
-                                            <div
-                                                key={cls.name}
-                                                className="bg-white dark:bg-starlux-obsidianLight rounded-[2rem] shadow-sm overflow-hidden border border-transparent dark:border-white/10 mb-6 break-inside-avoid"
-                                                draggable
-                                                onDragStart={(e) => {
-                                                    dragItem.current = idx;
-                                                    e.target.classList.add('opacity-50');
-                                                }}
-                                                onDragEnter={(e) => {
-                                                    dragOverItem.current = idx;
-                                                }}
-                                                onDragEnd={(e) => {
-                                                    e.target.classList.remove('opacity-50');
-                                                    handleSort();
-                                                }}
-                                                onDragOver={(e) => e.preventDefault()}
-                                                style={{ animationDelay: `${idx * 0.05}s` }}
-                                            >
-                                                <div onClick={() => setExpandedClasses(p => ({ ...p, [cls.name]: !p[cls.name] }))} className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors micro-interaction select-none">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-1" onMouseDown={e => e.stopPropagation()}>
-                                                            <LucideIcon name="GripVertical" size={20} />
+                                    {/* V9.3: Dynamic Auto-Sorting by remaining classes (desc) */}
+                                    {(() => {
+                                        const classesWithMeta = currentYearClasses.map((cls, originalIndex) => {
+                                            const r = getRemainingForClass(cls.name);
+                                            return { ...cls, remain: r !== null ? r : -1, originalIndex };
+                                        });
+
+                                        const sortedClasses = [...classesWithMeta].sort((a, b) => {
+                                            if (b.remain !== a.remain) return b.remain - a.remain;
+                                            return a.originalIndex - b.originalIndex; // Tie-breaker: original class order
+                                        });
+
+                                        return sortedClasses.map((cls, displayIdx) => {
+                                            const items = currentYearRecords.filter(r => r.className === cls.name && (r.progress.includes(filter) || r.date.includes(filter) || (r.tags && r.tags.some(t => t.includes(filter)))));
+                                            if (!items.length && filter) return null;
+                                            const isOpen = expandedClasses[cls.name] !== false;
+                                            const remain = cls.remain > -1 ? cls.remain : null;
+                                            return (
+                                                <div
+                                                    key={cls.name}
+                                                    className="bg-white dark:bg-starlux-obsidianLight rounded-[2rem] shadow-sm overflow-hidden border border-transparent dark:border-white/10 mb-6 break-inside-avoid"
+                                                    draggable
+                                                    onDragStart={(e) => {
+                                                        dragItem.current = cls.originalIndex;
+                                                        e.target.classList.add('opacity-50');
+                                                    }}
+                                                    onDragEnter={(e) => {
+                                                        dragOverItem.current = cls.originalIndex;
+                                                    }}
+                                                    onDragEnd={(e) => {
+                                                        e.target.classList.remove('opacity-50');
+                                                        handleSort();
+                                                    }}
+                                                    onDragOver={(e) => e.preventDefault()}
+                                                    style={{ animationDelay: `${displayIdx * 0.05}s` }}
+                                                >
+                                                    <div onClick={() => setExpandedClasses(p => ({ ...p, [cls.name]: !p[cls.name] }))} className="p-6 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors micro-interaction select-none">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-1" onMouseDown={e => e.stopPropagation()}>
+                                                                <LucideIcon name="GripVertical" size={20} />
+                                                            </div>
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform ${isOpen ? 'bg-[#9B8A5E] dark:bg-[#B4745A] text-white rotate-90' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}><LucideIcon name="ChevronRight" size={18} /></div>
+                                                            <div><h3 className="text-2xl font-black text-gray-900 dark:text-white">{cls.name}</h3><p className="text-sm font-bold text-gray-400">{items.length} 筆紀錄</p></div>
                                                         </div>
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform ${isOpen ? 'bg-[#9B8A5E] dark:bg-[#B4745A] text-white rotate-90' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}><LucideIcon name="ChevronRight" size={18} /></div>
-                                                        <div><h3 className="text-2xl font-black text-gray-900 dark:text-white">{cls.name}</h3><p className="text-sm font-bold text-gray-400">{items.length} 筆紀錄</p></div>
+                                                        {remain !== null && (
+                                                            <div className="bg-[#9B8A5E] dark:bg-[#B4745A] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                                                                <span className="text-xs font-bold opacity-80 uppercase">剩</span><span className="text-xl font-black leading-none">{remain}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {remain !== null && (
-                                                        <div className="bg-[#9B8A5E] dark:bg-[#B4745A] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
-                                                            <span className="text-xs font-bold opacity-80 uppercase">剩</span><span className="text-xl font-black leading-none">{remain}</span>
+                                                    {isOpen && (
+                                                        <div className="bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-white/5">
+                                                            {items.map((r, i) => (
+                                                                <div key={r.id} className={`p-6 flex gap-6 group relative ${i !== items.length - 1 ? 'border-b border-gray-200/50 dark:border-white/5' : ''}`}>
+                                                                    <div className="w-24 text-right">
+                                                                        <div className="font-mono text-xl font-black text-gray-900 dark:text-white opacity-80">{r.date.slice(5)}</div>
+                                                                        <div className="text-xs font-bold text-gray-400 mt-1">{r.subject}</div>
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <p className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">{r.progress}</p>
+                                                                        <div className="flex gap-2 flex-wrap">
+                                                                            {r.homework && <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold">作業: {r.homework}</span>}
+                                                                            {r.quiz && <span className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-bold">小考</span>}
+                                                                            {r.tags && r.tags.map(t => <span key={t} className="px-3 py-1 bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 rounded-lg text-xs font-bold">#{t}</span>)}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
+                                                                        <button onClick={(e) => { e.stopPropagation(); setEditingRecord(r); }} className="text-gray-300 hover:text-blue-500"><LucideIcon name="Pencil" size={20} /></button>
+                                                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(r.id); }} className="text-gray-300 hover:text-red-500"><LucideIcon name="Trash2" size={20} /></button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     )}
                                                 </div>
-                                                {isOpen && (
-                                                    <div className="bg-gray-50/50 dark:bg-black/20 border-t border-gray-100 dark:border-white/5">
-                                                        {items.map((r, i) => (
-                                                            <div key={r.id} className={`p-6 flex gap-6 group relative ${i !== items.length - 1 ? 'border-b border-gray-200/50 dark:border-white/5' : ''}`}>
-                                                                <div className="w-24 text-right">
-                                                                    <div className="font-mono text-xl font-black text-gray-900 dark:text-white opacity-80">{r.date.slice(5)}</div>
-                                                                    <div className="text-xs font-bold text-gray-400 mt-1">{r.subject}</div>
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <p className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">{r.progress}</p>
-                                                                    <div className="flex gap-2 flex-wrap">
-                                                                        {r.homework && <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold">作業: {r.homework}</span>}
-                                                                        {r.quiz && <span className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-bold">小考</span>}
-                                                                        {r.tags && r.tags.map(t => <span key={t} className="px-3 py-1 bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 rounded-lg text-xs font-bold">#{t}</span>)}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
-                                                                    <button onClick={(e) => { e.stopPropagation(); setEditingRecord(r); }} className="text-gray-300 hover:text-blue-500"><LucideIcon name="Pencil" size={20} /></button>
-                                                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(r.id); }} className="text-gray-300 hover:text-red-500"><LucideIcon name="Trash2" size={20} /></button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
+                                            );
+                                        });
+                                    })()}
 
                                     {/* V8.6 Print Footer */}
                                     <div className="print-footer">
@@ -1138,12 +1151,11 @@
                                             <div className="space-y-4">
                                                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">行政院行事曆同步 (自動)</h4>
                                                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl mb-2 text-xs font-bold text-blue-600 dark:text-blue-300">
-                                                    系統將自動抓取「今年 ({new Date().getFullYear()})」與「去年 ({new Date().getFullYear() - 1})」的假日資料。
+                                                    系統將自動抓取「去年 ({new Date().getFullYear() - 1})」、「今年 ({new Date().getFullYear()})」與「明年 ({new Date().getFullYear() + 1})」的假日資料。
                                                 </div>
                                                 <AppleButton onClick={async () => {
                                                     const curYear = new Date().getFullYear();
-                                                    const prevYear = curYear - 1;
-                                                    const years = [curYear, prevYear];
+                                                    const years = [curYear - 1, curYear, curYear + 1];
                                                     let count = 0;
                                                     let errors = [];
 
