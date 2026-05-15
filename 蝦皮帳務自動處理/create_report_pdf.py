@@ -8,7 +8,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import os
 from datetime import datetime
 
-OUTPUT_PDF = f'富亭工作室10~12月銷貨紀錄_{datetime.now().strftime("%Y%m%d")}.pdf'
+OUTPUT_PDF = f'富亭工作室銷貨紀錄_{datetime.now().strftime("%Y%m%d")}.pdf'
 INPUT_EXCEL = f'帳務資料_{datetime.now().strftime("%Y%m%d")}.xlsx'
 FONT_REGULAR = '/System/Library/Fonts/STHeiti Light.ttc'
 FONT_BOLD = '/System/Library/Fonts/STHeiti Medium.ttc'

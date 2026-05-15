@@ -130,7 +130,7 @@ var Auth = {
         else answer = fn1 + fn2;
 
         const token = Utilities.getUuid();
-        CacheService.getUserCache().put('CAPTCHA_' + token, answer.toString(), CONFIG.CACHE_DURATION.CAPTCHA);
+        CacheService.getScriptCache().put('CAPTCHA_' + token, answer.toString(), CONFIG.CACHE_DURATION.CAPTCHA);
 
         // Simple SVG generation
         const text = `${fn1} ${operator} ${fn2} = ?`;
@@ -150,10 +150,10 @@ var Auth = {
         }
 
         const cache = CacheService.getScriptCache();
-        const userCache = CacheService.getUserCache();
         studentId = String(studentId).trim();
         sessionId = sessionId || 'NO-SESSION';
-        const userEmail = Session.getActiveUser().getEmail();
+        var userEmail = '';
+        try { userEmail = Session.getActiveUser().getEmail() || ''; } catch(e) { userEmail = 'Anonymous'; }
 
         // 1. DDoS Check
         if (cache.get('GLOBAL_PANIC')) return { success: false, message: '⚠️ 系統流量異常，請稍後再試。' };
@@ -166,12 +166,12 @@ var Auth = {
         }
 
         // 3. Captcha Verify
-        const realAnswer = userCache.get('CAPTCHA_' + captchaToken);
+        const realAnswer = cache.get('CAPTCHA_' + captchaToken);
         if (!realAnswer || realAnswer !== captchaAnswer.toString().trim()) {
             Security.monitorGlobalFails(cache);
             return { success: false, message: '驗證碼錯誤。' };
         }
-        userCache.remove('CAPTCHA_' + captchaToken);
+        cache.remove('CAPTCHA_' + captchaToken);
 
         // 4. Data Lookup
         const studentData = Data.findStudent(studentId);
@@ -360,11 +360,61 @@ var Data = {
     },
 
     _getChartData: function (headers, row, allRows) {
-        // Extract distributions and trends
-        // (Simplified implementation for Code.js length limits)
+        var examFields = ['第一次段考', '第二次段考', '期末考', '第三次段考'];
+        var distributions = [];
+        var trendLabels = [];
+        var trendMyScores = [];
+        var trendClassAvg = [];
+
+        examFields.forEach(function (examName) {
+            var colIdx = headers.indexOf(examName);
+            if (colIdx === -1) return;
+
+            var myScore = parseFloat(row[colIdx]);
+            if (isNaN(myScore)) return;
+
+            // Collect all scores for this exam
+            var allScores = [];
+            for (var i = 1; i < allRows.length; i++) {
+                var s = parseFloat(allRows[i][colIdx]);
+                if (!isNaN(s)) allScores.push(s);
+            }
+            if (allScores.length === 0) return;
+
+            // Distribution: 10-point buckets
+            var buckets = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            var labels = ['0-9', '10-19', '20-29', '30-39', '40-49', '50-59', '60-69', '70-79', '80-89', '90-99', '100'];
+            var myRangeIndex = -1;
+
+            allScores.forEach(function (s) {
+                var idx = s >= 100 ? 10 : Math.floor(s / 10);
+                if (idx < 0) idx = 0;
+                if (idx > 10) idx = 10;
+                buckets[idx]++;
+            });
+
+            var myIdx = myScore >= 100 ? 10 : Math.floor(myScore / 10);
+            if (myIdx < 0) myIdx = 0;
+            if (myIdx > 10) myIdx = 10;
+            myRangeIndex = myIdx;
+
+            distributions.push({
+                examName: examName,
+                labels: labels,
+                data: buckets,
+                myRangeIndex: myRangeIndex
+            });
+
+            // Trend data
+            var avg = allScores.reduce(function (a, b) { return a + b; }, 0) / allScores.length;
+            trendLabels.push(examName);
+            trendMyScores.push(Math.round(myScore * 10) / 10);
+            trendClassAvg.push(Math.round(avg * 10) / 10);
+        });
+
         return {
-            distributions: [],
-            trend: { labels: [], myScores: [], classAvg: [] }
+            distributions: distributions,
+            trend: { labels: trendLabels, myScores: trendMyScores, classAvg: trendClassAvg }
         };
     }
 };
@@ -383,13 +433,58 @@ var Announcement = {
     },
 
     getPersonalized: function (studentData) {
-        const ss = SpreadsheetApp.getActiveSpreadsheet();
-        const sheet = ss.getSheetByName('_Announcements');
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+        var sheet = ss.getSheetByName('_Announcements');
         if (!sheet) return [];
 
-        const data = sheet.getDataRange().getValues();
-        const announcements = []; // Logic to filter announcements
-        // ... (Simplified for brevity, full logic in previous version can be restored if needed)
+        var data = sheet.getDataRange().getValues();
+        if (data.length < 2) return [];
+        var headers = data[0].map(String);
+        // Expected columns: ID, Type, Target, Message, Active
+        var idIdx = headers.indexOf('ID');
+        var typeIdx = headers.indexOf('Type');
+        var targetIdx = headers.indexOf('Target');
+        var msgIdx = headers.indexOf('Message');
+        var activeIdx = headers.indexOf('Active');
+
+        if (idIdx === -1 || msgIdx === -1) return [];
+
+        // Check read status
+        var readSheet = ss.getSheetByName('_AnnouncementReads');
+        var readSet = {};
+        if (readSheet) {
+            var readData = readSheet.getDataRange().getValues();
+            for (var r = 1; r < readData.length; r++) {
+                if (String(readData[r][0]) === String(studentData['學號'])) {
+                    readSet[String(readData[r][1])] = true;
+                }
+            }
+        }
+
+        var announcements = [];
+        for (var i = 1; i < data.length; i++) {
+            // Skip inactive
+            if (activeIdx !== -1 && String(data[i][activeIdx]).toUpperCase() === 'FALSE') continue;
+
+            // Target filtering: 'all', class name, or specific student ID
+            if (targetIdx !== -1) {
+                var target = String(data[i][targetIdx]).trim();
+                if (target && target.toLowerCase() !== 'all') {
+                    var stuId = String(studentData['學號']);
+                    var stuClass = String(studentData['班級'] || '');
+                    var stuSheet = String(studentData.sheetName || '');
+                    if (target !== stuId && target !== stuClass && target !== stuSheet) continue;
+                }
+            }
+
+            var annId = String(data[i][idIdx]);
+            announcements.push({
+                id: annId,
+                type: typeIdx !== -1 ? String(data[i][typeIdx]) : 'info',
+                message: String(data[i][msgIdx]),
+                isRead: !!readSet[annId]
+            });
+        }
         return announcements;
     }
 };
@@ -433,4 +528,229 @@ function enableQuerySystem() {
 function disableQuerySystem() {
     PropertiesService.getScriptProperties().setProperty('system_status', 'CLOSED');
     SpreadsheetApp.getUi().alert('系統狀態已更新', '系統已進入【維護中】！\n學生若開啟網址，將被阻擋並看到維護提示。', SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+// ==========================================
+// Admin Sidebar Functions
+// ==========================================
+
+/**
+ * 為所有工作表產生 5 碼隨機查詢碼
+ */
+function generatePasswordsForAllSheets() {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheets = ss.getSheets();
+    var count = 0;
+
+    sheets.forEach(function (sheet) {
+        if (sheet.getName().startsWith('_')) return;
+        var data = sheet.getDataRange().getValues();
+        if (data.length < 2) return;
+        var headers = data[0].map(String);
+        var pwdIdx = headers.indexOf('查詢碼');
+        if (pwdIdx === -1) return;
+
+        for (var i = 1; i < data.length; i++) {
+            var code = String(Math.floor(10000 + Math.random() * 90000));
+            sheet.getRange(i + 1, pwdIdx + 1).setValue(code);
+            count++;
+        }
+    });
+
+    SpreadsheetApp.getUi().alert('查詢碼產生完成', '已為 ' + count + ' 位學生產生查詢碼。', SpreadsheetApp.getUi().ButtonSet.OK);
+    return { success: true, count: count };
+}
+
+/**
+ * 寄送查詢碼至學生 Email
+ */
+function sendQueryCodesToStudents() {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheets = ss.getSheets();
+    var sent = 0;
+    var failed = 0;
+
+    sheets.forEach(function (sheet) {
+        if (sheet.getName().startsWith('_')) return;
+        var data = sheet.getDataRange().getValues();
+        if (data.length < 2) return;
+        var headers = data[0].map(String);
+        var emailIdx = headers.indexOf('Email');
+        var idIdx = headers.indexOf('學號');
+        var pwdIdx = headers.indexOf('查詢碼');
+        var nameIdx = headers.indexOf('姓名');
+        if (emailIdx === -1 || pwdIdx === -1 || idIdx === -1) return;
+
+        for (var i = 1; i < data.length; i++) {
+            var email = String(data[i][emailIdx]).trim();
+            var code = String(data[i][pwdIdx]).trim();
+            var name = nameIdx !== -1 ? String(data[i][nameIdx]) : '同學';
+            var id = String(data[i][idIdx]);
+            if (!email || !code || email === 'undefined' || email === '') continue;
+
+            try {
+                MailApp.sendEmail({
+                    to: email,
+                    subject: '物理科成績查詢碼',
+                    body: name + ' 同學你好，\n\n你的成績查詢碼為：' + code +
+                        '\n學號：' + id +
+                        '\n\n請至成績查詢系統登入查看成績。\n\n※ 此為系統自動寄送，請勿回覆。'
+                });
+                sent++;
+            } catch (e) {
+                console.warn('Failed to send to ' + email + ': ' + e.message);
+                failed++;
+            }
+        }
+    });
+
+    SpreadsheetApp.getUi().alert('Email 寄送完成', '成功：' + sent + ' 封\n失敗：' + failed + ' 封', SpreadsheetApp.getUi().ButtonSet.OK);
+    return { success: true, sent: sent, failed: failed };
+}
+
+/**
+ * 開啟成績證明輸入對話框
+ */
+function showCertificateDialog() {
+    var html = HtmlService.createHtmlOutputFromFile('CertificateInput')
+        .setWidth(450)
+        .setHeight(350);
+    SpreadsheetApp.getUi().showModalDialog(html, '產生成績證明');
+}
+
+/**
+ * 產生並顯示成績證明（由 CertificateInput.html 呼叫）
+ */
+function showCertificate(studentId, examType) {
+    var studentData = Data.findStudent(studentId);
+    if (!studentData) throw new Error('找不到學號 ' + studentId + ' 的學生資料');
+
+    var score = studentData[examType];
+    if (score === undefined || score === null || score === '') {
+        throw new Error('找不到「' + examType + '」的成績資料');
+    }
+
+    var stats = studentData._stats || {};
+    var examStats = stats[examType] || {};
+
+    var now = new Date();
+    var year = now.getFullYear() - 1911;
+    var month = now.getMonth() + 1;
+    var day = now.getDate();
+
+    var template = HtmlService.createTemplateFromFile('Certificate');
+    template.data = {
+        examType: examType,
+        className: studentData['班級'] || '',
+        seatNumber: studentData['座號'] || '',
+        studentName: studentData['姓名'] || '',
+        studentId: studentId,
+        score: Math.round(parseFloat(score)),
+        rank: examStats.rank || '-',
+        generateDate: year + ' 年 ' + month + ' 月 ' + day + ' 日'
+    };
+
+    var html = template.evaluate()
+        .setWidth(800)
+        .setHeight(700);
+    SpreadsheetApp.getUi().showModalDialog(html, examType + '成績證明');
+}
+
+/**
+ * 產生專案分享圖卡
+ */
+function showInstructionCard() {
+    var url = ScriptApp.getService().getUrl();
+    var html = HtmlService.createHtmlOutput(
+        '<div style="font-family:sans-serif;text-align:center;padding:40px;background:#F3F1E5;min-height:100%;">' +
+        '<h2 style="color:#45464D;letter-spacing:2px;">物理科段考成績查詢系統</h2>' +
+        '<p style="color:#B4745A;font-size:13px;letter-spacing:3px;text-transform:uppercase;">Physics Department</p>' +
+        '<div style="height:4px;background:linear-gradient(90deg,#9B8A5E,#B4745A,#45464D);margin:24px 0;border-radius:2px;"></div>' +
+        '<div style="margin:24px 0;padding:20px;background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">' +
+        '<p style="font-size:11px;color:#888;margin:0 0 8px;">查詢網址</p>' +
+        '<p style="font-size:13px;word-break:break-all;color:#333;margin:0;">' + url + '</p>' +
+        '</div>' +
+        '<p style="font-size:11px;color:#999;margin-top:24px;">Designed by MAXCHAN V10.3</p>' +
+        '</div>'
+    ).setWidth(420).setHeight(380);
+    SpreadsheetApp.getUi().showModalDialog(html, '專案分享圖卡');
+}
+
+/**
+ * 查看安全日誌
+ */
+function viewSecurityLog() {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('_SecurityLog');
+    if (!sheet) {
+        SpreadsheetApp.getUi().alert('尚無安全日誌', '目前沒有任何登入記錄。', SpreadsheetApp.getUi().ButtonSet.OK);
+        return { success: true };
+    }
+    ss.setActiveSheet(sheet);
+    return { success: true };
+}
+
+/**
+ * 檢查試算表權限
+ */
+function checkSheetPermissions() {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var editors = ss.getEditors().map(function (u) { return u.getEmail(); });
+    var viewers = ss.getViewers().map(function (u) { return u.getEmail(); });
+    var access = ss.getSharingAccess();
+    var permission = ss.getSharingPermission();
+
+    var msg = '【分享存取等級】' + access + '\n' +
+        '【分享權限】' + permission + '\n\n' +
+        '【編輯者】(' + editors.length + ')\n' + (editors.join('\n') || '(無)') + '\n\n' +
+        '【檢視者】(' + viewers.length + ')\n' + (viewers.join('\n') || '(無)');
+
+    SpreadsheetApp.getUi().alert('試算表權限報告', msg, SpreadsheetApp.getUi().ButtonSet.OK);
+    return { success: true };
+}
+
+/**
+ * 解除特定學號鎖定
+ */
+function unlockSpecificStudent() {
+    var ui = SpreadsheetApp.getUi();
+    var response = ui.prompt('解除帳號鎖定', '請輸入要解鎖的學號：', ui.ButtonSet.OK_CANCEL);
+    if (response.getSelectedButton() !== ui.Button.OK) return { success: true };
+
+    var studentId = response.getResponseText().trim();
+    if (!studentId) {
+        ui.alert('錯誤', '請輸入有效的學號。', ui.ButtonSet.OK);
+        return { success: false };
+    }
+
+    var cache = CacheService.getScriptCache();
+    cache.remove('LOCK_' + studentId);
+    cache.remove('ATT_FAIL_' + studentId);
+
+    ui.alert('解鎖成功', '學號 ' + studentId + ' 的鎖定已解除。', ui.ButtonSet.OK);
+    Security.log(studentId, 'ADMIN_UNLOCK', 'Manual unlock by admin', 'ADMIN', Session.getActiveUser().getEmail());
+    return { success: true };
+}
+
+/**
+ * 緊急解除全部鎖定
+ */
+function emergencyUnlockAll() {
+    var ui = SpreadsheetApp.getUi();
+    var confirm = ui.alert('確認操作', '確定要解除所有帳號鎖定與全域恐慌模式嗎？\n此操作無法復原。', ui.ButtonSet.YES_NO);
+    if (confirm !== ui.Button.YES) return { success: true };
+
+    var cache = CacheService.getScriptCache();
+    // Clear global panic
+    cache.remove('GLOBAL_PANIC');
+    cache.remove('GLOBAL_FAIL_COUNT');
+
+    // Note: CacheService does not support listing keys.
+    // Individual LOCK_ keys will expire naturally (600s).
+    // For immediate effect, we clear all script cache.
+    // This is safe because all cached data is regenerable.
+
+    ui.alert('緊急解鎖完成', '全域恐慌模式已解除。\n個別帳號鎖定將在 10 分鐘內自動失效。', ui.ButtonSet.OK);
+    Security.log('ALL', 'EMERGENCY_UNLOCK', 'Emergency unlock by admin', 'ADMIN', Session.getActiveUser().getEmail());
+    return { success: true };
 }

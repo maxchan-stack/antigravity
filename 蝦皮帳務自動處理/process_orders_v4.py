@@ -2,18 +2,26 @@ import pandas as pd
 import msoffcrypto
 import io
 import os
+import re
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 from datetime import datetime
 
 PASSWORD = '281105'
-# Define input files manually to ensure order or discovery
-# Assuming user provided files for Oct, Nov, Dec
-FILES_MAP = {
-    '2025-10': 'Order.completed.20251001_20251031.xlsx',
-    '2025-11': 'Order.completed.20251101_20251130.xlsx',
-    '2025-12': 'Order.completed.20251201_20251231.xlsx'
-}
+
+# Automatically scan for all Shopee order files
+all_files = {}
+target_pattern = re.compile(r'^Order\.(?:completed|toship)\.(\d{8})_(\d{8})\.xlsx$')
+for fname in os.listdir(os.getcwd()):
+    match = target_pattern.match(fname)
+    if match:
+        start_date_str = match.group(1)
+        month_key = f"{start_date_str[:4]}-{start_date_str[4:6]}"
+        all_files[month_key] = fname
+
+# Only keep the newest 3 files (by month) and sort chronologically
+latest_keys = sorted(all_files.keys())[-3:]
+FILES_MAP = {k: all_files[k] for k in latest_keys}
 TARGET_COLS = ['訂單成立日期', '訂單編號', '買家總支付金額']
 OUTPUT_FILE = f'帳務資料_{datetime.now().strftime("%Y%m%d")}.xlsx'
 
