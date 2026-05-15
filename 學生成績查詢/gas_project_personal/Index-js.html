@@ -370,10 +370,11 @@ else if (diff < 0) trendHtml=`<div class="trend-pill down">▼ ${Math.abs(diff)}
     const estimated = data.failRisk.estimatedScore;
     const isAtRisk = data.failRisk.isAtRisk;
 
-    // 計算及格機率：>=60分=100%，<60分則按比例計算 let probability; if (estimated>= 60) {
+    // 計算及格機率
+    var probability;
+    if (estimated >= 60) {
         probability = 100;
         } else {
-        // 低於60分，按比例計算（0-59分 → 0%-99%）
         probability = Math.max(0, Math.round((estimated / 60) * 100));
         }
 

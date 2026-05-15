@@ -130,7 +130,7 @@ var Auth = {
         else answer = fn1 + fn2;
 
         const token = Utilities.getUuid();
-        CacheService.getUserCache().put('CAPTCHA_' + token, answer.toString(), CONFIG.CACHE_DURATION.CAPTCHA);
+        CacheService.getScriptCache().put('CAPTCHA_' + token, answer.toString(), CONFIG.CACHE_DURATION.CAPTCHA);
 
         // Simple SVG generation
         const text = `${fn1} ${operator} ${fn2} = ?`;
@@ -150,10 +150,10 @@ var Auth = {
         }
 
         const cache = CacheService.getScriptCache();
-        const userCache = CacheService.getUserCache();
         studentId = String(studentId).trim();
         sessionId = sessionId || 'NO-SESSION';
-        const userEmail = Session.getActiveUser().getEmail();
+        var userEmail = '';
+        try { userEmail = Session.getActiveUser().getEmail() || ''; } catch(e) { userEmail = 'Anonymous'; }
 
         // 1. DDoS Check
         if (cache.get('GLOBAL_PANIC')) return { success: false, message: '⚠️ 系統流量異常，請稍後再試。' };
@@ -166,12 +166,12 @@ var Auth = {
         }
 
         // 3. Captcha Verify
-        const realAnswer = userCache.get('CAPTCHA_' + captchaToken);
+        const realAnswer = cache.get('CAPTCHA_' + captchaToken);
         if (!realAnswer || realAnswer !== captchaAnswer.toString().trim()) {
             Security.monitorGlobalFails(cache);
             return { success: false, message: '驗證碼錯誤。' };
         }
-        userCache.remove('CAPTCHA_' + captchaToken);
+        cache.remove('CAPTCHA_' + captchaToken);
 
         // 4. Data Lookup
         const studentData = Data.findStudent(studentId);
@@ -182,7 +182,7 @@ var Auth = {
         }
 
         // 5. Password Check
-        if (studentData['查詢碼'] != password) {
+        if (studentData['查詢碼'] !== password) {
             Security.monitorGlobalFails(cache);
             const attemptKey = 'ATT_FAIL_' + studentId;
             const attempts = Number(cache.get(attemptKey)) || 0;
