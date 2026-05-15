@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #9B8A5E;
+            /* Earth Gold */
+            --primary-hover: #86754d;
+            --accent-color: #B4745A;
+            /* Rose Gold */
+            --accent-hover: #9c634d;
+            --text-color: #45464D;
+            /* Obsidian Grey */
+            --bg-color: #f7f7f7;
+            --white: #ffffff;
+            --danger: #cf3b3b;
+            --danger-hover: #b03232;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #888;
+            margin-top: 12px;
+            margin-bottom: 4px;
+            padding-left: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            text-align: left;
+        }
+
+        /* Primary Button Style */
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(155, 138, 94, 0.2);
+        }
+
+        /* Secondary Button Style */
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #e0e0e0;
+        }
+
+        /* Accent Button Style */
+        .btn-accent {
+            background-color: white;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .btn-accent:hover:not(:disabled) {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        /* Danger Button Style */
+        .btn-danger {
+            background-color: #fff0f0;
+            color: var(--danger);
+            border: 1px solid #ffcccc;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .icon {
+            font-size: 16px;
+        }
+
+        /* Status Toast */
+        #status-area {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            background: #333;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #status-area.show {
+            opacity: 1;
+        }
+
+        #status-area.error {
+            background: var(--danger);
+        }
+
+        #status-area.success {
+            background: #4caf50;
+        }
+
+        .loading-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+        }
+
+        button.loading .loading-spinner {
+            display: inline-block;
+        }
+
+        button.loading .btn-text {
+            opacity: 0.8;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <div class="section-title">核心功能</div>
+        <div class="card">
+            <button class="btn-primary" onclick="run('generatePasswordsForAllSheets', this, '正在產生查詢碼...')">
+                <span class="loading-spinner"></span>
+                <span class="icon">🔢</span>
+                <span class="btn-text">產生所有查詢碼 (5碼)</span>
+            </button>
+            <button class="btn-accent" onclick="run('sendQueryCodesToStudents', this, '正在寄送 Email...')">
+                <span class="loading-spinner"></span>
+                <span class="icon">📧</span>
+                <span class="btn-text">寄送查詢碼 (Email)</span>
+            </button>
+        </div>
+
+        <div class="section-title">證明文件</div>
+        <div class="card">
+            <button class="btn-secondary" onclick="run('showCertificateDialog', this, '開啟視窗中...')">
+                <span class="loading-spinner"></span>
+                <span class="icon">📄</span>
+                <span class="btn-text">產生成績證明</span>
+            </button>
+            <button class="btn-secondary" onclick="run('showInstructionCard', this, '正在產生圖卡...')">
+                <span class="loading-spinner"></span>
+                <span class="icon">📱</span>
+                <span class="btn-text">專案分享圖卡</span>
+            </button>
+        </div>
+
+        <div class="section-title">安全管理</div>
+        <div class="card">
+            <button class="btn-secondary" onclick="run('viewSecurityLog', this, '載入日誌中...')">
+                <span class="loading-spinner"></span>
+                <span class="icon">📊</span>
+                <span class="btn-text">查看安全日誌</span>
+            </button>
+            <button class="btn-secondary" onclick="run('checkSheetPermissions', this, '檢查權限中...')">
+                <span class="loading-spinner"></span>
+                <span class="icon">🔒</span>
+                <span class="btn-text">檢查試算表權限</span>
+            </button>
+            <button class="btn-secondary" onclick="run('unlockSpecificStudent', this, '執行中...')">
+                <span class="loading-spinner"></span>
+                <span class="icon">🔓</span>
+                <span class="btn-text">解除特定學號鎖定</span>
+            </button>
+            <button class="btn-danger" onclick="run('emergencyUnlockAll', this, '緊急解鎖中...')">
+                <span class="loading-spinner"></span>
+                <span class="icon">⚠️</span>
+                <span class="btn-text">緊急解除全部鎖定</span>
+            </button>
+        </div>
+
+    </div>
+
+    <div id="status-area">Ready</div>
+
+    <script>
+        function run(serverFunction, btn, loadingMsg) {
+            // UI Loading State
+            const originalText = btn.querySelector('.btn-text').innerText;
+            const originalPointerEvents = btn.style.pointerEvents;
+
+            btn.classList.add('loading');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').innerText = loadingMsg || '處理中...';
+
+            showToast(loadingMsg || '處理中...', 'normal');
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    // Reset Button
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                    btn.querySelector('.btn-text').innerText = originalText;
+
+                    showToast('✅ 執行成功！', 'success');
+
+                    // Specific handling for dialog popups if needed, 
+                    // though most just run backend logic or open dialogs directly
+                })
+                .withFailureHandler(function (error) {
+                    // Reset Button
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                    btn.querySelector('.btn-text').innerText = originalText;
+
+                    showToast('❌ 錯誤：' + error.message, 'error');
+                })
+            [serverFunction](); // Call the function dynamically
+        }
+
+        let toastTimeout;
+        function showToast(msg, type) {
+            const toast = document.getElementById('status-area');
+            toast.innerText = msg;
+            toast.className = ''; // reset classes
+            toast.classList.add('show', type);
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+
+            // Auto hide after 3 seconds if success or normal, longer for error
+            const duration = type === 'error' ? 5000 : 3000;
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+    </script>
+</body>
+
+</html>
