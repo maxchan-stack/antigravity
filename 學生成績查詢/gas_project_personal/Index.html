@@ -759,531 +759,505 @@
     </div>
 
     <script>
-        // Init
-        let token = '';
-        let sessionId = '';  // 🆕 追蹤碼
-        window.onload = function () {
-            loadCaptcha();
-            initSecurityInfo();  // 🆕 初始化安全資訊
-            setupEnterKeySupport();  // 🆕 支援 Enter 鍵送出
+        // 🆕 P4-3 Frontend Error Tracking
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            try {
+                var errData = {
+                    msg: msg,
+                    url: url,
+                    line: lineNo,
+                    col: columnNo,
+                    stack: error ? error.stack : '',
+                    userAgent: navigator.userAgent
+                };
+                google.script.run.logFrontendError(JSON.stringify(errData));
+            } catch(e) {}
+            return false;
         };
-        const capBox = document.getElementById('cap-box');
-        capBox.onclick = loadCaptcha;
+"use strict";
 
-        // 🆕 Enter 鍵送出支援（效能優化 - 提升 UX）
-        function setupEnterKeySupport() {
-            const inputs = document.querySelectorAll('#inp-id, #inp-pwd, #inp-cap');
-            inputs.forEach(input => {
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        doLogin();
-                    }
-                });
-            });
-        }
+// Init
+var token = '';
+var sessionId = ''; // 🆕 追蹤碼
+window.onload = function () {
+  loadCaptcha();
+  initSecurityInfo(); // 🆕 初始化安全資訊
+  setupEnterKeySupport(); // 🆕 支援 Enter 鍵送出
+};
+var capBox = document.getElementById('cap-box');
+capBox.onclick = loadCaptcha;
 
-        // 🆕 初始化安全資訊
-        function initSecurityInfo() {
-            // 生成 Session ID（真實的追蹤碼）
-            const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-            const random = Math.random().toString(36).substring(2, 8);
-            sessionId = `${timestamp}-${random}`;
+// 🆕 Enter 鍵送出支援（效能優化 - 提升 UX）
+function setupEnterKeySupport() {
+  var inputs = document.querySelectorAll('#inp-id, #inp-pwd, #inp-cap');
+  inputs.forEach(function (input) {
+    input.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        doLogin();
+      }
+    });
+  });
+}
 
-            // 格式化時間
-            const now = new Date();
-            const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+// 🆕 初始化安全資訊
+function initSecurityInfo() {
+  // 生成 Session ID（真實的追蹤碼）
+  var timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+  var random = Math.random().toString(36).substring(2, 8);
+  sessionId = "".concat(timestamp, "-").concat(random);
 
-            // 🆕 更新顯示 (顯示真實 Email)
-            // userEmail 變數由後端 doGet 傳入 (透過 Scriptlet)
-            document.getElementById('user-identity').textContent = "<?= userEmail ?>";
-            document.getElementById('session-id').textContent = sessionId;
-            document.getElementById('access-time').textContent = timeStr;
-        }
+  // 格式化時間
+  var now = new Date();
+  var timeStr = "".concat(now.getFullYear(), "-").concat(String(now.getMonth() + 1).padStart(2, '0'), "-").concat(String(now.getDate()).padStart(2, '0'), " ").concat(String(now.getHours()).padStart(2, '0'), ":").concat(String(now.getMinutes()).padStart(2, '0'), ":").concat(String(now.getSeconds()).padStart(2, '0'));
 
-        function loadCaptcha() {
-            capBox.innerHTML = '<span style="color:#999;font-size:12px;">...</span>';
-            google.script.run
-                .withSuccessHandler(function(r) {
-                    capBox.innerHTML = r.svg;
-                    token = r.token;
-                })
-                .withFailureHandler(function(err) {
-                    console.warn('getCaptcha failed:', err);
-                    capBox.innerHTML = '<span style="color:#c00;font-size:12px;">載入失敗，點擊重試</span>';
-                })
-                .getCaptcha();
-        }
+  // 🆕 更新顯示 (顯示真實 Email)
+  // userEmail 變數由後端 doGet 傳入 (透過 Scriptlet)
+  document.getElementById('user-identity').textContent = "<?= userEmail ?>";
+  document.getElementById('session-id').textContent = sessionId;
+  document.getElementById('access-time').textContent = timeStr;
+}
+function loadCaptcha() {
+  capBox.innerHTML = '<span style="color:#999;font-size:12px;">...</span>';
+  google.script.run.withSuccessHandler(function (r) {
+    capBox.innerHTML = r.svg;
+    token = r.token;
+  }).withFailureHandler(function (err) {
+    console.warn('getCaptcha failed:', err);
+    capBox.innerHTML = '<span style="color:#c00;font-size:12px;">載入失敗，點擊重試</span>';
+  }).getCaptcha();
+}
+function showToast(msg) {
+  var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'normal';
+  var t = document.getElementById('toast');
+  t.innerHTML = msg;
+  t.className = type === 'error' ? 'visible error' : 'visible';
+  setTimeout(function () {
+    return t.classList.remove('visible');
+  }, 3000);
+}
 
-        function showToast(msg, type = 'normal') {
-            const t = document.getElementById('toast');
-            t.innerHTML = msg;
-            t.className = type === 'error' ? 'visible error' : 'visible';
-            setTimeout(() => t.classList.remove('visible'), 3000);
-        }
+// 🆕 V10 Smart Announcement: Mark as Read
+function markAsRead(studentId, announcementId, btn) {
+  btn.disabled = true;
+  btn.innerText = '處理中...';
+  google.script.run.withSuccessHandler(function (res) {
+    if (res.success) {
+      // 更新 UI
+      var item = btn.closest('.announce-item');
+      item.classList.add('read');
+      btn.outerHTML = '<span class="read-badge">已讀</span>';
+    } else {
+      showToast('標記失敗', 'error');
+      btn.disabled = false;
+      btn.innerText = '✓ 已讀';
+    }
+  }).withFailureHandler(function (err) {
+    showToast('標記失敗: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.innerText = '✓ 已讀';
+  }).markAnnouncementRead(studentId, announcementId);
+}
+function doLogin() {
+  var id = document.getElementById('inp-id').value;
+  var pwd = document.getElementById('inp-pwd').value;
+  var cap = document.getElementById('inp-cap').value;
+  var seatEl = document.getElementById('inp-seat');
+  var seat = seatEl ? seatEl.value : null; // 🆕 座號
+  if (!id || !pwd || !cap) return showToast('請填寫完整資訊');
+  document.getElementById('loader').style.display = 'flex';
+  google.script.run.withSuccessHandler(function (res) {
+    document.getElementById('loader').style.display = 'none';
+    if (!res.success) {
+      // 🆕 處理座號驗證要求
+      if (res.requireSeatNumber) {
+        showSeatNumberInput();
+      }
+      // 🆕 處理漸進式延遲
+      if (res.waitSeconds) {
+        showCountdown(res.waitSeconds);
+        disableLoginButton(res.waitSeconds);
+      }
+      showToast(res.message, 'error');
+      if (!res.locked && !res.waitSeconds) {
+        document.getElementById('inp-cap').value = '';
+        loadCaptcha();
+      }
+    } else {
+      renderResult(res.data, res.config, res.announcements);
+    }
+  }).login(id, pwd, token, cap, seat, sessionId); // 🆕 新增 sessionId 參數
+}
 
-        // 🆕 V10 Smart Announcement: Mark as Read
-        function markAsRead(studentId, announcementId, btn) {
-            btn.disabled = true;
-            btn.innerText = '處理中...';
+// 🆕 動態顯示座號輸入框
+function showSeatNumberInput() {
+  if (document.getElementById('inp-seat')) return; // 已存在
 
-            google.script.run
-                .withSuccessHandler(res => {
-                    if (res.success) {
-                        // 更新 UI
-                        const item = btn.closest('.announce-item');
-                        item.classList.add('read');
-                        btn.outerHTML = '<span class="read-badge">已讀</span>';
-                    } else {
-                        showToast('標記失敗', 'error');
-                        btn.disabled = false;
-                        btn.innerText = '✓ 已讀';
-                    }
-                })
-                .withFailureHandler(err => {
-                    showToast('標記失敗: ' + err.message, 'error');
-                    btn.disabled = false;
-                    btn.innerText = '✓ 已讀';
-                })
-                .markAnnouncementRead(studentId, announcementId);
-        }
+  var seatRow = document.createElement('div');
+  seatRow.className = 'input-row';
+  seatRow.id = 'seat-row';
+  seatRow.style.animation = 'slideIn 0.3s ease';
+  seatRow.innerHTML = "\n                <label>\uD83D\uDCCD \u5EA7\u865F</label>\n                <input type=\"text\" id=\"inp-seat\" placeholder=\"\u8ACB\u8F38\u5165\u60A8\u7684\u5EA7\u865F\" />\n            ";
+  var pwdRow = document.getElementById('inp-pwd').closest('.input-row');
+  pwdRow.after(seatRow);
 
-        function doLogin() {
-            const id = document.getElementById('inp-id').value;
-            const pwd = document.getElementById('inp-pwd').value;
-            const cap = document.getElementById('inp-cap').value;
-            var seatEl = document.getElementById('inp-seat');
-            const seat = seatEl ? seatEl.value : null;  // 🆕 座號
-            if (!id || !pwd || !cap) return showToast('請填寫完整資訊');
+  // 自動聚焦座號輸入框
+  setTimeout(function () {
+    return document.getElementById('inp-seat').focus();
+  }, 100);
+}
 
-            document.getElementById('loader').style.display = 'flex';
-            google.script.run.withSuccessHandler(res => {
-                document.getElementById('loader').style.display = 'none';
-                if (!res.success) {
-                    // 🆕 處理座號驗證要求
-                    if (res.requireSeatNumber) {
-                        showSeatNumberInput();
-                    }
-                    // 🆕 處理漸進式延遲
-                    if (res.waitSeconds) {
-                        showCountdown(res.waitSeconds);
-                        disableLoginButton(res.waitSeconds);
-                    }
-                    showToast(res.message, 'error');
-                    if (!res.locked && !res.waitSeconds) {
-                        document.getElementById('inp-cap').value = '';
-                        loadCaptcha();
-                    }
-                } else {
-                    renderResult(res.data, res.config, res.announcements);
-                }
-            }).login(id, pwd, token, cap, seat, sessionId);  // 🆕 新增 sessionId 參數
-        }
+// 🆕 顯示倒數計時器
+function showCountdown(seconds) {
+  var toast = document.getElementById('toast');
+  var remaining = seconds;
+  var _updateCountdown = function updateCountdown() {
+    if (remaining > 0) {
+      var mins = Math.floor(remaining / 60);
+      var secs = remaining % 60;
+      var timeStr = mins > 0 ? "".concat(mins, " \u5206 ").concat(secs, " \u79D2") : "".concat(secs, " \u79D2");
+      toast.innerHTML = "\u23F3 \u8ACB\u7A0D\u5019 ".concat(timeStr, " \u518D\u8A66");
+      toast.className = 'visible error';
+      remaining--;
+      setTimeout(_updateCountdown, 1000);
+    } else {
+      toast.classList.remove('visible');
+      showToast('可以再次嘗試了！');
+    }
+  };
+  _updateCountdown();
+}
 
-        // 🆕 動態顯示座號輸入框
-        function showSeatNumberInput() {
-            if (document.getElementById('inp-seat')) return;  // 已存在
+// 🆕 禽用登入按鈕 N 秒
+function disableLoginButton(seconds) {
+  var btn = document.querySelector('.btn-primary');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  btn.style.cursor = 'not-allowed';
+  setTimeout(function () {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    loadCaptcha(); // 重新載入驗證碼
+  }, seconds * 1000);
+}
+function renderResult(data, config, announcements) {
+  document.getElementById('view-login').style.display = 'none';
+  document.getElementById('view-result').style.display = 'flex';
 
-            const seatRow = document.createElement('div');
-            seatRow.className = 'input-row';
-            seatRow.id = 'seat-row';
-            seatRow.style.animation = 'slideIn 0.3s ease';
-            seatRow.innerHTML = `
-                <label>📍 座號</label>
-                <input type="text" id="inp-seat" placeholder="請輸入您的座號" />
-            `;
+  // 🆕 Store config in data object for easier access in loop
+  data.config = config;
 
-            const pwdRow = document.getElementById('inp-pwd').closest('.input-row');
-            pwdRow.after(seatRow);
+  // 🆕 Render Announcements (V10 Smart Announcement System)
+  var announceArea = document.getElementById('announce-area');
+  announceArea.innerHTML = '';
 
-            // 自動聚焦座號輸入框
-            setTimeout(() => document.getElementById('inp-seat').focus(), 100);
-        }
+  // 使用後端傳來的個人化公告
+  var smartAnnouncements = data.announcements || [];
+  if (smartAnnouncements.length > 0) {
+    smartAnnouncements.forEach(function (a) {
+      var el = document.createElement('div');
+      el.className = "announce-item ".concat(a.type).concat(a.isRead ? ' read' : '');
+      el.dataset.id = a.id;
+      var icon = 'ℹ️';
+      if (a.type === 'warning') icon = '⚠️';
+      if (a.type === 'emergency') icon = '🚨';
+      el.innerHTML = "\n                        <div class=\"announce-icon\">".concat(icon, "</div>\n                        <div class=\"announce-content\">\n                            <div class=\"announce-message\">").concat(a.message, "</div>\n                            ").concat(!a.isRead ? "<button class=\"mark-read-btn\" onclick=\"markAsRead('".concat(data['學號'], "', '").concat(a.id, "', this)\">\u2713 \u5DF2\u8B80</button>") : '<span class="read-badge">已讀</span>', "\n                        </div>\n                    ");
+      announceArea.appendChild(el);
+    });
+  }
+  document.getElementById('disp-name').innerText = data['姓名'] || '同學';
+  document.getElementById('disp-id').innerText = data['學號'];
 
-        // 🆕 顯示倒數計時器
-        function showCountdown(seconds) {
-            const toast = document.getElementById('toast');
-            let remaining = seconds;
+  // Debug Log (Hidden from UI, visible in Console as requested previously)
+  if (data._debug) {
+    console.group('Backend Debug Logic');
+    data._debug.forEach(function (l) {
+      return console.log(l);
+    });
+    console.groupEnd();
+  }
+  var container = document.getElementById('list-container');
+  container.innerHTML = '';
+  var stats = data._stats || {};
 
-            const updateCountdown = () => {
-                if (remaining > 0) {
-                    const mins = Math.floor(remaining / 60);
-                    const secs = remaining % 60;
-                    const timeStr = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
-                    toast.innerHTML = `⏳ 請稍候 ${timeStr} 再試`;
-                    toast.className = 'visible error';
-                    remaining--;
-                    setTimeout(updateCountdown, 1000);
-                } else {
-                    toast.classList.remove('visible');
-                    showToast('可以再次嘗試了！');
-                }
-            };
-            updateCountdown();
-        }
+  // 🆕 固定顯示順序（由上到下）
+  var displayOrder = ['第一次段考', '第二次段考', '期末考', '小考平均', '缺交', '平時', '學期'];
 
-        // 🆕 禽用登入按鈕 N 秒
-        function disableLoginButton(seconds) {
-            const btn = document.querySelector('.btn-primary');
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.style.cursor = 'not-allowed';
+  // 渲染函式
+  var renderGradeCard = function renderGradeCard(key) {
+    if (!data.hasOwnProperty(key)) return; // 若欄位不存在則跳過
 
-            setTimeout(() => {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
-                loadCaptcha();  // 重新載入驗證碼
-            }, seconds * 1000);
-        }
+    var val = data[key];
+    if (val === undefined || val === null) return; // 若值為空則跳過
 
-        function renderResult(data, config, announcements) {
-            document.getElementById('view-login').style.display = 'none';
-            document.getElementById('view-result').style.display = 'flex';
+    var s = stats[key] || {};
 
-            // 🆕 Store config in data object for easier access in loop
-            data.config = config;
+    // Trend
+    var trendHtml = '';
+    if (s.diff !== undefined && s.diff !== null) {
+      var diff = parseFloat(s.diff);
+      if (diff > 0) trendHtml = "<div class=\"trend-pill up\">\u25B2 ".concat(diff, "</div>");else if (diff < 0) trendHtml = "<div class=\"trend-pill down\">\u25BC ".concat(Math.abs(diff), "</div>");else trendHtml = "<div class=\"trend-pill flat\">-</div>";
+    }
 
-            // 🆕 Render Announcements (V10 Smart Announcement System)
-            const announceArea = document.getElementById('announce-area');
-            announceArea.innerHTML = '';
+    // Stats (排名與平均)
+    var footerHtml = '';
+    // 🆕 使用後端傳來的 Config，若無則使用預設值
+    var noStatsFields = data.config && data.config.noStatsFields || ['缺交', '小考平均', '平時', '學期'];
+    if (s.avg && !noStatsFields.includes(key)) {
+      footerHtml = "\n                        <div class=\"stats-footer\">\n                            <div class=\"stat-item\">\u73ED\u6392\u540D <span class=\"stat-val\">".concat(s.rank, "</span></div>\n                            <div class=\"stat-item\">\u73ED\u7D1A\u5E73\u5747 <span class=\"stat-val\">").concat(s.avg, "</span></div>\n                        </div>\n                    ");
+    }
 
-            // 使用後端傳來的個人化公告
-            const smartAnnouncements = data.announcements || [];
+    // 特殊欄位處理
+    var cardClass = 'grade-card';
+    var valueDisplay = val;
+    var displayName = key; // 🆕 欄位顯示名稱
 
-            if (smartAnnouncements.length > 0) {
-                smartAnnouncements.forEach(a => {
-                    const el = document.createElement('div');
-                    el.className = `announce-item ${a.type}${a.isRead ? ' read' : ''}`;
-                    el.dataset.id = a.id;
+    // 🆕 修改顯示名稱
+    if (key === '缺交') displayName = '缺交次數';
+    if (key === '學期') displayName = '學期總成績';
 
-                    let icon = 'ℹ️';
-                    if (a.type === 'warning') icon = '⚠️';
-                    if (a.type === 'emergency') icon = '🚨';
+    // 學期成績：放大強調
+    if (key === '學期' && val !== '-') {
+      cardClass += ' semester-highlight';
+    }
 
-                    el.innerHTML = `
-                        <div class="announce-icon">${icon}</div>
-                        <div class="announce-content">
-                            <div class="announce-message">${a.message}</div>
-                            ${!a.isRead ? `<button class="mark-read-btn" onclick="markAsRead('${data['學號']}', '${a.id}', this)">✓ 已讀</button>` : '<span class="read-badge">已讀</span>'}
-                        </div>
-                    `;
-                    announceArea.appendChild(el);
-                });
+    // 作業缺交：顯示次數 (移除警示色)
+    if (key === '缺交') {
+      var count = parseInt(val);
+      valueDisplay = "".concat(val, "<span class=\"homework-unit\">\u6B21</span>");
+    }
+    var card = document.createElement('div');
+    card.className = cardClass;
+    card.innerHTML = "\n                    <div class=\"grade-header\">\n                        <span class=\"subject-name\">".concat(displayName, "</span>\n                        ").concat(trendHtml, "\n                    </div>\n                    <div class=\"grade-main-container\">\n                        <span class=\"grade-val\">").concat(valueDisplay, "</span>\n                    </div>\n                    ").concat(footerHtml, "\n                ");
+    container.appendChild(card);
+  };
+
+  // 按照固定順序渲染
+  displayOrder.forEach(function (key) {
+    return renderGradeCard(key);
+  });
+
+  // 🆕 渲染圖表 (V9.2)
+  if (data.chartData) {
+    renderCharts(data.chartData);
+  }
+}
+
+// 🆕 Chart.js 圖表渲染函數 (V9.2 Grade Visualization Dashboard)
+var distributionChartInstance = null;
+var trendChartInstance = null;
+var globalChartData = null; // 🆕 儲存全域資料以供切換
+
+function renderCharts(chartData) {
+  globalChartData = chartData; // 存入全域
+  var chartSection = document.getElementById('chart-section');
+  if (!chartData || !chartData.distributions && !chartData.trend) {
+    chartSection.style.display = 'none';
+    return;
+  }
+  chartSection.style.display = 'block';
+
+  // === 1. 初始化下拉選單並渲染分佈圖 ===
+  var selector = document.getElementById('examSelector');
+  selector.innerHTML = '';
+  if (chartData.distributions && chartData.distributions.length > 0) {
+    // 填充選項
+    chartData.distributions.forEach(function (dist, index) {
+      var opt = document.createElement('option');
+      opt.value = index;
+      opt.innerText = dist.examName;
+      selector.appendChild(opt);
+    });
+
+    // 顯示下拉選單
+    selector.style.display = 'block';
+
+    // 預設選取最後一個（最新考試）
+    selector.value = chartData.distributions.length - 1;
+
+    // 渲染分佈圖
+    updateDistributionChart();
+  } else {
+    // 無分佈資料
+    selector.style.display = 'none';
+    // 清空畫布或顯示無資料
+    if (distributionChartInstance) distributionChartInstance.destroy();
+  }
+
+  // === 2. 渲染個人成績趨勢圖 ===
+  renderTrendChart(chartData.trend);
+}
+
+// 🆕 更新分佈圖 (On Change)
+function updateDistributionChart() {
+  if (!globalChartData || !globalChartData.distributions) return;
+  var selector = document.getElementById('examSelector');
+  var index = parseInt(selector.value);
+  var distData = globalChartData.distributions[index];
+  if (!distData) return;
+  var distCtx = document.getElementById('distributionChart').getContext('2d');
+
+  // Starlux 配色
+  var colors = {
+    earthGold: '#9B8A5E',
+    earthGoldLight: 'rgba(155, 138, 94, 0.6)',
+    highlight: '#FFB554',
+    obsidian: '#45464D'
+  };
+
+  // 銷毀舊實例
+  if (distributionChartInstance) {
+    distributionChartInstance.destroy();
+  }
+
+  // 標記學生所在區間
+  var backgroundColors = distData.labels.map(function (label, idx) {
+    return idx === distData.myRangeIndex ? colors.highlight : colors.earthGoldLight;
+  });
+  distributionChartInstance = new Chart(distCtx, {
+    type: 'bar',
+    data: {
+      labels: distData.labels,
+      datasets: [{
+        label: '人數',
+        data: distData.data,
+        backgroundColor: backgroundColors,
+        borderColor: colors.earthGold,
+        borderWidth: 1,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        title: {
+          display: false
+        },
+        // 標題已在卡片標題列
+        tooltip: {
+          callbacks: {
+            afterLabel: function afterLabel(context) {
+              if (context.dataIndex === distData.myRangeIndex) {
+                return '⬅️ 你的成績區間';
+              }
+              return '';
             }
-
-            document.getElementById('disp-name').innerText = data['姓名'] || '同學';
-            document.getElementById('disp-id').innerText = data['學號'];
-
-            // Debug Log (Hidden from UI, visible in Console as requested previously)
-            if (data._debug) {
-                console.group('Backend Debug Logic');
-                data._debug.forEach(l => console.log(l));
-                console.groupEnd();
-            }
-
-            const container = document.getElementById('list-container');
-            container.innerHTML = '';
-
-            const stats = data._stats || {};
-
-            // 🆕 固定顯示順序（由上到下）
-            const displayOrder = [
-                '第一次段考',
-                '第二次段考',
-                '期末考',
-                '小考平均',
-                '缺交',
-                '平時',
-                '學期'
-            ];
-
-            // 渲染函式
-            const renderGradeCard = (key) => {
-                if (!data.hasOwnProperty(key)) return; // 若欄位不存在則跳過
-
-                const val = data[key];
-                if (val === undefined || val === null) return; // 若值為空則跳過
-
-                const s = stats[key] || {};
-
-                // Trend
-                let trendHtml = '';
-                if (s.diff !== undefined && s.diff !== null) {
-                    const diff = parseFloat(s.diff);
-                    if (diff > 0) trendHtml = `<div class="trend-pill up">▲ ${diff}</div>`;
-                    else if (diff < 0) trendHtml = `<div class="trend-pill down">▼ ${Math.abs(diff)}</div>`;
-                    else trendHtml = `<div class="trend-pill flat">-</div>`;
-                }
-
-                // Stats (排名與平均)
-                let footerHtml = '';
-                // 🆕 使用後端傳來的 Config，若無則使用預設值
-                const noStatsFields = (data.config && data.config.noStatsFields) || ['缺交', '小考平均', '平時', '學期'];
-                if (s.avg && !noStatsFields.includes(key)) {
-                    footerHtml = `
-                        <div class="stats-footer">
-                            <div class="stat-item">班排名 <span class="stat-val">${s.rank}</span></div>
-                            <div class="stat-item">班級平均 <span class="stat-val">${s.avg}</span></div>
-                        </div>
-                    `;
-                }
-
-                // 特殊欄位處理
-                let cardClass = 'grade-card';
-                let valueDisplay = val;
-                let displayName = key; // 🆕 欄位顯示名稱
-
-                // 🆕 修改顯示名稱
-                if (key === '缺交') displayName = '缺交次數';
-                if (key === '學期') displayName = '學期總成績';
-
-                // 學期成績：放大強調
-                if (key === '學期' && val !== '-') {
-                    cardClass += ' semester-highlight';
-                }
-
-                // 作業缺交：顯示次數 (移除警示色)
-                if (key === '缺交') {
-                    const count = parseInt(val);
-                    valueDisplay = `${val}<span class="homework-unit">次</span>`;
-                }
-
-                const card = document.createElement('div');
-                card.className = cardClass;
-                card.innerHTML = `
-                    <div class="grade-header">
-                        <span class="subject-name">${displayName}</span>
-                        ${trendHtml}
-                    </div>
-                    <div class="grade-main-container">
-                        <span class="grade-val">${valueDisplay}</span>
-                    </div>
-                    ${footerHtml}
-                `;
-                container.appendChild(card);
-            };
-
-            // 按照固定順序渲染
-            displayOrder.forEach(key => renderGradeCard(key));
-
-            // 🆕 渲染圖表 (V9.2)
-            if (data.chartData) {
-                renderCharts(data.chartData);
-            }
+          }
         }
-
-        // 🆕 Chart.js 圖表渲染函數 (V9.2 Grade Visualization Dashboard)
-        let distributionChartInstance = null;
-        let trendChartInstance = null;
-        let globalChartData = null; // 🆕 儲存全域資料以供切換
-
-        function renderCharts(chartData) {
-            globalChartData = chartData; // 存入全域
-            const chartSection = document.getElementById('chart-section');
-
-            if (!chartData || (!chartData.distributions && !chartData.trend)) {
-                chartSection.style.display = 'none';
-                return;
-            }
-
-            chartSection.style.display = 'block';
-
-            // === 1. 初始化下拉選單並渲染分佈圖 ===
-            const selector = document.getElementById('examSelector');
-            selector.innerHTML = '';
-
-            if (chartData.distributions && chartData.distributions.length > 0) {
-                // 填充選項
-                chartData.distributions.forEach((dist, index) => {
-                    const opt = document.createElement('option');
-                    opt.value = index;
-                    opt.innerText = dist.examName;
-                    selector.appendChild(opt);
-                });
-
-                // 顯示下拉選單
-                selector.style.display = 'block';
-
-                // 預設選取最後一個（最新考試）
-                selector.value = chartData.distributions.length - 1;
-
-                // 渲染分佈圖
-                updateDistributionChart();
-            } else {
-                // 無分佈資料
-                selector.style.display = 'none';
-                // 清空畫布或顯示無資料
-                if (distributionChartInstance) distributionChartInstance.destroy();
-            }
-
-            // === 2. 渲染個人成績趨勢圖 ===
-            renderTrendChart(chartData.trend);
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1,
+            color: colors.obsidian
+          },
+          grid: {
+            color: 'rgba(0,0,0,0.05)'
+          }
+        },
+        x: {
+          ticks: {
+            color: colors.obsidian
+          },
+          grid: {
+            display: false
+          }
         }
+      }
+    }
+  });
+}
 
-        // 🆕 更新分佈圖 (On Change)
-        function updateDistributionChart() {
-            if (!globalChartData || !globalChartData.distributions) return;
+// 🆕 渲染趨勢圖 (分離出來以保持程式碼整潔)
+function renderTrendChart(trendData) {
+  if (!trendData || trendData.labels.length === 0) return;
+  var trendCtx = document.getElementById('trendChart').getContext('2d');
+  var colors = {
+    earthGold: '#9B8A5E',
+    earthGoldLight: 'rgba(155, 138, 94, 0.6)',
+    roseGold: '#B4745A',
+    roseGoldLight: 'rgba(180, 116, 90, 0.6)',
+    obsidian: '#45464D'
+  };
 
-            const selector = document.getElementById('examSelector');
-            const index = parseInt(selector.value);
-            const distData = globalChartData.distributions[index];
-
-            if (!distData) return;
-
-            const distCtx = document.getElementById('distributionChart').getContext('2d');
-
-            // Starlux 配色
-            const colors = {
-                earthGold: '#9B8A5E',
-                earthGoldLight: 'rgba(155, 138, 94, 0.6)',
-                highlight: '#FFB554',
-                obsidian: '#45464D'
-            };
-
-            // 銷毀舊實例
-            if (distributionChartInstance) {
-                distributionChartInstance.destroy();
-            }
-
-            // 標記學生所在區間
-            const backgroundColors = distData.labels.map((label, idx) => {
-                return idx === distData.myRangeIndex
-                    ? colors.highlight
-                    : colors.earthGoldLight;
-            });
-
-            distributionChartInstance = new Chart(distCtx, {
-                type: 'bar',
-                data: {
-                    labels: distData.labels,
-                    datasets: [{
-                        label: '人數',
-                        data: distData.data,
-                        backgroundColor: backgroundColors,
-                        borderColor: colors.earthGold,
-                        borderWidth: 1,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: false }, // 標題已在卡片標題列
-                        tooltip: {
-                            callbacks: {
-                                afterLabel: function (context) {
-                                    if (context.dataIndex === distData.myRangeIndex) {
-                                        return '⬅️ 你的成績區間';
-                                    }
-                                    return '';
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1,
-                                color: colors.obsidian
-                            },
-                            grid: { color: 'rgba(0,0,0,0.05)' }
-                        },
-                        x: {
-                            ticks: { color: colors.obsidian },
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
+  // 銷毀舊實例
+  if (trendChartInstance) {
+    trendChartInstance.destroy();
+  }
+  trendChartInstance = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: trendData.labels,
+      datasets: [{
+        label: '我的成績',
+        data: trendData.myScores,
+        borderColor: colors.earthGold,
+        backgroundColor: colors.earthGoldLight,
+        borderWidth: 3,
+        pointRadius: 6,
+        pointBackgroundColor: colors.earthGold,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        tension: 0.3,
+        fill: false
+      }, {
+        label: '班級平均',
+        data: trendData.classAvg,
+        borderColor: colors.roseGoldLight,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        pointRadius: 4,
+        pointBackgroundColor: colors.roseGold,
+        tension: 0.3,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: colors.obsidian,
+            usePointStyle: true,
+            padding: 12
+          }
         }
-
-        // 🆕 渲染趨勢圖 (分離出來以保持程式碼整潔)
-        function renderTrendChart(trendData) {
-            if (!trendData || trendData.labels.length === 0) return;
-
-            const trendCtx = document.getElementById('trendChart').getContext('2d');
-            const colors = {
-                earthGold: '#9B8A5E',
-                earthGoldLight: 'rgba(155, 138, 94, 0.6)',
-                roseGold: '#B4745A',
-                roseGoldLight: 'rgba(180, 116, 90, 0.6)',
-                obsidian: '#45464D'
-            };
-
-            // 銷毀舊實例
-            if (trendChartInstance) {
-                trendChartInstance.destroy();
-            }
-
-            trendChartInstance = new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: trendData.labels,
-                    datasets: [
-                        {
-                            label: '我的成績',
-                            data: trendData.myScores,
-                            borderColor: colors.earthGold,
-                            backgroundColor: colors.earthGoldLight,
-                            borderWidth: 3,
-                            pointRadius: 6,
-                            pointBackgroundColor: colors.earthGold,
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            tension: 0.3,
-                            fill: false
-                        },
-                        {
-                            label: '班級平均',
-                            data: trendData.classAvg,
-                            borderColor: colors.roseGoldLight,
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 4,
-                            pointBackgroundColor: colors.roseGold,
-                            tension: 0.3,
-                            fill: false
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                color: colors.obsidian,
-                                usePointStyle: true,
-                                padding: 12
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            min: 0,
-                            max: 100,
-                            ticks: {
-                                stepSize: 20,
-                                color: colors.obsidian
-                            },
-                            grid: { color: 'rgba(0,0,0,0.05)' }
-                        },
-                        x: {
-                            ticks: { color: colors.obsidian },
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
+      },
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          ticks: {
+            stepSize: 20,
+            color: colors.obsidian
+          },
+          grid: {
+            color: 'rgba(0,0,0,0.05)'
+          }
+        },
+        x: {
+          ticks: {
+            color: colors.obsidian
+          },
+          grid: {
+            display: false
+          }
         }
-    </script>
+      }
+    }
+  });
+}
+</script>
 </body>
 
 </html>

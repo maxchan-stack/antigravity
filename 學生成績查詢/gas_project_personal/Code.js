@@ -378,6 +378,32 @@ function alertAdmin(subject, body) {
     }
 }
 
+// 🆕 P4-3 Frontend Error Logger
+function logFrontendError(errDataStr) {
+    try {
+        const errData = JSON.parse(errDataStr);
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let sheet = ss.getSheetByName('_ErrorLog');
+        if (!sheet) {
+            sheet = ss.insertSheet('_ErrorLog');
+            sheet.appendRow(['Timestamp', 'Message', 'URL', 'Line', 'Column', 'UserAgent', 'Stack']);
+            sheet.setFrozenRows(1);
+        }
+        sheet.appendRow([
+            new Date(),
+            errData.msg || '',
+            errData.url || '',
+            errData.line || '',
+            errData.col || '',
+            errData.userAgent || '',
+            errData.stack || ''
+        ]);
+        if (sheet.getLastRow() > 500) {
+            sheet.deleteRows(2, 100);
+        }
+    } catch(e) {}
+}
+
 // ==========================================
 // Helper Functions for Grade Formatting
 // ==========================================
