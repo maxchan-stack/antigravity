@@ -125,7 +125,7 @@ function getCaptcha() {
     }
 
     const token = Utilities.getUuid();
-    CacheService.getUserCache().put('CAPTCHA_' + token, answer.toString(), CONFIG.CACHE_DURATION.CAPTCHA);
+    CacheService.getScriptCache().put('CAPTCHA_' + token, answer.toString(), CONFIG.CACHE_DURATION.CAPTCHA);
 
     // Hardened SVG Generation
     let svgContent = '';
@@ -156,12 +156,12 @@ function getCaptcha() {
 
 function login(studentId, password, captchaToken, captchaAnswer, seatNumber, sessionId) {
     const cache = CacheService.getScriptCache();
-    const userCache = CacheService.getUserCache();
     studentId = String(studentId).trim();
     sessionId = sessionId || 'NO-SESSION';  // 🆕 接收 Session ID
 
     // 🆕 Capture Real User Identity (Workspace Feature)
-    const userEmail = Session.getActiveUser().getEmail();
+    var userEmail = '';
+    try { userEmail = Session.getActiveUser().getEmail() || ''; } catch(e) { userEmail = 'Anonymous'; }
 
     // 1. GLOBAL CIRCUIT BREAKER (DDoS Protection)
     if (cache.get('GLOBAL_PANIC')) {
@@ -177,12 +177,12 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
     }
 
     // 3. Verify Captcha
-    const realAnswer = userCache.get('CAPTCHA_' + captchaToken);
+    const realAnswer = cache.get('CAPTCHA_' + captchaToken);
     if (!realAnswer || realAnswer !== captchaAnswer.toString().trim()) {
         monitorGlobalFails(cache);
         return { success: false, message: '驗證碼錯誤。' };
     }
-    userCache.remove('CAPTCHA_' + captchaToken);
+    cache.remove('CAPTCHA_' + captchaToken);
 
     try {
         const studentData = findStudentData(studentId);
@@ -198,7 +198,7 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
             };
         }
 
-        if (studentData['查詢碼'] != password) {
+        if (String(studentData['查詢碼']) !== String(password)) {
             monitorGlobalFails(cache);
 
             // 🆕 座號驗證邏輯
