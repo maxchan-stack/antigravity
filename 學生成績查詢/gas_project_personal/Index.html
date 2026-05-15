@@ -803,10 +803,16 @@
 
         function loadCaptcha() {
             capBox.innerHTML = '<span style="color:#999;font-size:12px;">...</span>';
-            google.script.run.withSuccessHandler(r => {
-                capBox.innerHTML = r.svg;
-                token = r.token;
-            }).getCaptcha();
+            google.script.run
+                .withSuccessHandler(function(r) {
+                    capBox.innerHTML = r.svg;
+                    token = r.token;
+                })
+                .withFailureHandler(function(err) {
+                    console.warn('getCaptcha failed:', err);
+                    capBox.innerHTML = '<span style="color:#c00;font-size:12px;">載入失敗，點擊重試</span>';
+                })
+                .getCaptcha();
         }
 
         function showToast(msg, type = 'normal') {
@@ -846,7 +852,8 @@
             const id = document.getElementById('inp-id').value;
             const pwd = document.getElementById('inp-pwd').value;
             const cap = document.getElementById('inp-cap').value;
-            const seat = document.getElementById('inp-seat')?.value || null;  // 🆕 座號
+            var seatEl = document.getElementById('inp-seat');
+            const seat = seatEl ? seatEl.value : null;  // 🆕 座號
             if (!id || !pwd || !cap) return showToast('請填寫完整資訊');
 
             document.getElementById('loader').style.display = 'flex';
@@ -886,7 +893,7 @@
                 <input type="text" id="inp-seat" placeholder="請輸入您的座號" />
             `;
 
-            const pwdRow = document.querySelector('.input-row:has(#inp-pwd)');
+            const pwdRow = document.getElementById('inp-pwd').closest('.input-row');
             pwdRow.after(seatRow);
 
             // 自動聚焦座號輸入框
