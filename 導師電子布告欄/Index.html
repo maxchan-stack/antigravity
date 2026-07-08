@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>高二甲班電子佈告欄</title>
+  <meta name="description" content="高二甲班作業、小考、老師交代事項、學校行政公告查詢平台">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════
+       MUJI 無印良品色彩系統
+    ═══════════════════════════════════ */
+    :root {
+      --c-bg:           #f4f6f7;
+      --c-surface:      #FFFFFF;
+      --c-surface-2:    #e7f0ef;
+      --c-surface-3:    #d4e5e3;
+      --c-border:       #dde4e3;
+      --c-border-hover: #1a5d57;
+      --c-text:         #243231;
+      --c-text-muted:   #5b6c6a;
+      --c-text-dim:     #8b9997;
+      --c-primary:      #1a5d57;
+      --c-primary-dim:  rgba(26,93,87,0.08);
+      --c-hw:           #4C729F;
+      --c-hw-dim:       rgba(76,114,159,0.09);
+      --c-quiz:         #c8862a;
+      --c-quiz-dim:     rgba(200,134,42,0.09);
+      --c-note:         #2e7d32;
+      --c-note-dim:     rgba(46,125,50,0.09);
+      --c-admin:        #8A738F;
+      --c-admin-dim:    rgba(138,115,143,0.09);
+      --c-danger:       #c62828;
+      --c-success:      #2e7d32;
+      --c-warn:         #b26a00;
+      --c-expired:      #5f6a6a;
+      --c-expired-dim:  rgba(95,106,106,0.09);
+      --radius-sm:      4px;
+      --radius-md:      8px;
+      --radius-lg:      12px;
+      --shadow-sm:      0 1px 3px rgba(20,40,38,0.08);
+      --shadow-card:    0 2px 10px rgba(20,40,38,0.09);
+      --shadow-lg:      0 6px 28px rgba(20,40,38,0.14);
+      --transition:     0.18s ease;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans TC', -apple-system, sans-serif;
+      background: var(--c-bg); color: var(--c-text);
+      min-height: 100vh; line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      font-size: clamp(14px, 1.5vw + 10px, 16px);
+    }
+    .hidden { display: none !important; }
+
+    /* ── 按鈕 ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 10px 24px; border: 1.5px solid transparent;
+      border-radius: var(--radius-md); font-family: inherit;
+      font-size: 0.875rem; font-weight: 500; cursor: pointer;
+      transition: var(--transition); white-space: nowrap; letter-spacing: 0.04em;
+    }
+    .btn-primary { background: var(--c-primary); color: #FAF8F5; border-color: var(--c-primary); }
+    .btn-primary:hover { background: #4A3D34; border-color: #4A3D34; }
+    .btn-ghost { background: transparent; color: var(--c-text-muted); border-color: var(--c-border); }
+    .btn-ghost:hover { border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-dim); }
+    .btn-danger { background: transparent; color: var(--c-danger); border-color: rgba(181,112,90,0.3); }
+    .btn-danger:hover { background: var(--c-quiz-dim); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* ── 表單 ── */
+    input, select, textarea {
+      width: 100%; background: var(--c-surface);
+      border: 1.5px solid var(--c-border); border-radius: var(--radius-md);
+      color: var(--c-text); font-family: inherit; font-size: 0.9rem;
+      padding: 10px 14px; transition: var(--transition); outline: none; appearance: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--c-primary);
+      box-shadow: 0 0 0 2px var(--c-primary-dim);
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237E6E64' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;
+    }
+    textarea { resize: vertical; min-height: 110px; line-height: 1.7; }
+    .form-group { display: flex; flex-direction: column; gap: 7px; }
+    .form-label { font-size: 0.78rem; font-weight: 500; color: var(--c-text-muted); letter-spacing: 0.06em; }
+    .char-count { font-size: 0.73rem; color: var(--c-text-dim); text-align: right; }
+    .char-count.warn { color: var(--c-danger); }
+
+    /* ── Header ── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(247,244,241,0.92);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--c-border); padding: 0 28px;
+    }
+    .header-inner {
+      max-width: 860px; margin: 0 auto; height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-title { font-family: 'Noto Serif TC', serif; font-size: 0.97rem; font-weight: 500; color: var(--c-text); letter-spacing: 0.08em; cursor: pointer; }
+    .header-subtitle { font-size: 0.68rem; color: var(--c-text-dim); letter-spacing: 0.06em; margin-top: 1px; }
+    .header-role-badge { font-size: 0.7rem; padding: 3px 10px; border-radius: 2px; font-weight: 500; letter-spacing: 0.05em; }
+    .badge-viewer { background: var(--c-note-dim); color: var(--c-note); border: 1px solid rgba(106,158,124,0.2); }
+    .badge-editor { background: var(--c-primary-dim); color: var(--c-primary); border: 1px solid rgba(92,77,67,0.2); }
+    .badge-admin  { background: rgba(184,154,74,0.08); color: var(--c-warn); border: 1px solid rgba(184,154,74,0.25); }
+
+    /* ── 主版面 ── */
+    .main { max-width: 860px; margin: 0 auto; padding: 44px 28px 88px; }
+
+    /* ── Loading ── */
+    #page-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 54vh; gap: 20px; }
+    .spinner { width: 32px; height: 32px; border: 1.5px solid var(--c-border); border-top-color: var(--c-primary); border-radius: 50%; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--c-text-dim); font-size: 0.83rem; letter-spacing: 0.04em; }
+
+    /* ════════════════════════════
+       角色選擇頁面
+    ════════════════════════════ */
+    #page-role { max-width: 680px; margin: 0 auto; }
+    .role-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+      gap: 16px;
+    }
+    .role-header-left {
+      flex: 1;
+      min-width: 0;
+    }
+    .role-huge-date {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      padding: 12px 20px;
+      box-shadow: none;
+      min-width: 130px;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+    .role-huge-date:hover {
+      transform: scale(1.04);
+    }
+
+    .huge-date-month-day {
+      font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--c-primary);
+      line-height: 1.1;
+      display: flex;
+      align-items: baseline;
+      letter-spacing: -0.02em;
+    }
+    .huge-date-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--c-text-muted);
+      margin: 0 2px;
+    }
+    .huge-date-dayofweek {
+      font-size: 0.75rem;
+      color: var(--c-text-dim);
+      font-weight: 600;
+      margin-top: 4px;
+      letter-spacing: 0.1em;
+    }
+    .role-eyebrow { font-size: 0.73rem; color: var(--c-text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+    .role-header h1 { font-family: 'Noto Serif TC', serif; font-size: 1.75rem; font-weight: 500; color: var(--c-text); letter-spacing: 0.05em; line-height: 1.35; margin-bottom: 10px; }
+    .role-header p { font-size: 0.87rem; color: var(--c-text-muted); line-height: 1.8; }
+
+    @media (max-width: 580px) {
+      .role-header h1 {
+        font-size: 1.45rem;
+      }
+      .role-header p {
+        font-size: 0.8rem;
+        line-height: 1.6;
+      }
+      .role-huge-date {
+        padding: 8px 14px;
+        min-width: 110px;
+      }
+      .huge-date-month-day {
+        font-size: 1.85rem;
+      }
+      .huge-date-label {
+        font-size: 0.85rem;
+      }
+      .huge-date-dayofweek {
+        font-size: 0.7rem;
+      }
+    }
+
+    .role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .role-card {
+      background: var(--c-surface); border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 28px 20px;
+      cursor: pointer; transition: var(--transition); text-align: left; position: relative;
+      box-shadow: var(--shadow-sm);
+    }
+    .role-card:hover {
+      border-color: rgba(92, 77, 67, 0.4);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-card);
+    }
+    .role-card.selected {
+      border-color: var(--c-primary);
+      background: var(--c-primary-dim);
+      box-shadow: var(--shadow-card);
+    }
+    .role-card.selected::before {
+      content: '✓'; position: absolute; top: 12px; right: 12px;
+      width: 18px; height: 18px; background: var(--c-primary);
+      color: #fff; border-radius: 50%; font-size: 0.65rem;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold;
+    }
+    .role-card-icon { font-size: 1.4rem; margin-bottom: 12px; display: block; }
+    .role-card-name { font-size: 0.97rem; font-weight: 600; color: var(--c-text); margin-bottom: 5px; white-space: nowrap; }
+    .role-name-student { color: var(--c-primary); }
+    .role-name-parent { color: var(--c-quiz); }
+    .role-card-desc { font-size: 0.77rem; color: var(--c-text-muted); line-height: 1.6; }
+
+    .role-sub-select {
+      background: var(--c-surface); border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 22px 24px;
+      margin-bottom: 20px; animation: slideDown 0.18s ease;
+    }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .role-sub-label { font-size: 0.75rem; color: var(--c-text-muted); letter-spacing: 0.07em; margin-bottom: 12px; font-weight: 500; }
+
+    /* PIN 驗證區塊 */
+    .pin-verify-wrap {
+      background: var(--c-surface); border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 22px 24px;
+      margin-bottom: 20px; animation: slideDown 0.18s ease;
+    }
+    .pin-verify-label { font-size: 0.75rem; color: var(--c-text-muted); letter-spacing: 0.07em; margin-bottom: 12px; font-weight: 500; }
+    .pin-verify-row { display: flex; gap: 10px; align-items: center; }
+    .pin-verify-row input { max-width: 140px; letter-spacing: 0.35em; font-size: 1.1rem; text-align: center; font-weight: 600; flex-shrink: 0; }
+    .pin-verify-error { font-size: 0.78rem; color: var(--c-danger); margin-top: 8px; }
+
+    .verified-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(106,158,124,0.08); border: 1px solid rgba(106,158,124,0.25);
+      color: var(--c-success); border-radius: var(--radius-md);
+      padding: 8px 14px; font-size: 0.83rem; font-weight: 500;
+      margin-bottom: 18px; width: 100%;
+    }
+    .verified-badge .v-change { margin-left: auto; font-size: 0.72rem; color: var(--c-text-dim); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: inherit; }
+    .verified-badge .v-change:hover { color: var(--c-primary); }
+
+    .role-continue-wrap { text-align: right; }
+
+    /* ════════════════════════════
+       Viewer 公告頁面
+    ════════════════════════════ */
+    .section-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .section-title-group { display: flex; flex-direction: column; gap: 4px; }
+    .section-title { font-family: 'Noto Serif TC', serif; font-size: 1.45rem; font-weight: 500; color: var(--c-text); letter-spacing: 0.05em; }
+    .section-date { font-size: 0.77rem; color: var(--c-text-dim); letter-spacing: 0.04em; }
+
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .filter-chip {
+      padding: 5px 14px; border-radius: 2px; font-size: 0.77rem; font-weight: 500;
+      cursor: pointer; border: 1.5px solid var(--c-border); background: var(--c-surface);
+      color: var(--c-text-muted); transition: var(--transition); letter-spacing: 0.04em;
+    }
+    .filter-chip:hover { border-color: var(--c-primary); color: var(--c-primary); }
+    .filter-chip.active-all  { background: var(--c-primary-dim); border-color: rgba(92,77,67,0.3); color: var(--c-primary); }
+    .filter-chip.active-hw   { background: var(--c-hw-dim);   border-color: rgba(91,127,168,0.3);   color: var(--c-hw); }
+    .filter-chip.active-quiz { background: var(--c-quiz-dim); border-color: rgba(181,112,90,0.3);   color: var(--c-quiz); }
+    .filter-chip.active-note { background: var(--c-note-dim); border-color: rgba(106,158,124,0.3);  color: var(--c-note); }
+    .filter-chip.active-admin { background: var(--c-admin-dim); border-color: rgba(138,115,143,0.3);  color: var(--c-admin); }
+    .filter-chip.active-expired { background: var(--c-expired-dim); border-color: rgba(95,106,106,0.3); color: var(--c-expired); }
+
+    /* 公告卡片 */
+    .cards-grid { display: flex; flex-direction: column; gap: 16px; }
+    .card {
+      background: var(--c-surface); border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 20px 22px; display: flex; gap: 14px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition); animation: cardIn 0.25s ease var(--delay, 0s) both;
+    }
+    .card:hover {
+      background: var(--c-surface);
+      box-shadow: var(--shadow-card);
+      transform: translateY(-2px);
+      border-color: rgba(92, 77, 67, 0.2);
+    }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card-accent { width: 5px; border-radius: 4px; flex-shrink: 0; align-self: stretch; }
+    .accent-hw   { background: var(--c-hw); }
+    .accent-quiz { background: var(--c-quiz); }
+    .accent-note { background: var(--c-note); }
+    .accent-admin { background: var(--c-admin); }
+
+    .card-body { flex: 1; min-width: 0; }
+    .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .tag { font-size: 0.69rem; font-weight: 600; padding: 2px 8px; border-radius: 2px; letter-spacing: 0.07em; }
+    .tag-hw   { background: var(--c-hw-dim);   color: var(--c-hw); }
+    .tag-quiz { background: var(--c-quiz-dim); color: var(--c-quiz); }
+    .tag-note { background: var(--c-note-dim); color: var(--c-note); }
+    .tag-admin { background: var(--c-admin-dim); color: var(--c-admin); }
+    .subject-tag { font-size: 0.73rem; font-weight: 400; color: var(--c-text-muted); background: var(--c-surface-2); padding: 2px 9px; border-radius: 2px; border: 1px solid var(--c-border); }
+    .card-content { font-size: 0.88rem; color: var(--c-text); line-height: 1.75; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+    .card-date { font-size: 0.75rem; color: var(--c-text-muted); }
+    .days-left { font-size: 0.7rem; font-weight: 500; padding: 2px 10px; border-radius: 12px; letter-spacing: 0.03em; }
+    .days-today  { background: rgba(181,112,90,0.10); color: var(--c-quiz); }
+    .days-urgent { background: rgba(181,112,90,0.07); color: var(--c-quiz); }
+    .days-normal { background: var(--c-surface-2); color: var(--c-text-muted); border: 1px solid var(--c-border); }
+    .days-past   { background: var(--c-surface-2); color: var(--c-text-dim); border: 1px solid var(--c-border); }
+
+    /* 緊急標籤呼吸燈與統計回彈動畫 */
+    .days-today, .days-urgent {
+      animation: labelPulse 2s infinite ease-in-out;
+    }
+    @keyframes labelPulse {
+      0%, 100% { opacity: 0.85; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.03); }
+    }
+    .stats-bounce {
+      display: inline-block;
+      animation: bouncePulse 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes bouncePulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    /* 首頁跑馬燈通知 */
+    .marquee-container {
+      display: flex;
+      align-items: center;
+      background: #FAF6EF;
+      border: 1px solid rgba(181, 112, 90, 0.2);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      margin-bottom: 28px;
+      font-size: 0.85rem;
+      color: #8C6A5A;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .marquee-icon {
+      font-weight: 600;
+      margin-right: 8px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--c-quiz);
+    }
+    .marquee-wrapper {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 1.25rem;
+    }
+    .marquee-content {
+      display: inline-block;
+      white-space: nowrap;
+      position: absolute;
+      will-change: transform;
+      animation: marqueeMove 15s linear infinite;
+      padding-left: 100%;
+    }
+    @keyframes marqueeMove {
+      0%   { transform: translate3d(0, 0, 0); }
+      100% { transform: translate3d(-100%, 0, 0); }
+    }
+
+    .empty-state { text-align: center; padding: 64px 24px; }
+    .empty-state-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.35; }
+    .empty-state-text { font-size: 0.87rem; color: var(--c-text-muted); }
+    .divider { border: none; border-top: 1px solid var(--c-border); margin: 32px 0; }
+
+    /* ════════════════════════════
+       Editor 發布頁面
+    ════════════════════════════ */
+    .editor-layout { max-width: 520px; margin: 0 auto; }
+    .editor-card {
+      background: var(--c-surface); border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 32px;
+    }
+    .editor-card-title { font-family: 'Noto Serif TC', serif; font-size: 1.1rem; font-weight: 500; margin-bottom: 4px; color: var(--c-text); letter-spacing: 0.04em; }
+    .editor-card-desc { font-size: 0.8rem; color: var(--c-text-muted); margin-bottom: 26px; line-height: 1.7; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-full { grid-column: 1 / -1; }
+    .selected-poster-info {
+      display: flex; align-items: center; gap: 10px; background: var(--c-surface-2);
+      border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 10px 14px;
+      margin-bottom: 20px; font-size: 0.83rem; color: var(--c-text); font-weight: 500;
+    }
+    .selected-poster-info .change-btn { margin-left: auto; font-size: 0.73rem; color: var(--c-text-dim); cursor: pointer; text-decoration: underline; font-weight: 400; background: none; border: none; font-family: inherit; }
+    .selected-poster-info .change-btn:hover { color: var(--c-primary); }
+    .submit-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .status-msg { padding: 12px 14px; border-radius: var(--radius-md); font-size: 0.84rem; font-weight: 500; margin-top: 14px; animation: fadeIn 0.18s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .status-success { background: rgba(106,158,124,0.08); border: 1px solid rgba(106,158,124,0.25); color: var(--c-success); }
+    .status-error   { background: rgba(181,112,90,0.08);  border: 1px solid rgba(181,112,90,0.25);  color: var(--c-danger); }
+    hr.form-sep { border: none; border-top: 1px solid var(--c-border); margin: 22px 0; }
+
+    /* ── 導師管理說明 ── */
+    .teacher-panel {
+      background: rgba(184,154,74,0.05); border: 1px solid rgba(184,154,74,0.25);
+      border-radius: var(--radius-lg); padding: 20px 22px; margin-top: 28px;
+    }
+    .teacher-panel-title { font-size: 0.82rem; font-weight: 600; color: var(--c-warn); margin-bottom: 10px; letter-spacing: 0.04em; }
+    .teacher-panel-desc { font-size: 0.79rem; color: var(--c-text-muted); line-height: 1.8; margin-bottom: 14px; }
+    .teacher-panel-steps { font-size: 0.79rem; color: var(--c-text-muted); line-height: 1.9; padding-left: 18px; margin-bottom: 14px; }
+
+    /* ── Toast 通知 ── */
+    #toast-container { position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { min-width: 220px; max-width: 340px; padding: 12px 16px; border-radius: var(--radius-md); font-size: 0.84rem; font-weight: 500; box-shadow: var(--shadow-lg); animation: toastIn 0.22s ease both; cursor: pointer; border: 1.5px solid transparent; letter-spacing: 0.02em; pointer-events: all; }
+    .toast-success { background: #FAFDF7; border-color: rgba(106,158,124,0.35); color: #3A6B4D; }
+    .toast-error   { background: #FDF8F6; border-color: rgba(181,112,90,0.35);  color: #7A3D28; }
+    .toast-info    { background: var(--c-surface); border-color: var(--c-border); color: var(--c-text); }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* ════════════════════════════════════════════
+       RWD 三段式：手機 / 平板 / 寬螢幕
+    ════════════════════════════════════════════ */
+    @media (max-width: 479px) {
+      .header { padding: 0 14px; }
+      .header-inner { height: 52px; }
+      .header-title { font-size: 0.86rem; letter-spacing: 0.05em; }
+      .header-subtitle { display: none; }
+      .main { padding: 20px 14px 72px; }
+      .role-cards { grid-template-columns: 1fr; gap: 10px; }
+      .role-card { padding: 18px 16px; display: flex; align-items: center; gap: 14px; }
+      .role-card-icon { font-size: 1.6rem; margin-bottom: 0; flex-shrink: 0; }
+      .role-header { margin-bottom: 28px; }
+      .role-header h1 { font-size: 1.3rem; }
+      .role-header p { font-size: 0.79rem; }
+      .card { padding: 14px 16px; gap: 10px; }
+      .card-content { font-size: 0.84rem; }
+      .section-title { font-size: 1.15rem; }
+      .editor-card { padding: 18px 14px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .pin-verify-row { flex-direction: column; align-items: stretch; }
+      .pin-verify-row input { max-width: 100%; }
+      .submit-row { flex-direction: column; }
+      .submit-row .btn { width: 100%; }
+      #toast-container { left: 12px; right: 12px; bottom: 14px; }
+      .toast { min-width: 0; max-width: none; width: 100%; text-align: center; }
+    }
+    @media (min-width: 480px) and (max-width: 767px) {
+      .header { padding: 0 20px; }
+      .main { padding: 28px 20px 80px; }
+      .role-cards { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .role-card { padding: 22px 16px; }
+      .card { padding: 16px 18px; }
+      .editor-card { padding: 24px 20px; }
+      #toast-container { right: 16px; left: 16px; bottom: 16px; }
+      .toast { min-width: 0; max-width: none; width: 100%; text-align: center; }
+    }
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .header { padding: 0 24px; }
+      .main { padding: 36px 24px 88px; }
+    }
+    @media (min-width: 1280px) {
+      .header-inner { max-width: 960px; }
+      .main { max-width: 960px; padding: 52px 32px 100px; }
+      #page-role { max-width: 600px; }
+      .editor-layout { max-width: 560px; }
+      .section-title { font-size: 1.55rem; }
+      .role-header h1 { font-size: 1.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-brand" onclick="handleLogoClick()" style="cursor:pointer;">
+      <div>
+        <div class="header-title" id="header-title">高二甲班電子佈告欄</div>
+        <div class="header-subtitle" id="header-subtitle">Classroom Bulletin Board</div>
+      </div>
+    </div>
+    <div class="header-nav hidden" id="header-nav" style="display: flex; gap: 8px; margin-left: 12px; margin-right: auto;">
+      <button class="btn btn-ghost btn-sm" onclick="showAdminBoard()" style="padding: 5px 10px; font-size: 0.75rem;">📢 公告欄</button>
+      <button class="btn btn-ghost btn-sm" onclick="showAdminEdit()" style="padding: 5px 10px; font-size: 0.75rem;">✏️ 新增公告</button>
+    </div>
+    <span class="header-role-badge badge-viewer" id="role-badge">瀏覽</span>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- Page: Loading -->
+  <div id="page-loading">
+    <div class="spinner"></div>
+    <div class="loading-text">載入中，請稍候⋯</div>
+  </div>
+
+  <!-- Page: 角色選擇 -->
+  <div id="page-role" class="hidden">
+    <!-- 重要通知跑馬燈 -->
+    <div id="role-marquee-container" class="marquee-container hidden">
+      <span class="marquee-icon">📢 重要通知：</span>
+      <div class="marquee-wrapper">
+        <div id="role-marquee-text" class="marquee-content"></div>
+      </div>
+    </div>
+    <div class="role-header">
+      <div class="role-header-left">
+        <div class="role-eyebrow">CLASSROOM BULLETIN BOARD</div>
+        <h1>您的身份是？</h1>
+        <p>請選擇您的角色以繼續。<br>幹部與小老師需輸入授權碼以發布公告。</p>
+      </div>
+      <div class="role-huge-date" id="role-huge-date">
+        <div class="huge-date-month-day"><span id="role-date-month">--</span><span class="huge-date-label">月</span><span id="role-date-day">--</span><span class="huge-date-label">日</span></div>
+        <div class="huge-date-dayofweek" id="role-date-dayofweek">--</div>
+      </div>
+    </div>
+
+    <div class="role-cards">
+      <div class="role-card" id="role-card-viewer" onclick="selectRoleCard('viewer')">
+        <span class="role-card-icon">📖</span>
+        <div class="role-card-name"><span class="role-name-student">學生</span><br><span class="role-name-parent">家長</span></div>
+        <div class="role-card-desc">瀏覽作業、小考、老師交代事項與學校行政公告</div>
+      </div>
+      <div class="role-card" id="role-card-cadre" onclick="selectRoleCard('cadre')">
+        <span class="role-card-icon">💼</span>
+        <div class="role-card-name">班級幹部</div>
+        <div class="role-card-desc">班長、股長發布班級公告</div>
+      </div>
+      <div class="role-card" id="role-card-teacher" onclick="selectRoleCard('teacher')">
+        <span class="role-card-icon">🎓</span>
+        <div class="role-card-name">學科小老師</div>
+        <div class="role-card-desc">發布各科作業與小考公告</div>
+      </div>
+    </div>
+
+    <!-- 幹部選擇 -->
+    <div id="role-sub-cadre" class="role-sub-select hidden">
+      <div class="role-sub-label">選擇幹部職稱</div>
+      <select id="cadre-title" onchange="onCadreSelect(this.value)">
+        <option value="">— 請選擇 —</option>
+      </select>
+    </div>
+
+    <!-- 小老師選擇 -->
+    <div id="role-sub-teacher" class="role-sub-select hidden">
+      <div class="role-sub-label">選擇您負責的科目</div>
+      <select id="teacher-subject" onchange="onTeacherSubjectSelect(this.value)">
+        <option value="">— 請選擇 —</option>
+      </select>
+    </div>
+
+    <!-- PIN 驗證 -->
+    <div id="role-pin-wrap" class="pin-verify-wrap hidden">
+      <div class="pin-verify-label">輸入授權碼</div>
+      <div class="pin-verify-row">
+        <input type="text" id="role-pin" placeholder="授權碼" maxlength="10" autocomplete="off"
+               onkeydown="if(event.key==='Enter') verifyRolePin()"
+               oninput="document.getElementById('pin-error').textContent=''">
+        <button class="btn btn-primary" id="btn-verify-pin" onclick="verifyRolePin()">驗證</button>
+      </div>
+      <div class="pin-verify-error" id="pin-error"></div>
+    </div>
+
+    <!-- 繼續按鈕（學生用） -->
+    <div id="role-continue-wrap" class="role-continue-wrap hidden">
+      <button class="btn btn-primary" id="btn-role-continue" onclick="proceedFromRole()">進入佈告欄</button>
+    </div>
+  </div>
+
+  <!-- Page: Board 公告瀏覽 -->
+  <div id="page-board" class="hidden">
+    <div class="section-header">
+      <div class="section-title-group">
+        <div class="section-title">公告欄</div>
+        <div class="section-date" id="board-date"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="loadBoard()">重新整理</button>
+    </div>
+
+    <!-- 統計資訊面版 (僅管理員可見) -->
+    <div id="admin-stats-box" class="hidden" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; background: rgba(92,77,67,0.05); border: 1.5px solid var(--c-border); border-radius: var(--radius-md); padding: 12px 16px;">
+      <div style="text-align: center;"><div style="font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500;">作業總數</div><div id="stat-hw" style="font-size: 1.3rem; font-weight: 600; color: var(--c-hw);">0</div></div>
+      <div style="text-align: center; border-left: 1px solid var(--c-border);"><div style="font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500;">小考總數</div><div id="stat-quiz" style="font-size: 1.3rem; font-weight: 600; color: var(--c-quiz);">0</div></div>
+      <div style="text-align: center; border-left: 1px solid var(--c-border); border-right: 1px solid var(--c-border);"><div style="font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500;">老師交代</div><div id="stat-note" style="font-size: 1.3rem; font-weight: 600; color: var(--c-note);">0</div></div>
+      <div style="text-align: center;"><div style="font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500;">行政公告</div><div id="stat-admin" style="font-size: 1.3rem; font-weight: 600; color: var(--c-admin);">0</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-chip active-all" data-filter="all" onclick="setFilter('all')">全部</div>
+      <div class="filter-chip" data-filter="作業" onclick="setFilter('作業')">作業</div>
+      <div class="filter-chip" data-filter="小考" onclick="setFilter('小考')">小考</div>
+      <div class="filter-chip" data-filter="老師交代事項" onclick="setFilter('老師交代事項')">老師交代事項</div>
+      <div class="filter-chip" data-filter="學校行政公告" onclick="setFilter('學校行政公告')">學校行政公告</div>
+      <div class="filter-chip" data-filter="expired" onclick="setFilter('expired')">已過期</div>
+    </div>
+
+    <div id="bulletin-list"></div>
+  </div>
+
+  <!-- Page: Edit 發布公告 -->
+  <div id="page-edit" class="hidden">
+    <div class="editor-layout">
+      <div class="editor-card" id="editor-card">
+        <div class="editor-card-title">新增公告</div>
+        <div class="editor-card-desc">
+          以
+          <strong id="editor-verified-label">─</strong>
+          的身份發布公告
+        </div>
+
+        <div class="selected-poster-info" id="selected-poster-display">
+          <span>✅</span>
+          <span id="selected-poster-text">─</span>
+          <button class="change-btn" onclick="goToRolePage()">切換身份</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="ed-category">類別</label>
+            <select id="ed-category" required>
+              <option value="">— 請選擇 —</option>
+              <option value="作業">作業</option>
+              <option value="小考">小考</option>
+              <option value="老師交代事項">老師交代事項</option>
+              <option value="學校行政公告">學校行政公告</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ed-subject">科目 / 對象</label>
+            <select id="ed-subject" required>
+              <option value="">— 請選擇 —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ed-date">截止日期</label>
+            <input type="date" id="ed-date" required>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <div class="form-label">發布者</div>
+            <div style="padding: 10px 14px; background: var(--c-surface-2); border: 1.5px solid var(--c-border); border-radius: var(--radius-md); font-size: 0.9rem; color: var(--c-text-muted);" id="poster-display-name">─</div>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label" for="ed-content">公告內容</label>
+            <textarea id="ed-content" placeholder="請輸入公告內容…" maxlength="500" oninput="updateCharCount()"></textarea>
+            <div class="char-count" id="char-count">0 / 500</div>
+          </div>
+        </div>
+
+        <hr class="form-sep">
+        <div class="submit-row">
+          <button class="btn btn-ghost" onclick="goToRolePage()">取消</button>
+          <button class="btn btn-primary" id="btn-submit" onclick="submitBulletin()">發布公告</button>
+        </div>
+        <div id="submit-status" class="status-msg hidden"></div>
+      </div>
+
+      <!-- 導師管理說明 -->
+      <div class="teacher-panel hidden" id="teacher-panel">
+        <div class="teacher-panel-title">⚙️ 導師管理公告</div>
+        <div class="teacher-panel-desc">若需要隱藏已發布的公告，請直接在 Google 試算表操作：</div>
+        <ol class="teacher-panel-steps">
+          <li>點擊下方連結開啟試算表</li>
+          <li>找到要隱藏的公告所在列</li>
+          <li>在最右側「狀態」欄位填入「<strong>隱藏</strong>」</li>
+          <li>回到佈告欄重新整理即可</li>
+        </ol>
+        <a id="teacher-sheet-link" href="#" target="_blank" class="btn btn-ghost btn-sm">開啟 Google 試算表管理</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast 容器 -->
+<div id="toast-container"></div>
+
+<!-- 隱藏 iframe（用於 Google Form 提交） -->
+<iframe name="hidden-submit-frame" style="display:none;" title="submit"></iframe>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  設定區 — 由 AI 根據 Setup.gs 執行結果自動填入
+// ═══════════════════════════════════════════════════════
+const CONFIG = {
+  SPREADSHEET_ID: '1p2Ii2M8dOGdBffuLe0hvE40P6qmfj4SS55uQ4_9bQrQ',
+  FORM_ID:        '1_GTG8t2-uI96uG7hi1d0IuTkUCk_kz_GTPC26Binxv0',
+  RESPONSE_SHEET: '表單回覆 2',
+  WEB_APP_URL:    'https://script.google.com/macros/s/AKfycby_3DMV8oHJmNp04l0YJbgb0cm1I6N07zuWR4UI1KeMvvZ8n2YDvWw9EyZorPzXFT4t/exec',
+  FORM_ENTRIES: {
+    category:   'entry.881129735',
+    subject:    'entry.511209487',
+    dueDate:    'entry.302347305',
+    content:    'entry.440674452',
+    posterName: 'entry.2075420315',
+    posterType: 'entry.1414592064'
+  },
+  // 幹部職稱列表
+  CADRE_TITLES: ['班長','副班長','學藝股長','風紀股長','衛生股長','體育股長','資訊股長','總務股長','環保股長'],
+  // 小老師科目列表
+  TEACHER_SUBJECTS: ['班級公告','國文','英文','數學','物理','化學','生物','地科','歷史','地理','公民與社會','體育','音樂','美術','自主學習','探究','本土語文']
+};
+
+// ═══════════════════════════════════════════════════════
+//  App 狀態
+// ═══════════════════════════════════════════════════════
+const APP = {
+  role:         null,   // 'viewer' | 'editor'
+  posterType:   null,   // 'viewer' | 'cadre' | 'teacher'
+  posterLabel:  '',
+  posterSubject: '',
+  verifiedPin:  false,
+  allBulletins: [],
+  activeFilter: 'all',
+  isSubmitting: false,
+  adminSecret:  null    // 儲存管理員金鑰
+};
+
+// 判斷公告是否已過期
+function isExpired(b) {
+  if (!b.dueDate) return false;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const due = new Date(b.dueDate);
+  due.setHours(0,0,0,0);
+  return due < today;
+}
+
+// ═══════════════════════════════════════════════════════
+//  初始化
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // 管理後台：URL 包含 ?admin=XXX 時
+  const urlParams = new URLSearchParams(window.location.search);
+  const adminSecret = urlParams.get('admin');
+  if (adminSecret) {
+    APP.role = 'editor';
+    APP.posterType = 'teacher';
+    APP.posterLabel = '導師';
+    APP.verifiedPin = true;
+    APP.adminSecret = adminSecret; // 儲存管理員金鑰
+    updateHeader();
+    showPage('edit');
+    document.getElementById('selected-poster-text').textContent = '導師';
+    document.getElementById('editor-verified-label').textContent = '導師';
+    document.getElementById('teacher-panel').classList.remove('hidden');
+    document.getElementById('teacher-sheet-link').href =
+      `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/edit`;
+    setEditorDefaultDate();
+    return;
+  }
+  showPage('role');
+  populateRoleSelects();
+  hideLoading();
+  initMarqueeData();
+  setRolePageDate();
+});
+
+function populateRoleSelects() {
+  const cadreSelect = document.getElementById('cadre-title');
+  CONFIG.CADRE_TITLES.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    cadreSelect.appendChild(opt);
+  });
+  const teacherSelect = document.getElementById('teacher-subject');
+  CONFIG.TEACHER_SUBJECTS.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    teacherSelect.appendChild(opt);
+  });
+  const subjectSelect = document.getElementById('ed-subject');
+  CONFIG.TEACHER_SUBJECTS.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    subjectSelect.appendChild(opt);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  頁面導覽
+// ═══════════════════════════════════════════════════════
+function showPage(pageId) {
+  ['loading','role','board','edit'].forEach(id => {
+    const el = document.getElementById('page-' + id);
+    if (el) el.classList.add('hidden');
+  });
+  const target = document.getElementById('page-' + pageId);
+  if (target) target.classList.remove('hidden');
+}
+
+function hideLoading() { document.getElementById('page-loading').classList.add('hidden'); }
+
+function handleLogoClick() {
+  if (APP.adminSecret) {
+    showPage('board');
+  } else {
+    goToRolePage();
+  }
+}
+
+function goToRolePage() {
+  APP.role = null; APP.posterType = null; APP.posterLabel = '';
+  APP.posterSubject = ''; APP.verifiedPin = false; APP.adminSecret = null;
+  // 清除 URL 中的 admin 參數，徹底結束管理模式
+  const url = new URL(window.location.href);
+  url.searchParams.delete('admin');
+  window.history.replaceState({}, '', url.toString());
+
+  resetRolePage();
+  showPage('role');
+  updateHeader();
+}
+
+async function initMarqueeData() {
+  try {
+    const bulletins = await fetchBulletins();
+    APP.allBulletins = bulletins; // 快速快取公告，加速後續載入
+    
+    // 篩選出未截止的「學校行政公告」與「老師交代事項」
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const activeAnnouncements = bulletins.filter(b => {
+      if (b.status === '隱藏') return false;
+      if (b.marqueeStatus === '不跑馬燈') return false;
+      if (b.category !== '老師交代事項' && b.category !== '交代事項' && b.category !== '學校行政公告') return false;
+      if (b.dueDate) {
+        const due = new Date(b.dueDate);
+        due.setHours(0,0,0,0);
+        return due >= today;
+      }
+      return true;
+    });
+    
+    if (activeAnnouncements.length > 0) {
+      const text = activeAnnouncements.map(b => `【${b.category} / ${b.subject || '一般'}】${b.content}`).join('　　★　　');
+      const marqueeTextEl = document.getElementById('role-marquee-text');
+      const marqueeContainerEl = document.getElementById('role-marquee-container');
+      if (marqueeTextEl && marqueeContainerEl) {
+        marqueeTextEl.textContent = text;
+        marqueeContainerEl.classList.remove('hidden');
+        
+        // 根據文字寬度，動態調整跑馬燈的播放時間
+        const speed = 40;
+        const textWidth = marqueeTextEl.offsetWidth || (text.length * 14);
+        const duration = Math.max(12, textWidth / speed);
+        marqueeTextEl.style.animationDuration = `${duration}s`;
+      }
+    }
+  } catch (e) {
+    console.warn('載入跑馬燈資料失敗：', e);
+  }
+}
+
+function setRolePageDate() {
+  const now = new Date();
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+  
+  const monthStr = String(now.getMonth() + 1);
+  const dayStr = String(now.getDate());
+  const dayOfWeekStr = weekdays[now.getDay()];
+  
+  const monthEl = document.getElementById('role-date-month');
+  const dayEl = document.getElementById('role-date-day');
+  const dayOfWeekEl = document.getElementById('role-date-dayofweek');
+  
+  if (monthEl) monthEl.textContent = monthStr;
+  if (dayEl) dayEl.textContent = dayStr;
+  if (dayOfWeekEl) dayOfWeekEl.textContent = dayOfWeekStr;
+}
+
+
+
+function resetRolePage() {
+  document.getElementById('role-card-viewer').classList.remove('selected');
+  const cadreCard = document.getElementById('role-card-cadre');
+  const teacherCard = document.getElementById('role-card-teacher');
+  if (cadreCard) cadreCard.classList.remove('selected');
+  if (teacherCard) teacherCard.classList.remove('selected');
+  document.getElementById('role-sub-cadre').classList.add('hidden');
+  document.getElementById('role-sub-teacher').classList.add('hidden');
+  document.getElementById('role-pin-wrap').classList.add('hidden');
+  document.getElementById('role-continue-wrap').classList.add('hidden');
+  document.getElementById('role-pin').value = '';
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('cadre-title').value = '';
+  document.getElementById('teacher-subject').value = '';
+}
+
+function updateHeader() {
+  const badge = document.getElementById('role-badge');
+  const nav = document.getElementById('header-nav');
+  badge.className = 'header-role-badge';
+  if (APP.adminSecret) {
+    badge.className = 'header-role-badge badge-admin';
+    badge.textContent = '導師管理';
+    if (nav) nav.classList.remove('hidden');
+  } else if (APP.role === 'editor') {
+    badge.classList.add('badge-editor');
+    badge.textContent = '發布者';
+    if (nav) nav.classList.add('hidden');
+  } else {
+    badge.className = 'header-role-badge badge-viewer';
+    badge.textContent = '瀏覽';
+    if (nav) nav.classList.add('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  角色選擇邏輯
+// ═══════════════════════════════════════════════════════
+function selectRoleCard(type) {
+  document.getElementById('role-card-viewer').classList.remove('selected');
+  const cadreCard = document.getElementById('role-card-cadre');
+  const teacherCard = document.getElementById('role-card-teacher');
+  if (cadreCard) cadreCard.classList.remove('selected');
+  if (teacherCard) teacherCard.classList.remove('selected');
+
+  const targetCard = document.getElementById('role-card-' + type);
+  if (targetCard) targetCard.classList.add('selected');
+
+  document.getElementById('role-sub-cadre').classList.add('hidden');
+  document.getElementById('role-sub-teacher').classList.add('hidden');
+  document.getElementById('role-pin-wrap').classList.add('hidden');
+  document.getElementById('role-continue-wrap').classList.add('hidden');
+  APP.posterType = '';
+  APP.verifiedPin = false;
+
+  if (type === 'viewer') {
+    APP.posterType = 'viewer';
+    document.getElementById('role-continue-wrap').classList.remove('hidden');
+    document.getElementById('btn-role-continue').textContent = '進入佈告欄';
+  } else if (type === 'cadre') {
+    document.getElementById('role-sub-cadre').classList.remove('hidden');
+  } else if (type === 'teacher') {
+    document.getElementById('role-sub-teacher').classList.remove('hidden');
+  }
+}
+
+function onCadreSelect(val) {
+  if (!val) { document.getElementById('role-pin-wrap').classList.add('hidden'); return; }
+  APP.posterType = 'cadre';
+  APP.posterLabel = val;
+  APP.posterSubject = '';
+  document.getElementById('role-sub-teacher').classList.add('hidden');
+  showPinInput();
+}
+
+function onTeacherSubjectSelect(val) {
+  if (!val) { document.getElementById('role-pin-wrap').classList.add('hidden'); return; }
+  APP.posterType = 'teacher';
+  APP.posterLabel = val + ' 小老師';
+  APP.posterSubject = val;
+  showPinInput();
+}
+
+function showPinInput() {
+  APP.verifiedPin = false;
+  document.getElementById('role-pin').value = '';
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('role-pin-wrap').classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════════════════════
+//  PIN 驗證（從 Google Sheets config 工作表讀取）
+// ═══════════════════════════════════════════════════════
+async function verifyRolePin() {
+  const pin = document.getElementById('role-pin').value.trim();
+  if (!pin) {
+    document.getElementById('pin-error').textContent = '請輸入授權碼';
+    return;
+  }
+  const btn = document.getElementById('btn-verify-pin');
+  btn.disabled = true;
+  btn.textContent = '驗證中…';
+  document.getElementById('pin-error').textContent = '';
+
+  try {
+    const correctPin = await fetchConfigPin();
+    if (pin === String(correctPin)) {
+      APP.verifiedPin = true;
+      proceedFromRole();
+    } else {
+      document.getElementById('pin-error').textContent = '授權碼錯誤，請再試一次';
+      document.getElementById('role-pin').value = '';
+      document.getElementById('role-pin').focus();
+    }
+  } catch (e) {
+    document.getElementById('pin-error').textContent = '驗證出錯: ' + e.message + ' (請嘗試強制重新整理網頁)';
+    console.error('PIN fetch error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '驗證';
+  }
+}
+
+async function fetchConfigPin() {
+  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=config&nocache=${Date.now()}`;
+  const res = await fetch(url);
+  const text = await res.text();
+  const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
+  if (!match) throw new Error('無法解析 config 工作表');
+  const data = JSON.parse(match[1]);
+  const rows = data.table?.rows || [];
+
+  // 1. 標準做法：尋找第一欄為 'pin' 的那一列，取第二欄的值
+  for (const row of rows) {
+    const cells = row.c || [];
+    if (cells[0]?.v && String(cells[0].v).toLowerCase().trim() === 'pin') {
+      return String(cells[1]?.v ?? '').trim();
+    }
+  }
+
+  // 2. 容錯備份一：如果使用者直接把 PIN 碼打在 A1 儲存格（或者整個工作表的第一格）
+  if (rows.length > 0) {
+    const firstRowCells = rows[0]?.c || [];
+    const val1 = firstRowCells[0]?.v;
+    if (val1 !== null && val1 !== undefined && val1 !== '') {
+      return String(val1).trim();
+    }
+  }
+
+  // 3. 容錯備份二：如果 Google 試算表將第一列當作標頭（header），而 A1 就是密碼
+  const cols = data.table?.cols || [];
+  if (cols[0]?.label && cols[0].label !== 'key') {
+    return String(cols[0].label).trim();
+  }
+
+  throw new Error('config 工作表無任何設定值');
+}
+
+function proceedFromRole() {
+  if (APP.posterType === 'viewer') {
+    APP.role = 'viewer';
+    updateHeader();
+    loadBoard();
+  } else if ((APP.posterType === 'cadre' || APP.posterType === 'teacher') && APP.verifiedPin) {
+    APP.role = 'editor';
+    updateHeader();
+    showPage('edit');
+    setEditorDefaultDate();
+    if (APP.posterSubject) document.getElementById('ed-subject').value = APP.posterSubject;
+    document.getElementById('selected-poster-text').textContent = APP.posterLabel;
+    document.getElementById('editor-verified-label').textContent = APP.posterLabel;
+    document.getElementById('poster-display-name').textContent = APP.posterLabel;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  讀取公告（Google Sheets gviz API）
+// ═══════════════════════════════════════════════════════
+async function loadBoard() {
+  showPage('board');
+  updateHeader();
+  const now = new Date();
+  document.getElementById('board-date').textContent = `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日`;
+  document.getElementById('bulletin-list').innerHTML = `<div style="text-align:center;padding:48px;color:var(--c-text-dim)"><div class="spinner" style="margin:0 auto 16px;"></div>讀取中…</div>`;
+
+  try {
+    const bulletins = await fetchBulletins();
+    APP.allBulletins = bulletins;
+    renderBulletins(bulletins);
+  } catch (e) {
+    console.error('fetchBulletins error:', e);
+    document.getElementById('bulletin-list').innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">無法載入公告，請稍後再試<br><small style="color:var(--c-text-dim)">${e.message}</small></div></div>`;
+  }
+}
+
+async function fetchBulletins() {
+  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CONFIG.RESPONSE_SHEET)}&nocache=${Date.now()}`;
+  const res = await fetch(url);
+  const text = await res.text();
+
+  // 錯誤：試算表未公開
+  if (text.includes('You need permission') || text.includes('access denied')) {
+    throw new Error('試算表未公開，請聯繫管理員');
+  }
+
+  const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
+  if (!match) throw new Error('無法解析試算表資料');
+
+  const data = JSON.parse(match[1]);
+  if (!data.table) return [];
+
+  const rows = data.table.rows || [];
+  // 欄位順序（Google Form 回應表）：
+  // 0:Timestamp 1:類別 2:科目 3:截止日期 4:內容 5:發布者 6:角色 7:狀態
+  return rows.map((row, i) => {
+    const c = row.c || [];
+    const getVal = (idx) => {
+      const cell = c[idx];
+      if (!cell || cell.v === null || cell.v === undefined) return '';
+      // Google gviz date format: Date(y,m,d) -> 0-based month, 支援時間戳記解析
+      if (typeof cell.v === 'string' && cell.v.startsWith('Date(')) {
+        const m = cell.v.match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/);
+        if (m) {
+          const year = m[1];
+          const month = String(+m[2]+1).padStart(2,'0');
+          const day = String(+m[3]).padStart(2,'0');
+          if (m[4] !== undefined) {
+            const hour = String(+m[4]).padStart(2,'0');
+            const min = String(+m[5]).padStart(2,'0');
+            const sec = String(+m[6]).padStart(2,'0');
+            return `${year}-${month}-${day}T${hour}:${min}:${sec}`;
+          }
+          return `${year}-${month}-${day}`;
+        }
+      }
+      return String(cell.v);
+    };
+    return {
+      id:         i,
+      timestamp:  getVal(0),
+      category:   getVal(1),
+      subject:    getVal(2),
+      dueDate:    getVal(3),
+      content:    getVal(4),
+      posterName: getVal(5),
+      posterType:    getVal(6),
+      status:        getVal(7),
+      marqueeStatus: getVal(8)
+    };
+  })
+  .filter(b => b.content && b.status !== '隱藏')
+  .reverse(); // 最新的排最前
+}
+
+// ═══════════════════════════════════════════════════════
+//  渲染公告
+// ═══════════════════════════════════════════════════════
+function setFilter(filter) {
+  APP.activeFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(el => {
+    el.className = 'filter-chip';
+    if (el.dataset.filter === filter) {
+      if (filter === 'all') el.classList.add('active-all');
+      else if (filter === '作業') el.classList.add('active-hw');
+      else if (filter === '小考') el.classList.add('active-quiz');
+      else if (filter === '學校行政公告') el.classList.add('active-admin');
+      else if (filter === 'expired') el.classList.add('active-expired');
+      else el.classList.add('active-note');
+    }
+  });
+  const filtered = filter === 'all'
+    ? APP.allBulletins.filter(b => !isExpired(b))
+    : filter === 'expired'
+      ? APP.allBulletins.filter(b => isExpired(b))
+      : APP.allBulletins.filter(b => {
+          if (isExpired(b)) return false;
+          if (filter === '老師交代事項') return b.category === '老師交代事項' || b.category === '交代事項';
+          return b.category === filter;
+        });
+  renderBulletinList(filtered);
+}
+
+function renderBulletins(bulletins) {
+  if (APP.adminSecret) {
+    const statsBox = document.getElementById('admin-stats-box');
+    if (statsBox) {
+      statsBox.classList.remove('hidden');
+      calculateStats(bulletins);
+    }
+  } else {
+    const statsBox = document.getElementById('admin-stats-box');
+    if (statsBox) statsBox.classList.add('hidden');
+  }
+  const filtered = APP.activeFilter === 'all'
+    ? bulletins.filter(b => !isExpired(b))
+    : APP.activeFilter === 'expired'
+      ? bulletins.filter(b => isExpired(b))
+      : bulletins.filter(b => {
+          if (isExpired(b)) return false;
+          if (APP.activeFilter === '老師交代事項') return b.category === '老師交代事項' || b.category === '交代事項';
+          return b.category === APP.activeFilter;
+        });
+  renderBulletinList(filtered);
+}
+
+function calculateStats(bulletins) {
+  let hwCount = 0;
+  let quizCount = 0;
+  let noteCount = 0;
+  let adminCount = 0;
+
+  bulletins.forEach(b => {
+    if (isExpired(b)) return;
+    if (b.category === '作業') hwCount++;
+    else if (b.category === '小考') quizCount++;
+    else if (b.category === '老師交代事項' || b.category === '交代事項') noteCount++;
+    else if (b.category === '學校行政公告') adminCount++;
+  });
+
+  const updateStatVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.textContent !== String(val)) {
+      el.textContent = val;
+      el.classList.remove('stats-bounce');
+      void el.offsetWidth;
+      el.classList.add('stats-bounce');
+      const cleanUp = () => {
+        el.classList.remove('stats-bounce');
+        el.removeEventListener('animationend', cleanUp);
+      };
+      el.addEventListener('animationend', cleanUp);
+    }
+  };
+
+  updateStatVal('stat-hw', hwCount);
+  updateStatVal('stat-quiz', quizCount);
+  updateStatVal('stat-note', noteCount);
+  updateStatVal('stat-admin', adminCount);
+}
+
+function renderBulletinList(list) {
+  const container = document.getElementById('bulletin-list');
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">目前沒有公告</div></div>`;
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  container.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'cards-grid';
+
+  list.forEach((b, i) => {
+    const catMap = { 
+      '作業': ['hw','tag-hw'], 
+      '小考': ['quiz','tag-quiz'], 
+      '交代事項': ['note','tag-note'],
+      '老師交代事項': ['note','tag-note'],
+      '學校行政公告': ['admin','tag-admin']
+    };
+    const [accentKey, tagClass] = catMap[b.category] || ['note','tag-note'];
+
+    let daysHTML = '';
+    if (b.dueDate) {
+      const due = new Date(b.dueDate); due.setHours(0,0,0,0);
+      const diff = Math.round((due - today) / 86400000);
+      if (diff === 0) daysHTML = `<span class="days-left days-today">今天截止</span>`;
+      else if (diff > 0 && diff <= 3) daysHTML = `<span class="days-left days-urgent">還有 ${diff} 天</span>`;
+      else if (diff > 0) daysHTML = `<span class="days-left days-normal">還有 ${diff} 天</span>`;
+      else daysHTML = `<span class="days-left days-past">已截止</span>`;
+    }
+
+    let adminControlsHTML = '';
+    if (APP.adminSecret) {
+      let marqueeBtnHTML = '';
+      if (b.category === '老師交代事項' || b.category === '交代事項' || b.category === '學校行政公告') {
+        const isMarquee = b.marqueeStatus !== '不跑馬燈';
+        const btnText = isMarquee ? '🔇 關閉跑馬燈' : '📢 開啟跑馬燈';
+        const btnClass = isMarquee ? 'btn-ghost' : 'btn-primary';
+        const nextStatus = isMarquee ? 'no_marquee' : 'marquee';
+        marqueeBtnHTML = `<button class="btn ${btnClass} btn-sm" onclick="toggleMarquee('${b.timestamp}', '${nextStatus}', event)" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); margin-right: 6px;">${btnText}</button>`;
+      }
+      adminControlsHTML = `<div style="margin-left: auto; display: flex; align-items: center;">
+        ${marqueeBtnHTML}
+        <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${b.timestamp}', event)" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-sm);">🗑️ 隱藏</button>
+      </div>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.setProperty('--delay', `${i * 0.04}s`);
+    card.innerHTML = `
+      <div class="card-accent accent-${accentKey}"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <span class="tag ${tagClass}">${b.category}</span>
+          <span class="subject-tag">${b.subject || '一般'}</span>
+          ${adminControlsHTML}
+        </div>
+        <div class="card-content">${escHtml(b.content)}</div>
+        <div class="card-footer">
+          <span class="card-date">
+            ${b.dueDate ? `截止 ${b.dueDate}` : ''}
+            ${b.posterName ? `・${b.posterName}` : ''}
+          </span>
+          ${daysHTML}
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  container.appendChild(grid);
+}
+
+async function deleteAnnouncement(timestamp, event) {
+  if (event) event.stopPropagation();
+  if (!confirm('確定要將此公告從佈告欄中隱藏嗎？')) return;
+
+  showToast('正在處理中...', 'info');
+
+  try {
+    const payload = {
+      action: 'updateStatus',
+      adminSecret: APP.adminSecret,
+      timestamp: timestamp,
+      status: 'hidden'
+    };
+
+    const response = await fetch(CONFIG.WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast('公告已成功隱藏', 'success');
+      loadBoard(); // 重新整理佈告欄
+    } else {
+      showToast('操作失敗：' + (result.error || '未知錯誤'), 'error');
+    }
+  } catch (e) {
+    showToast('網路連線失敗或權限不足', 'error');
+    console.error('Delete error:', e);
+  }
+}
+
+async function toggleMarquee(timestamp, nextStatus, event) {
+  if (event) event.stopPropagation();
+  showToast('正在設定跑馬燈狀態...', 'info');
+
+  try {
+    const payload = {
+      action: 'updateMarquee',
+      adminSecret: APP.adminSecret,
+      timestamp: timestamp,
+      marqueeStatus: nextStatus
+    };
+
+    const response = await fetch(CONFIG.WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast('已更新跑馬燈設定', 'success');
+      loadBoard(); // 重新整理佈告欄
+    } else {
+      showToast('設定失敗：' + (result.error || '未知錯誤'), 'error');
+    }
+  } catch (e) {
+    showToast('網路連線失敗或權限不足', 'error');
+    console.error('Marquee update error:', e);
+  }
+}
+
+function showAdminBoard() {
+  loadBoard();
+}
+
+function showAdminEdit() {
+  showPage('edit');
+}
+
+// ═══════════════════════════════════════════════════════
+//  發布公告（提交 Google Form 透過隱藏 iframe）
+// ═══════════════════════════════════════════════════════
+function submitBulletin() {
+  if (APP.isSubmitting) return;
+  const category = document.getElementById('ed-category').value;
+  const subject  = document.getElementById('ed-subject').value;
+  const dueDate  = document.getElementById('ed-date').value;
+  const content  = document.getElementById('ed-content').value.trim();
+
+  if (!category || !subject || !dueDate || !content) {
+    showStatusMsg('請填寫所有欄位', 'error');
+    return;
+  }
+
+  // 檢查 CONFIG 是否已設定
+  if (CONFIG.FORM_ID === 'SETUP_REQUIRED') {
+    showStatusMsg('系統尚未完成設定，請聯繫管理員', 'error');
+    return;
+  }
+
+  APP.isSubmitting = true;
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = '發布中…';
+
+  // 使用隱藏 form 提交（規避 CORS 限制）
+  const formUrl = `https://docs.google.com/forms/d/${CONFIG.FORM_ID}/formResponse`;
+
+  const hiddenForm = document.createElement('form');
+  hiddenForm.method  = 'POST';
+  hiddenForm.action  = formUrl;
+  hiddenForm.target  = 'hidden-submit-frame';
+  hiddenForm.style.display = 'none';
+
+  const fields = {
+    [CONFIG.FORM_ENTRIES.category]:   category,
+    [CONFIG.FORM_ENTRIES.subject]:    subject,
+    [CONFIG.FORM_ENTRIES.dueDate]:    dueDate,
+    [CONFIG.FORM_ENTRIES.content]:    content,
+    [CONFIG.FORM_ENTRIES.posterName]: APP.posterLabel,
+    [CONFIG.FORM_ENTRIES.posterType]: APP.posterType
+  };
+
+  Object.entries(fields).forEach(([name, value]) => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = name; inp.value = value;
+    hiddenForm.appendChild(inp);
+  });
+
+  document.body.appendChild(hiddenForm);
+  hiddenForm.submit();
+
+  // 等待約 1.5 秒後回傳成功（無法讀取 iframe 的回應，樂觀假設成功）
+  setTimeout(() => {
+    document.body.removeChild(hiddenForm);
+    APP.isSubmitting = false;
+    btn.disabled = false; btn.textContent = '發布公告';
+    showStatusMsg('公告已成功發布！公告欄將在幾分鐘內更新。', 'success');
+    resetEditorForm();
+    showToast('公告發布成功', 'success');
+  }, 1800);
+}
+
+function resetEditorForm() {
+  document.getElementById('ed-category').value = '';
+  document.getElementById('ed-content').value = '';
+  document.getElementById('char-count').textContent = '0 / 500';
+  document.getElementById('char-count').classList.remove('warn');
+  setEditorDefaultDate();
+}
+
+function setEditorDefaultDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('ed-date').value = s;
+}
+
+function updateCharCount() {
+  const val = document.getElementById('ed-content').value;
+  const counter = document.getElementById('char-count');
+  counter.textContent = `${val.length} / 500`;
+  counter.classList.toggle('warn', val.length > 450);
+}
+
+function showStatusMsg(msg, type) {
+  const el = document.getElementById('submit-status');
+  el.textContent = msg;
+  el.className = `status-msg status-${type}`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 5000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  Toast 通知
+// ═══════════════════════════════════════════════════════
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = msg;
+  toast.onclick = () => container.removeChild(toast);
+  container.appendChild(toast);
+  setTimeout(() => { if (toast.parentNode) container.removeChild(toast); }, 4000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  工具函式
+// ═══════════════════════════════════════════════════════
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
