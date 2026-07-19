@@ -1573,7 +1573,8 @@ window.addEventListener('DOMContentLoaded', async () => {
           return;
         }
       }
-      clearSavedRole();
+      goToRolePage();
+      return;
     } else if (saved.role === 'editor' && saved.adminSecret) {
       // 舊快取若誤存 adminSecret 但不是導師標籤，仍驗證一次（安全修正：必須 URL 含有 admin 參數才還原）
       if (adminSecret) {
@@ -1583,7 +1584,8 @@ window.addEventListener('DOMContentLoaded', async () => {
           return;
         }
       }
-      clearSavedRole();
+      goToRolePage();
+      return;
     }
 
     APP.role = saved.role;
