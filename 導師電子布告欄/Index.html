@@ -1326,7 +1326,7 @@ const CONFIG = {
   // 幹部職稱列表
   CADRE_TITLES: ['班長','副班長','學藝股長','風紀股長','衛生股長','體育股長','資訊股長','總務股長','環保股長'],
   // 小老師科目列表
-  TEACHER_SUBJECTS: ['班級公告','國文','英文','數學','物理','化學','生物','地科','歷史','地理','公民與社會','體育','音樂','美術','自主學習','探究','本土語文']
+  TEACHER_SUBJECTS: ['班級公告','學校行政','國文','英文','數學','物理','化學','生物','地科','歷史','地理','公民與社會','體育','音樂','美術','自主學習','探究','本土語文']
 };
 
 /**
@@ -1550,6 +1550,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   populateRoleSelects();
+
+  // 類別與科目聯動監聽
+  document.getElementById('ed-category')?.addEventListener('change', function() {
+    const subjectEl = document.getElementById('ed-subject');
+    if (this.value === '學校行政公告') {
+      subjectEl.value = '學校行政';
+    } else if (subjectEl.value === '學校行政') {
+      subjectEl.value = APP.posterSubject || '';
+    }
+  });
 
   // 嘗試從 localStorage 還原上次選擇的角色
   const saved = getSavedRole();
