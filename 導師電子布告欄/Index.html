@@ -1527,7 +1527,19 @@ function enterTeacherMode(adminSecret) {
 //  初始化
 // ═══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
-  // 管理後台：URL 含 ?admin= 時，必須後端驗證通過才進入導師模式
+  // 1. 填充選單與註冊通用監聽
+  populateRoleSelects();
+
+  document.getElementById('ed-category')?.addEventListener('change', function() {
+    const subjectEl = document.getElementById('ed-subject');
+    if (this.value === '學校行政公告') {
+      subjectEl.value = '學校行政';
+    } else if (subjectEl.value === '學校行政') {
+      subjectEl.value = APP.posterSubject || '';
+    }
+  });
+
+  // 2. 管理後台：URL 含 ?admin= 時，必須後端驗證通過才進入導師模式
   const urlParams = new URLSearchParams(window.location.search);
   let adminSecret = urlParams.get('admin');
   if (!adminSecret && window.GAS_PARAMS && window.GAS_PARAMS.admin) {
@@ -1549,19 +1561,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     window.history.replaceState({}, '', clean.toString());
   }
 
-  populateRoleSelects();
-
-  // 類別與科目聯動監聽
-  document.getElementById('ed-category')?.addEventListener('change', function() {
-    const subjectEl = document.getElementById('ed-subject');
-    if (this.value === '學校行政公告') {
-      subjectEl.value = '學校行政';
-    } else if (subjectEl.value === '學校行政') {
-      subjectEl.value = APP.posterSubject || '';
-    }
-  });
-
-  // 嘗試從 localStorage 還原上次選擇的角色
+  // 3. 嘗試從 localStorage 還原上次選擇的角色
   const saved = getSavedRole();
   if (saved && saved.role) {
     // 若本機記的是導師，重新向後端驗證密鑰（安全修正：必須 URL 含有 admin 參數才還原，防權限外洩）
