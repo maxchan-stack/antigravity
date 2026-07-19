@@ -870,6 +870,8 @@
       padding: 6px 12px; background: rgba(219,68,85,0.06); border: 1px solid rgba(219,68,85,0.22);
       border-radius: var(--radius-sm); font-size: 0.77rem; font-weight: 500; color: #db4455;
       animation: labelPulse 2.5s infinite ease-in-out;
+      flex-wrap: wrap; /* 💡 允許在行動裝置等寬度不足時自動折行，避免文字擠壓變形 */
+      line-height: 1.5; /* 💡 確保折行時上下字體不重疊、不被切除 */
     }
     .countdown-tag {
       font-weight: 600; color: #FAF8F5; background: #db4455;
