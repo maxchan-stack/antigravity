@@ -1564,20 +1564,24 @@ window.addEventListener('DOMContentLoaded', async () => {
   // 嘗試從 localStorage 還原上次選擇的角色
   const saved = getSavedRole();
   if (saved && saved.role) {
-    // 若本機記的是導師，重新向後端驗證密鑰
+    // 若本機記的是導師，重新向後端驗證密鑰（安全修正：必須 URL 含有 admin 參數才還原，防權限外洩）
     if (saved.posterLabel === '導師' && saved.adminSecret) {
-      const ok = await verifyAdminSecret(saved.adminSecret);
-      if (ok) {
-        enterTeacherMode(saved.adminSecret);
-        return;
+      if (adminSecret) {
+        const ok = await verifyAdminSecret(saved.adminSecret);
+        if (ok) {
+          enterTeacherMode(saved.adminSecret);
+          return;
+        }
       }
       clearSavedRole();
     } else if (saved.role === 'editor' && saved.adminSecret) {
-      // 舊快取若誤存 adminSecret 但不是導師標籤，仍驗證一次
-      const ok = await verifyAdminSecret(saved.adminSecret);
-      if (ok) {
-        enterTeacherMode(saved.adminSecret);
-        return;
+      // 舊快取若誤存 adminSecret 但不是導師標籤，仍驗證一次（安全修正：必須 URL 含有 admin 參數才還原）
+      if (adminSecret) {
+        const ok = await verifyAdminSecret(saved.adminSecret);
+        if (ok) {
+          enterTeacherMode(saved.adminSecret);
+          return;
+        }
       }
       clearSavedRole();
     }
