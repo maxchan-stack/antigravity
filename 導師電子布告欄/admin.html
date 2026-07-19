@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電子佈告欄 · 授權碼管理控制台</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --c-bg:           #f4f6f7;
+      --c-surface:      #ffffff;
+      --c-border:       #dde4e3;
+      --c-text:         #243231;
+      --c-text-muted:   #5b6c6a;
+      --c-primary:      #1a5d57;
+      --c-primary-dark: #134843;
+      --c-primary-dim:  rgba(26,93,87,0.06);
+      --c-danger:       #c62828;
+      --c-success:      #2e7d32;
+      
+      --radius-lg:      16px;
+      --radius-md:      12px;
+      --radius-sm:      8px;
+      --shadow-lg:      0 8px 32px rgba(20,40,38,0.12);
+      --transition:     all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      
+      /* 壓紋紙張背景疊加 */
+      --bg-image: 
+        repeating-linear-gradient(0deg, rgba(20, 40, 38, 0.035) 0px, rgba(20, 40, 38, 0.035) 1px, transparent 1px, transparent 4px),
+        repeating-linear-gradient(90deg, rgba(20, 40, 38, 0.035) 0px, rgba(20, 40, 38, 0.035) 1px, transparent 1px, transparent 4px),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8) 0%, rgba(220, 225, 225, 0.35) 100%);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, sans-serif;
+      background-color: var(--c-bg);
+      background-image: var(--bg-image);
+      color: var(--c-text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    /* ── 卡片容器 ── */
+    .admin-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 480px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow-lg);
+      animation: cardInit 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+    }
+
+    @keyframes cardInit {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── 標頭 ── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--c-primary-dim);
+      color: var(--c-primary);
+      border: 1px solid rgba(26,93,87,0.2);
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 50px;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+    .title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--c-text);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── 表單群組 ── */
+    .form-group {
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--c-text-muted);
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .input-wrapper {
+      position: relative;
+    }
+    .input-wrapper i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--c-text-muted);
+      font-size: 0.95rem;
+    }
+    input {
+      width: 100%;
+      padding: 12px 14px 12px 40px;
+      border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--c-text);
+      background: var(--c-surface);
+      transition: var(--transition);
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--c-primary);
+      box-shadow: 0 0 0 3px rgba(26,93,87,0.12);
+    }
+
+    /* ── 展示區域 ── */
+    .display-box {
+      background: var(--c-primary-dim);
+      border: 1px solid rgba(26,93,87,0.12);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 24px;
+      display: none;
+      animation: fadeIn 0.4s ease forwards;
+    }
+    .display-label {
+      font-size: 0.78rem;
+      color: var(--c-text-muted);
+      margin-bottom: 4px;
+    }
+    .display-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--c-primary);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── 按鈕 ── */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: var(--transition);
+      letter-spacing: 0.05em;
+    }
+    .btn-primary {
+      background: var(--c-primary);
+      color: #FAF8F5;
+      box-shadow: 0 4px 12px rgba(26,93,87,0.15);
+    }
+    .btn-primary:hover {
+      background: var(--c-primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(26,93,87,0.22);
+    }
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    /* ── 回饋訊息 ── */
+    .msg {
+      font-size: 0.82rem;
+      text-align: center;
+      margin-top: 16px;
+      display: none;
+    }
+    .msg.error { color: var(--c-danger); display: block; }
+    .msg.success { color: var(--c-success); display: block; }
+
+    /* ── 頁尾 ── */
+    .footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.72rem;
+      color: var(--c-text-muted);
+    }
+    .footer a {
+      color: var(--c-primary);
+      text-decoration: none;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="admin-card">
+    <div class="header">
+      <span class="badge">內部控制台</span>
+      <h1 class="title">授權碼管理系統</h1>
+    </div>
+
+    <!-- 驗證密鑰 -->
+    <div class="form-group" id="secret-group">
+      <label class="form-label"><i class="fa-solid fa-key"></i> 管理端安全密鑰</label>
+      <div class="input-wrapper">
+        <i class="fa-solid fa-lock"></i>
+        <input type="password" id="admin-secret" placeholder="輸入管理密鑰" autocomplete="off" oninput="clearMessages()">
+      </div>
+    </div>
+
+    <!-- 目前設定的 PIN 展示 -->
+    <div class="display-box" id="pin-display-box">
+      <div class="display-label">目前幹部/小老師授權碼</div>
+      <div class="display-value" id="current-pin-val">- - - -</div>
+    </div>
+
+    <!-- 設定新 PIN -->
+    <div class="form-group" id="new-pin-group" style="display: none;">
+      <label class="form-label"><i class="fa-solid fa-shield-halved"></i> 設定新授權碼 (純數字)</label>
+      <div class="input-wrapper">
+        <i class="fa-solid fa-hashtag"></i>
+        <input type="text" id="new-pin" placeholder="例如 1234" maxlength="8" autocomplete="off" oninput="clearMessages()">
+      </div>
+    </div>
+
+    <!-- 操作按鈕 -->
+    <button class="btn btn-primary" id="btn-submit" onclick="handleAction()">
+      <i class="fa-solid fa-magnifying-glass"></i> 驗證密鑰並讀取授權碼
+    </button>
+
+    <div class="msg" id="feedback-msg"></div>
+
+    <div class="footer">
+      <p>© 2026 高二甲班 導師管理平台 | <a href="./bulletin.html">返回電子佈告欄</a></p>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════
+    //  組態設定
+    // ═══════════════════════════════════════════════════════
+    const CONFIG = {
+      // ⚠️ 此網址將於後續步驟中被您的新部署 Web App 網址更新
+      WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbyQr4WjfdF_sNs7z1VyngP0rPxYJJEpGsp1i7dO_MHR5w5egCvJIjVMFavea_CnHHgPeA/exec'
+    };
+
+    let step = 1; // 1 = 驗證與讀取, 2 = 修改授權碼
+
+    // ═══════════════════════════════════════════════════════
+    //  初始化：自動解析 URL 中的密鑰
+    // ═══════════════════════════════════════════════════════
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const adminSecret = urlParams.get('admin');
+      if (adminSecret) {
+        document.getElementById('admin-secret').value = adminSecret;
+        // 自動執行驗證與讀取
+        handleAction();
+      }
+    });
+
+    function clearMessages() {
+      const msgDiv = document.getElementById('feedback-msg');
+      msgDiv.className = 'msg';
+      msgDiv.textContent = '';
+    }
+
+    function showMsg(text, type = 'success') {
+      const msgDiv = document.getElementById('feedback-msg');
+      msgDiv.className = `msg ${type}`;
+      msgDiv.textContent = text;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  主邏輯分流
+    // ═══════════════════════════════════════════════════════
+    async function handleAction() {
+      if (step === 1) {
+        await verifyAndFetchPin();
+      } else if (step === 2) {
+        await updatePin();
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  1. 驗證密鑰並讀取目前 PIN 碼
+    // ═══════════════════════════════════════════════════════
+    async function verifyAndFetchPin() {
+      const secretInput = document.getElementById('admin-secret');
+      const secret = secretInput.value.trim();
+      if (!secret) {
+        showMsg('請輸入管理端安全密鑰', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 驗證並連線中…';
+      clearMessages();
+
+      try {
+        const response = await fetch(CONFIG.WEB_APP_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'getPin',
+            adminSecret: secret
+          })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          // 顯示目前 PIN
+          document.getElementById('current-pin-val').textContent = result.pin;
+          document.getElementById('pin-display-box').style.display = 'block';
+          
+          // 開放新 PIN 輸入欄位
+          document.getElementById('new-pin-group').style.display = 'flex';
+          
+          // 鎖定安全密鑰輸入框避免誤改
+          secretInput.disabled = true;
+          
+          // 切換按鈕狀態至階段 2
+          step = 2;
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 儲存並更新授權碼';
+          if (result.weak || result.pin === '1234') {
+            showMsg('管理驗證成功。⚠️ 目前 PIN 過於簡單（如 1234），請立即改為 4–8 位數字（不可用 1234）', 'error');
+          } else if (result.warning === 'PIN_NOT_SET' || !result.pin) {
+            showMsg('管理驗證成功，但尚未設定 PIN，請立刻設定', 'error');
+          } else {
+            showMsg('管理驗證成功，已讀取目前設定', 'success');
+          }
+        } else {
+          showMsg('管理密鑰錯誤，請重新輸入', 'error');
+          secretInput.value = '';
+          secretInput.focus();
+        }
+      } catch (err) {
+        showMsg('系統連線失敗，請檢查網路或確認 Web App 已公開發布', 'error');
+        console.error('API Error:', err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  2. 更新 PIN 碼
+    // ═══════════════════════════════════════════════════════
+    async function updatePin() {
+      const secret = document.getElementById('admin-secret').value.trim();
+      const newPinInput = document.getElementById('new-pin');
+      const newPin = newPinInput.value.trim();
+
+      if (!newPin) {
+        showMsg('請輸入新的授權碼', 'error');
+        return;
+      }
+      if (!/^\d+$/.test(newPin)) {
+        showMsg('授權碼格式錯誤，必須為純數字', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在更新雲端設定…';
+      clearMessages();
+
+      try {
+        const response = await fetch(CONFIG.WEB_APP_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'updatePin',
+            adminSecret: secret,
+            newPin: newPin
+          })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          // 更新顯示的值
+          document.getElementById('current-pin-val').textContent = newPin;
+          newPinInput.value = '';
+          showMsg('授權碼已成功更新並寫入雲端試算表！', 'success');
+        } else {
+          const detail = result.detail ? `（${result.detail}）` : '';
+          showMsg('修改失敗：' + (result.error || '未知的後端錯誤') + detail, 'error');
+        }
+      } catch (err) {
+        showMsg('連線失敗，請確認網路狀態', 'error');
+        console.error('API Error:', err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

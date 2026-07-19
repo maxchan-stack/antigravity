@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --muji-bg-light: #FAF8F5;
+      --muji-bg-dark: #F3ECE2;
+      --muji-crimson: #7F1921;
+      --muji-crimson-hover: #5C1118;
+      --muji-charcoal: #2E2E2E;
+      --muji-muted: #8E877E;
+      --muji-sand: #E6DFD5;
+      --muji-card-bg: #FFFFFF;
+      --muji-border: rgba(127, 25, 33, 0.12);
+      --muji-border-hover: rgba(127, 25, 33, 0.25);
+      --muji-shadow: 0 4px 20px rgba(46, 46, 46, 0.03);
+      --muji-shadow-hover: 0 8px 30px rgba(46, 46, 46, 0.06);
+      --error-bg: rgba(127, 25, 33, 0.04);
+    }
+
+    body {
+      margin: 0;
+      padding: 60px 20px;
+      background: radial-gradient(circle at 50% 0%, var(--muji-bg-light), var(--muji-bg-dark));
+      min-height: 100vh;
+      color: var(--muji-charcoal);
+      font-family: "Noto Sans TC", -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      animation: fadeIn 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 頁首樣式 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 40px;
+      border-bottom: 1px solid var(--muji-crimson);
+      padding-bottom: 20px;
+    }
+
+    .header-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .header-subtitle {
+      font-family: "Jost", sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muji-crimson);
+      letter-spacing: 2px;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--muji-charcoal);
+      letter-spacing: 1px;
+    }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-sand);
+      padding: 8px 20px;
+      font-family: "Noto Sans TC", sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muji-charcoal);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      box-shadow: var(--muji-shadow);
+    }
+
+    .btn-refresh:hover {
+      border-color: var(--muji-crimson);
+      color: var(--muji-crimson);
+      box-shadow: var(--muji-shadow-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-refresh:active {
+      transform: translateY(1px);
+    }
+
+    .icon-refresh {
+      fill: currentColor;
+      transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .btn-refresh:hover .icon-refresh {
+      transform: rotate(180deg);
+    }
+
+    /* 篩選卡片樣式 */
+    .filter-card {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      padding: 24px;
+      margin-bottom: 30px;
+      box-shadow: var(--muji-shadow);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .filter-card:hover {
+      box-shadow: var(--muji-shadow-hover);
+    }
+
+    .filter-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .filter-icon svg {
+      fill: var(--muji-crimson);
+    }
+
+    .filter-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .select-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .select-wrapper::after {
+      content: "";
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid var(--muji-muted);
+      pointer-events: none;
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--muji-sand);
+      background: var(--muji-bg-light);
+      color: var(--muji-charcoal);
+      font-family: "Noto Sans TC", sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--muji-crimson);
+      background: var(--muji-card-bg);
+    }
+
+    .custom-date-row {
+      display: none;
+      margin-top: 16px;
+      flex-direction: column;
+      gap: 16px;
+      animation: slideDown 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .custom-date-row.visible {
+      display: flex;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .date-input-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .date-field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .date-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muji-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .date-field input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--muji-sand);
+      background: var(--muji-bg-light);
+      color: var(--muji-charcoal);
+      font-family: "Noto Sans TC", sans-serif;
+      font-size: 13px;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    .date-field input[type="date"]:focus {
+      outline: none;
+      border-color: var(--muji-crimson);
+      background: var(--muji-card-bg);
+    }
+
+    .date-separator {
+      color: var(--muji-muted);
+      font-size: 13px;
+      padding-top: 20px;
+    }
+
+    .btn-apply {
+      background: var(--muji-crimson);
+      border: none;
+      color: #FFFFFF;
+      padding: 12px;
+      font-family: "Noto Sans TC", sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .btn-apply:hover {
+      background: var(--muji-crimson-hover);
+    }
+
+    .filter-badge {
+      display: none;
+      margin-top: 16px;
+      padding: 8px 12px;
+      background: var(--error-bg);
+      border-left: 2px solid var(--muji-crimson);
+      color: var(--muji-crimson);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .filter-badge.visible {
+      display: block;
+    }
+
+    /* 全體進度卡片樣式 */
+    .progress-card {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      padding: 30px 24px;
+      margin-bottom: 40px;
+      box-shadow: var(--muji-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--muji-crimson);
+    }
+
+    .progress-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 20px;
+    }
+
+    .progress-card-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muji-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .progress-card-value {
+      font-family: "Jost", sans-serif;
+      font-size: 48px;
+      font-weight: 300;
+      color: var(--muji-crimson);
+      line-height: 0.9;
+    }
+
+    .progress-track {
+      background: var(--muji-bg-dark);
+      height: 8px;
+      width: 100%;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      background: var(--muji-crimson);
+      height: 100%;
+      width: 0%;
+      transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .progress-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--muji-bg-light);
+      padding: 12px 20px;
+      border: 1px solid var(--muji-sand);
+    }
+
+    .footer-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .footer-stat-label {
+      font-size: 11px;
+      color: var(--muji-muted);
+    }
+
+    .footer-stat-value {
+      font-family: "Jost", "Noto Sans TC", sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--muji-charcoal);
+    }
+
+    .footer-stat-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--muji-sand);
+    }
+
+    /* 班級與安全區域標題 */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section-title-line {
+      width: 3px;
+      height: 14px;
+      background: var(--muji-crimson);
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--muji-charcoal);
+      letter-spacing: 0.5px;
+    }
+
+    /* 班級列表卡片 */
+    .class-list {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      padding: 30px 24px;
+      margin-bottom: 40px;
+      box-shadow: var(--muji-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .class-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInUp 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      animation-delay: var(--delay, 0ms);
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .class-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .class-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--muji-charcoal);
+    }
+
+    .class-stats-right {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .class-count {
+      font-size: 12px;
+      color: var(--muji-muted);
+    }
+
+    .class-percentage {
+      font-family: "Jost", sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--muji-crimson);
+    }
+
+    .class-track {
+      background: var(--muji-bg-light);
+      border: 1px solid var(--muji-sand);
+      height: 6px;
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .class-bar {
+      background: var(--muji-crimson);
+      height: 100%;
+      width: 0%;
+      transition: width 1s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* 安全事件網格與卡片 */
+    .security-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .security-card {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      padding: 24px;
+      box-shadow: var(--muji-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .security-card:hover {
+      box-shadow: var(--muji-shadow-hover);
+      border-color: var(--muji-border-hover);
+    }
+
+    .security-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .security-card-icon svg {
+      fill: var(--muji-muted);
+    }
+
+    .security-card-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muji-muted);
+    }
+
+    .security-card-value {
+      font-family: "Jost", sans-serif;
+      font-size: 32px;
+      font-weight: 500;
+      color: var(--muji-charcoal);
+    }
+
+    .security-card.warning {
+      border-color: var(--muji-crimson);
+      background: var(--error-bg);
+    }
+
+    .security-card.warning .security-card-icon svg {
+      fill: var(--muji-crimson);
+    }
+
+    .security-card.warning .security-card-label {
+      color: var(--muji-crimson);
+    }
+
+    .security-card.warning .security-card-value {
+      color: var(--muji-crimson);
+      animation: pulseRed 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseRed {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* 載入遮罩樣式 */
+    .loader-container {
+      position: fixed;
+      inset: 0;
+      background: var(--muji-bg-light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .loader-content {
+      text-align: center;
+    }
+
+    .loader-ring {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--muji-sand);
+      border-top: 2px solid var(--muji-crimson);
+      border-radius: 50%;
+      animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      margin: 0 auto 20px;
+    }
+
+    .loader-text {
+      font-size: 13px;
+      color: var(--muji-muted);
+      letter-spacing: 2px;
+      font-weight: 400;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 響應式微調 */
+    @media (max-width: 600px) {
+      body {
+        padding: 40px 16px;
+      }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .btn-refresh {
+        width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+      .date-input-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .date-separator {
+        padding-top: 0;
+        text-align: center;
+      }
+      .progress-card-footer {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+      }
+      .footer-stat-divider {
+        width: 100%;
+        height: 1px;
+      }
+      .security-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 載入動畫 -->
+  <div id="loader" class="loader-container">
+    <div class="loader-content">
+      <div class="loader-ring"></div>
+      <div class="loader-text">資料整理中</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 頁首區塊 -->
+    <header class="header">
+      <div class="header-title-group">
+        <span class="header-subtitle">GRADE QUERY SYSTEM</span>
+        <h1 class="header-title">成績查詢統計儀表板</h1>
+      </div>
+      <button class="btn-refresh" onclick="applyCurrentFilter()">
+        <svg class="icon-refresh" viewBox="0 0 24 24" width="16" height="16">
+          <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        重新整理
+      </button>
+    </header>
+
+    <!-- 考試區間篩選卡片 -->
+    <div class="filter-card">
+      <div class="filter-header">
+        <span class="filter-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+          </svg>
+        </span>
+        <span class="filter-title">時間區間篩選</span>
+      </div>
+      <div class="filter-body">
+        <div class="select-wrapper">
+          <select id="exam-select" class="filter-select" onchange="onExamSelectChange()">
+            <option value="all">全部時間</option>
+            <option value="custom">自訂日期區間</option>
+          </select>
+        </div>
+        <div id="custom-date-row" class="custom-date-row">
+          <div class="date-input-group">
+            <div class="date-field">
+              <span class="date-label">開始日期</span>
+              <input type="date" id="date-start">
+            </div>
+            <div class="date-separator">至</div>
+            <div class="date-field">
+              <span class="date-label">結束日期</span>
+              <input type="date" id="date-end">
+            </div>
+          </div>
+          <button class="btn-apply" onclick="applyCustomDate()">篩選</button>
+        </div>
+        <div id="filter-active-label" class="filter-badge"></div>
+      </div>
+    </div>
+
+    <!-- 全體學生查詢進度卡片 -->
+    <div class="progress-card">
+      <div class="progress-card-header">
+        <span class="progress-card-title">全體學生查詢進度</span>
+        <span id="query-percentage" class="progress-card-value">0.0%</span>
+      </div>
+      <div class="progress-track">
+        <div id="progress-bar" class="progress-fill"></div>
+      </div>
+      <div class="progress-card-footer">
+        <div class="footer-stat">
+          <span class="footer-stat-label">已查詢學生</span>
+          <span class="footer-stat-value">已查詢 <span id="unique-count">0</span> 位</span>
+        </div>
+        <div class="footer-stat-divider"></div>
+        <div class="footer-stat">
+          <span class="footer-stat-label">全體學生總數</span>
+          <span class="footer-stat-value">全體 <span id="total-students">0</span> 位</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 各班級查詢進度區塊 -->
+    <div class="section-header">
+      <div class="section-title-line"></div>
+      <h2 class="section-title">班級查詢進度</h2>
+    </div>
+    <div id="class-list" class="class-list">
+      <div class="empty-state">資料載入中...</div>
+    </div>
+
+    <!-- 安全事件統計區塊 -->
+    <div class="section-header">
+      <div class="section-title-line"></div>
+      <h2 class="section-title">安全事件統計</h2>
+    </div>
+    <div class="security-grid">
+      <div class="security-card">
+        <div class="security-card-header">
+          <span class="security-card-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+          </span>
+          <span class="security-card-label">登入失敗次數</span>
+        </div>
+        <div class="security-card-value">
+          登入失敗 <span id="fail-count">0</span> 次
+        </div>
+      </div>
+      <div class="security-card warning">
+        <div class="security-card-header">
+          <span class="security-card-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+            </svg>
+          </span>
+          <span class="security-card-label">帳號鎖定次數</span>
+        </div>
+        <div class="security-card-value">
+          帳號鎖定 <span id="locked-count">0</span> 次
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var examPeriods = [];
+    var currentFilter = null;
+
+    function loadExamPeriods() {
+      google.script.run
+        .withSuccessHandler(function(periods) {
+          examPeriods = periods || [];
+          populateExamSelect();
+          loadStatistics(null);
+        })
+        .withFailureHandler(function(err) {
+          loadStatistics(null);
+        })
+        .getExamPeriods();
+    }
+
+    function populateExamSelect() {
+      var select = document.getElementById('exam-select');
+      while (select.options.length > 2) {
+        select.remove(2);
+      }
+
+      var customOption = select.options[1];
+      select.remove(1);
+
+      examPeriods.forEach(function(period, index) {
+        var option = document.createElement('option');
+        option.value = 'exam_' + index;
+        var startStr = formatDateLabel(period.startDate);
+        var endStr = formatDateLabel(period.endDate);
+        option.textContent = period.name + '（' + startStr + ' ~ ' + endStr + '）';
+        select.appendChild(option);
+      });
+
+      select.appendChild(customOption);
+    }
+
+    function formatDateLabel(isoStr) {
+      var d = new Date(isoStr);
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '/' + m + '/' + day;
+    }
+
+    function onExamSelectChange() {
+      var select = document.getElementById('exam-select');
+      var value = select.value;
+      var customRow = document.getElementById('custom-date-row');
+      var activeLabel = document.getElementById('filter-active-label');
+
+      if (value === 'custom') {
+        customRow.classList.add('visible');
+        activeLabel.classList.remove('visible');
+        return;
+      }
+
+      customRow.classList.remove('visible');
+
+      if (value === 'all') {
+        currentFilter = null;
+        activeLabel.classList.remove('visible');
+        loadStatistics(null);
+      } else if (value.startsWith('exam_')) {
+        var idx = parseInt(value.replace('exam_', ''), 10);
+        var period = examPeriods[idx];
+        if (period) {
+          currentFilter = {
+            startDate: period.startDate,
+            endDate: period.endDate
+          };
+          activeLabel.textContent = '篩選區間： ' + period.name;
+          activeLabel.classList.add('visible');
+          loadStatistics(currentFilter);
+        }
+      }
+    }
+
+    function applyCustomDate() {
+      var startVal = document.getElementById('date-start').value;
+      var endVal = document.getElementById('date-end').value;
+
+      if (!startVal || !endVal) {
+        alert('請選擇開始日期與結束日期');
+        return;
+      }
+
+      if (new Date(startVal) > new Date(endVal)) {
+        alert('開始日期不可晚於結束日期');
+        return;
+      }
+
+      currentFilter = {
+        startDate: new Date(startVal).toISOString(),
+        endDate: new Date(endVal).toISOString()
+      };
+
+      var activeLabel = document.getElementById('filter-active-label');
+      activeLabel.textContent = '篩選區間： ' + startVal + ' ~ ' + endVal;
+      activeLabel.classList.add('visible');
+
+      loadStatistics(currentFilter);
+    }
+
+    function applyCurrentFilter() {
+      var select = document.getElementById('exam-select');
+      if (select.value === 'custom') {
+        applyCustomDate();
+      } else {
+        onExamSelectChange();
+      }
+    }
+
+    function loadStatistics(filter) {
+      showLoader();
+      google.script.run
+        .withSuccessHandler(function(data) {
+          updateUI(data);
+          hideLoader();
+        })
+        .withFailureHandler(function(err) {
+          alert('載入統計資料失敗： ' + err.message);
+          hideLoader();
+        })
+        .getQueryStatistics(filter);
+    }
+
+    function updateUI(data) {
+      var percentageStr = data.queryPercentage || '0.0%';
+      document.getElementById('query-percentage').textContent = percentageStr;
+      
+      var numericPercentage = parseFloat(percentageStr);
+      if (isNaN(numericPercentage)) numericPercentage = 0;
+      document.getElementById('progress-bar').style.width = numericPercentage + '%';
+
+      document.getElementById('unique-count').textContent = data.uniqueStudentsCount;
+      document.getElementById('total-students').textContent = data.totalStudents;
+      
+      document.getElementById('fail-count').textContent = data.failCount;
+      document.getElementById('locked-count').textContent = data.lockedCount;
+
+      var classList = document.getElementById('class-list');
+      classList.innerHTML = '';
+      
+      if (!data.classStats || data.classStats.length === 0) {
+        var emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-state';
+        emptyDiv.textContent = '暫無班級資料';
+        classList.appendChild(emptyDiv);
+        return;
+      }
+
+      data.classStats.forEach(function(item, index) {
+        var itemDiv = document.createElement('div');
+        itemDiv.className = 'class-item';
+        itemDiv.style.setProperty('--delay', (index * 60) + 'ms');
+        
+        var infoDiv = document.createElement('div');
+        infoDiv.className = 'class-info';
+        
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'class-name';
+        nameSpan.textContent = item.className;
+        
+        var rightSpan = document.createElement('span');
+        rightSpan.className = 'class-stats-right';
+        
+        var countSpan = document.createElement('span');
+        countSpan.className = 'class-count';
+        countSpan.textContent = '已查詢 ' + item.queriedCount + ' / ' + item.totalStudents + ' 人';
+        
+        var pctSpan = document.createElement('span');
+        pctSpan.className = 'class-percentage';
+        pctSpan.textContent = item.percentage;
+        
+        rightSpan.appendChild(countSpan);
+        rightSpan.appendChild(pctSpan);
+        
+        infoDiv.appendChild(nameSpan);
+        infoDiv.appendChild(rightSpan);
+        
+        var barBgDiv = document.createElement('div');
+        barBgDiv.className = 'class-track';
+        
+        var barFillDiv = document.createElement('div');
+        barFillDiv.className = 'class-bar';
+        
+        var numericPct = parseFloat(item.percentage);
+        if (isNaN(numericPct)) numericPct = 0;
+        
+        barBgDiv.appendChild(barFillDiv);
+        itemDiv.appendChild(infoDiv);
+        itemDiv.appendChild(barBgDiv);
+        
+        classList.appendChild(itemDiv);
+        
+        setTimeout(function() {
+          barFillDiv.style.width = numericPct + '%';
+        }, 50);
+      });
+    }
+
+    function showLoader() {
+      document.getElementById('loader').style.opacity = '1';
+      document.getElementById('loader').style.display = 'flex';
+    }
+
+    function hideLoader() {
+      var loader = document.getElementById('loader');
+      loader.style.opacity = '0';
+      setTimeout(function() {
+        loader.style.display = 'none';
+      }, 400);
+    }
+
+    window.onload = function() {
+      loadExamPeriods();
+    };
+  </script>
+</body>
+</html>

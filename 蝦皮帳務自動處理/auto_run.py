@@ -4,7 +4,7 @@ from datetime import datetime
 
 # 取得今天的日期字串，用於尋找檔案名稱
 date_str = datetime.now().strftime("%Y%m%d")
-pdf_filename = f"富亭工作室銷貨紀錄_{date_str}.pdf"
+pdf_filename = f"富亭工作室4~6月銷貨紀錄_{date_str}.pdf"
 excel_filename = f"帳務資料_{date_str}.xlsx"
 pdf_path = os.path.join(os.getcwd(), pdf_filename)
 excel_path = os.path.join(os.getcwd(), excel_filename)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     print("========== 蝦皮帳務全自動處理流程開始 ==========")
     
     # 步驟 1: 處理 Excel 訂單資料
-    run_script('process_orders_v4.py')
+    run_script('process_orders.py')
     
     # 步驟 2: 產生格式化 PDF
     run_script('create_report_pdf.py')

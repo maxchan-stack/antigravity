@@ -35,15 +35,6 @@ const CONFIG = {
 };
 
 function doGet(e) {
-    // 檢查是否要求查看統計網頁
-    if (e && e.parameter && e.parameter.page === 'stats') {
-        const template = HtmlService.createTemplateFromFile('Statistics');
-        return template.evaluate()
-            .setTitle('學生成績查詢系統統計儀表板')
-            .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-            .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-    }
-
     // 🆕 備用存取控制 (由 Google Sheet 選單控制)
     const scriptProps = PropertiesService.getScriptProperties();
     if (scriptProps.getProperty('system_status') === 'CLOSED') {
@@ -97,39 +88,20 @@ function doGet(e) {
         }
     }
 
-    // 🆕 路由：若帶有 page=login 參數，進入成績查詢登入頁面
-    if (e && e.parameter && e.parameter.page === 'login') {
-        const template = HtmlService.createTemplateFromFile('Index');
+    const template = HtmlService.createTemplateFromFile('Index');
 
-        // 🆕 取得當前登入者 Email (僅在 Workspace 模式有效)
-        let activeUser = 'Anonymous (Public Mode)';
-        try {
-            const email = Session.getActiveUser().getEmail();
-            if (email) activeUser = email;
-        } catch (err) {
-            console.warn('Unable to get active user email:', err);
-        }
-        template.userEmail = activeUser;
-
-        return template.evaluate()
-            .setTitle('物理科段考成績查詢系統')
-            .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-            .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-    }
-
-    // 🆕 預設路由：載入入口引導頁面 (Gateway.html)
-    const template = HtmlService.createTemplateFromFile('Gateway');
-    let webAppUrl = '';
+    // 🆕 取得當前登入者 Email (僅在 Workspace 模式有效)
+    let activeUser = 'Anonymous (Public Mode)';
     try {
-        webAppUrl = ScriptApp.getService().getUrl();
-    } catch (err) {
-        console.warn('Unable to get web app url:', err);
+        const email = Session.getActiveUser().getEmail();
+        if (email) activeUser = email;
+    } catch (e) {
+        console.warn('Unable to get active user email:', e);
     }
-    // 🆕 後端直接組裝好 Account Chooser 網址，防止前端 HTML 逸出破壞百分比編碼
-    template.loginUrl = 'https://accounts.google.com/AccountChooser?continue=' + encodeURIComponent(webAppUrl + '?page=login');
+    template.userEmail = activeUser;
 
     return template.evaluate()
-        .setTitle('物理科段考成績查詢 - 帳號確認')
+        .setTitle('物理科段考成績查詢系統')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -153,7 +125,7 @@ function getCaptcha() {
     }
 
     const token = Utilities.getUuid();
-    CacheService.getScriptCache().put('CAPTCHA_' + token, answer.toString(), CONFIG.CACHE_DURATION.CAPTCHA);
+    CacheService.getUserCache().put('CAPTCHA_' + token, answer.toString(), CONFIG.CACHE_DURATION.CAPTCHA);
 
     // Hardened SVG Generation
     let svgContent = '';
@@ -184,12 +156,12 @@ function getCaptcha() {
 
 function login(studentId, password, captchaToken, captchaAnswer, seatNumber, sessionId) {
     const cache = CacheService.getScriptCache();
+    const userCache = CacheService.getUserCache();
     studentId = String(studentId).trim();
     sessionId = sessionId || 'NO-SESSION';  // 🆕 接收 Session ID
 
     // 🆕 Capture Real User Identity (Workspace Feature)
-    var userEmail = '';
-    try { userEmail = Session.getActiveUser().getEmail() || ''; } catch(e) { userEmail = 'Anonymous'; }
+    const userEmail = Session.getActiveUser().getEmail();
 
     // 1. GLOBAL CIRCUIT BREAKER (DDoS Protection)
     if (cache.get('GLOBAL_PANIC')) {
@@ -205,12 +177,12 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
     }
 
     // 3. Verify Captcha
-    const realAnswer = cache.get('CAPTCHA_' + captchaToken);
+    const realAnswer = userCache.get('CAPTCHA_' + captchaToken);
     if (!realAnswer || realAnswer !== captchaAnswer.toString().trim()) {
         monitorGlobalFails(cache);
         return { success: false, message: '驗證碼錯誤。' };
     }
-    cache.remove('CAPTCHA_' + captchaToken);
+    userCache.remove('CAPTCHA_' + captchaToken);
 
     try {
         const studentData = findStudentData(studentId);
@@ -222,12 +194,11 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
                 success: false,
                 message: res.message || (res.locked ? '帳號已鎖定。' : '學號或密碼錯誤。'),
                 locked: res.locked,
-                requireSeatNumber: res.requireSeatNumber,
-                waitSeconds: res.waitSeconds
+                requireSeatNumber: res.requireSeatNumber
             };
         }
 
-        if (String(studentData['查詢碼']) !== String(password)) {
+        if (studentData['查詢碼'] != password) {
             monitorGlobalFails(cache);
 
             // 🆕 座號驗證邏輯
@@ -252,8 +223,7 @@ function login(studentId, password, captchaToken, captchaAnswer, seatNumber, ses
                 success: false,
                 message: res.message || (res.locked ? '帳號已鎖定。' : '學號或密碼錯誤。'),
                 locked: res.locked,
-                requireSeatNumber: res.requireSeatNumber,
-                waitSeconds: res.waitSeconds
+                requireSeatNumber: res.requireSeatNumber
             };
         }
 
@@ -404,32 +374,6 @@ function alertAdmin(subject, body) {
     } catch (e) {
         Logger.log('Email alert failed: ' + e.toString());
     }
-}
-
-// 🆕 P4-3 Frontend Error Logger
-function logFrontendError(errDataStr) {
-    try {
-        const errData = JSON.parse(errDataStr);
-        const ss = SpreadsheetApp.getActiveSpreadsheet();
-        let sheet = ss.getSheetByName('_ErrorLog');
-        if (!sheet) {
-            sheet = ss.insertSheet('_ErrorLog');
-            sheet.appendRow(['Timestamp', 'Message', 'URL', 'Line', 'Column', 'UserAgent', 'Stack']);
-            sheet.setFrozenRows(1);
-        }
-        sheet.appendRow([
-            new Date(),
-            errData.msg || '',
-            errData.url || '',
-            errData.line || '',
-            errData.col || '',
-            errData.userAgent || '',
-            errData.stack || ''
-        ]);
-        if (sheet.getLastRow() > 500) {
-            sheet.deleteRows(2, 100);
-        }
-    } catch(e) {}
 }
 
 // ==========================================
@@ -1493,7 +1437,6 @@ function onOpen() {
             .addItem('🔑 產生所有查詢碼 (5碼)', 'generatePasswordsForAllSheets')
             .addItem('📧 寄送查詢碼 (Email)', 'sendQueryCodesToStudents')
             .addSeparator()
-            .addItem('查看查詢統計', 'showQueryStatisticsDialog')
             .addItem('📊 查看安全日誌', 'viewSecurityLog')
             .addItem('🔓 解除特定學號鎖定', 'unlockSpecificStudent')
             .addItem('⚠️ 緊急解除全部鎖定', 'emergencyUnlockAll')
@@ -1514,173 +1457,3 @@ function disableQuerySystem() {
     PropertiesService.getScriptProperties().setProperty('system_status', 'CLOSED');
     SpreadsheetApp.getUi().alert('🛑 系統已關閉：所有點選網址的學生僅會看到【系統維護中】');
 }
-
-/**
- * 開啟學生查詢統計的 Modal 對話框
- */
-function showQueryStatisticsDialog() {
-    const html = HtmlService.createHtmlOutputFromFile('Statistics')
-        .setWidth(600)
-        .setHeight(580);
-    SpreadsheetApp.getUi().showModalDialog(html, '學生成績查詢統計');
-}
-
-/**
- * 取得成績查詢的統計資料（按班級統計，支援日期區間篩選）
- * @param {Object} [filter] 可選篩選條件
- * @param {string} [filter.startDate] ISO 格式開始日期
- * @param {string} [filter.endDate] ISO 格式結束日期
- * @returns {Object} 統計資訊與各班級佔比
- */
-function getQueryStatistics(filter) {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    // 解析篩選日期區間
-    let filterStart = null;
-    let filterEnd = null;
-    if (filter && filter.startDate) {
-        filterStart = new Date(filter.startDate);
-        filterStart.setHours(0, 0, 0, 0);
-    }
-    if (filter && filter.endDate) {
-        filterEnd = new Date(filter.endDate);
-        filterEnd.setHours(23, 59, 59, 999);
-    }
-    
-    // 1. 取得登入成功的去重學號 Set（依日期篩選）
-    const logSheet = ss.getSheetByName('_SecurityLog');
-    const queriedStudents = new Set();
-    let failCount = 0;
-    let lockedCount = 0;
-    
-    if (logSheet) {
-        const lastRow = logSheet.getLastRow();
-        if (lastRow >= 2) {
-            const logData = logSheet.getRange(2, 1, lastRow - 1, 6).getValues();
-            logData.forEach(row => {
-                const timestamp = new Date(row[0]);
-                
-                // 日期區間篩選
-                if (filterStart && timestamp < filterStart) return;
-                if (filterEnd && timestamp > filterEnd) return;
-                
-                const studentId = String(row[1]).trim();
-                const type = String(row[2]).trim();
-                if (type === 'LOGIN_SUCCESS') {
-                    queriedStudents.add(studentId);
-                } else if (type === 'LOGIN_FAIL') {
-                    failCount++;
-                } else if (type === 'ACCOUNT_LOCKED' || type === 'MALICIOUS_LOCKOUT_ATTEMPT') {
-                    lockedCount++;
-                }
-            });
-        }
-    }
-    
-    // 2. 遍歷班級工作表，統計各班數據
-    const classStats = [];
-    let totalAllStudents = 0;
-    let totalAllQueried = 0;
-    
-    ss.getSheets().forEach(sheet => {
-        const className = sheet.getName();
-        if (className.startsWith('_')) return; // 跳過系統工作表
-        
-        const data = sheet.getDataRange().getValues();
-        if (data.length < 2) return;
-        
-        const headers = data[0].map(x => String(x).trim());
-        const idCol = headers.indexOf('學號');
-        if (idCol === -1) return;
-        
-        const classStudentIds = new Set();
-        for (let i = 1; i < data.length; i++) {
-            const id = String(data[i][idCol]).trim();
-            if (id) classStudentIds.add(id);
-        }
-        
-        const classTotal = classStudentIds.size;
-        let classQueried = 0;
-        classStudentIds.forEach(id => {
-            if (queriedStudents.has(id)) {
-                classQueried++;
-            }
-        });
-        
-        const pct = classTotal > 0 ? (classQueried / classTotal) * 100 : 0;
-        
-        classStats.push({
-            className: className,
-            totalStudents: classTotal,
-            queriedCount: classQueried,
-            percentage: pct.toFixed(1) + '%'
-        });
-        
-        totalAllStudents += classTotal;
-        totalAllQueried += classQueried;
-    });
-    
-    // 計算總體百分比
-    const overallPct = totalAllStudents > 0 ? (totalAllQueried / totalAllStudents) * 100 : 0;
-    
-    // 依據班級名稱排序
-    classStats.sort((a, b) => String(a.className).localeCompare(String(b.className), 'zh-Hant'));
-    
-    const result = {
-        totalStudents: totalAllStudents,
-        uniqueStudentsCount: totalAllQueried,
-        queryPercentage: overallPct.toFixed(1) + '%',
-        failCount: failCount,
-        lockedCount: lockedCount,
-        classStats: classStats
-    };
-    
-    return result;
-}
-
-/**
- * 取得所有已定義的考試區間
- * 若 _ExamPeriods 工作表不存在則自動建立
- * @returns {Array} 考試區間陣列，每項包含 name, startDate, endDate
- */
-function getExamPeriods() {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName('_ExamPeriods');
-    
-    if (!sheet) {
-        sheet = ss.insertSheet('_ExamPeriods');
-        sheet.appendRow(['考試名稱', '開始日期', '結束日期']);
-        sheet.setFrozenRows(1);
-        sheet.setColumnWidth(1, 180);
-        sheet.setColumnWidth(2, 140);
-        sheet.setColumnWidth(3, 140);
-        // 設定日期欄位格式
-        sheet.getRange('B:C').setNumberFormat('yyyy/mm/dd');
-        return [];
-    }
-    
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return [];
-    
-    const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
-    const periods = [];
-    
-    data.forEach(row => {
-        const name = String(row[0]).trim();
-        if (!name) return;
-        
-        const startDate = row[1] ? new Date(row[1]) : null;
-        const endDate = row[2] ? new Date(row[2]) : null;
-        
-        if (!startDate || !endDate) return;
-        
-        periods.push({
-            name: name,
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-        });
-    });
-    
-    return periods;
-}
-

@@ -787,7 +787,12 @@
             }
 
             /* 字體縮小以防撐開格子 */
-            .seat-item>div:first-child {
+            .seat-item .seat-no {
+                font-size: 10pt !important;
+                font-weight: 900 !important;
+                line-height: 1.1;
+            }
+            .seat-item .seat-name {
                 font-size: 14pt !important;
                 font-weight: 900 !important;
                 line-height: 1.1;
@@ -2622,6 +2627,33 @@
          */
         const SeatingChartTool = () => {
             const [namesStr, setNamesStr] = useState("");
+
+            // 解析座位文字為座號與名字
+            const parseSeatText = (text) => {
+                if (!text) return { no: "", name: "" };
+                const str = String(text).trim();
+                // 匹配前導數字（座號），可能包含點、頓號、空格等分隔符
+                const match = str.match(/^(\d+)(?:\s*[\.\-\/\,、\s_]\s*|\s*)(.+)$/);
+                if (match) {
+                    return {
+                        no: match[1],
+                        name: match[2].trim()
+                    };
+                }
+                // 若為純數字則判定為座號
+                if (/^\d+$/.test(str)) {
+                    return {
+                        no: str,
+                        name: ""
+                    };
+                }
+                // 其他則判定為純姓名，座號留空
+                return {
+                    no: "",
+                    name: str
+                };
+            };
+
             const [rows, setRows] = useState(6);
             const [cols, setCols] = useState(7);
             const [seats, setSeats] = useState(Array.from({ length: 42 }, () => ({ text: "", note: "", type: "empty", locked: false })));
@@ -2856,6 +2888,23 @@
                 }
             };
 
+            // 解析匯出用座位文字 (座號與姓名分離)
+            const renderExportSeat = (seat) => {
+                if (seat.type === 'empty' || seat.type === 'blocked') return null;
+                const { no: seatNo, name: seatName } = parseSeatText(seat.text);
+                return (
+                    <>
+                        {seatNo && (
+                            <div className="seat-no" style={{ fontSize: '20px', fontWeight: 'bold', color: '#000', lineHeight: '1.2' }}>{seatNo}</div>
+                        )}
+                        {seatName && (
+                            <div className="seat-name" style={{ fontSize: '20px', fontWeight: 'bold', color: '#000', lineHeight: '1.2' }}>{seatName}</div>
+                        )}
+                        {seat.note && <div style={{ fontSize: '12px', color: '#555', marginTop: '2px' }}>{seat.note}</div>}
+                    </>
+                );
+            };
+
             return (
                 <div className="flex flex-col h-full gap-4 relative overflow-hidden">
                     <div style={{ position: 'fixed', top: '-10000px', left: '-10000px', pointerEvents: 'none' }}>
@@ -2865,7 +2914,7 @@
                             <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: '8px' }}>
                                 {seats.map((seat, i) => (
                                     <div key={i} style={{ border: seat.type === 'empty' ? '1px dashed #ccc' : '2px solid #000', borderRadius: '8px', backgroundColor: seat.type === 'blocked' ? '#ddd' : 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                        {seat.type !== 'empty' && seat.type !== 'blocked' && (<><div style={{ fontSize: '24px', fontWeight: '900', color: '#000' }}>{seat.text}</div>{seat.note && <div style={{ fontSize: '12px', color: '#555' }}>{seat.note}</div>}</>)}
+                                        {renderExportSeat(seat)}
                                     </div>
                                 ))}
                             </div>
@@ -2884,7 +2933,7 @@
                                 <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: '8px', transform: 'rotate(180deg)' }}>
                                     {seats.map((seat, i) => (
                                         <div key={i} style={{ border: seat.type === 'empty' ? '1px dashed #ccc' : '2px solid #000', borderRadius: '8px', backgroundColor: seat.type === 'blocked' ? '#ddd' : 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transform: 'rotate(-180deg)' }}>
-                                            {seat.type !== 'empty' && seat.type !== 'blocked' && (<><div style={{ fontSize: '24px', fontWeight: '900', color: '#000' }}>{seat.text}</div>{seat.note && <div style={{ fontSize: '12px', color: '#555' }}>{seat.note}</div>}</>)}
+                                            {renderExportSeat(seat)}
                                         </div>
                                     ))}
                                 </div>
@@ -2986,9 +3035,23 @@
                                                 </div>
                                             )}
 
-                                            <span className="truncate w-full text-center px-0.5 z-0 font-black">
-                                                {seat.type === 'blocked' ? '' : (seat.text || (i + 1))}
-                                            </span>
+                                            {seat.type === 'blocked' ? (
+                                                ""
+                                            ) : seat.type === 'occupied' ? (
+                                                (() => {
+                                                    const { no, name } = parseSeatText(seat.text);
+                                                    return (
+                                                        <span className="flex flex-col items-center justify-center w-full min-h-0">
+                                                            {no && <span className="seat-no block text-[10px] md:text-xs opacity-60 leading-tight font-black">{no}</span>}
+                                                            {name && <span className="seat-name block text-sm md:text-base leading-tight font-black">{name}</span>}
+                                                        </span>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <span className="truncate w-full text-center px-0.5 z-0 font-black opacity-40">
+                                                    {i + 1}
+                                                </span>
+                                            )}
 
                                             {seat.type !== 'blocked' && seat.type !== 'empty' && (
                                                 <input

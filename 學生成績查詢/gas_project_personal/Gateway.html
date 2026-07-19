@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <title>物理科段考成績查詢 - 帳號確認</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+
+    <!-- PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="成績查詢">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect fill='%231a1a2e' width='180' height='180' rx='40'/%3E%3Ctext x='90' y='115' font-size='80' text-anchor='middle' fill='%239B8A5E'%3E📊%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231a1a2e' width='32' height='32' rx='6'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%239B8A5E'%3E📊%3C/text%3E%3C/svg%3E">
+
+    <!-- 系統預設字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rufina:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* 
+           Design System: Starlux Airlines x Apple UI 
+           - Colors: Starlux Official Palette
+        */
+        :root {
+            --earth-gold: #9B8A5E;
+            --rose-gold: #B4745A;
+            --rose-gold-deep: #794425;
+            --obsidian-grey: #45464D;
+            --cream-bg: #F3F1E5;
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-dark: #1D1D1F;
+            --radius-l: 24px;
+            --radius-pill: 50px;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Montserrat', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--cream-bg);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 24px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-family: 'Rufina', Georgia, serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin: 0 0 8px 0;
+            color: var(--earth-gold);
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: var(--rose-gold);
+            text-align: center;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+            opacity: 0.9;
+            font-weight: 600;
+        }
+
+        /* 曜石灰卡片 */
+        .info-card {
+            background: var(--obsidian-grey);
+            border-radius: var(--radius-l);
+            padding: 28px 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(155, 138, 94, 0.2);
+            color: var(--text-primary);
+            box-shadow: 0 12px 40px rgba(69, 70, 77, 0.3);
+            line-height: 1.6;
+        }
+
+        .info-header {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+
+        .info-body {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        .domain-highlight {
+            color: #FFD60A; /* 明亮黃高亮 */
+            font-weight: 700;
+            font-family: monospace;
+            letter-spacing: 0.5px;
+            background: rgba(255, 214, 10, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .warning-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--rose-gold);
+            margin-bottom: 8px;
+        }
+
+        /* 玫瑰金漸層按鈕 */
+        .btn-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--rose-gold-deep) 0%, var(--rose-gold) 50%, var(--rose-gold-deep) 100%);
+            border-radius: var(--radius-pill);
+            color: #FFFFFF;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            padding: 16px 24px;
+            box-shadow: 0 8px 24px rgba(180, 116, 90, 0.35);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-action:active {
+            transform: scale(0.98);
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(180, 116, 90, 0.5);
+        }
+
+        .footer {
+            margin-top: 32px;
+            font-size: 11px;
+            color: #86868b;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <h1>物理科段考成績查詢系統</h1>
+        <div class="subtitle">CCSH Physics Inquiry Portal</div>
+
+        <div class="info-card">
+            <div class="info-header">
+                校園線上服務安全說明
+            </div>
+            <div class="info-body">
+                本服務限定以校內 Google 帳號 (<span class="domain-highlight">@stu.ccsh.tp.edu.tw</span>) 登入存取。
+            </div>
+            <div class="warning-text">
+                <strong>系統重要提醒：</strong><br>
+                若點選進入後出現 Google「很抱歉，目前無法開啟這個檔案」錯誤，此為瀏覽器登入個人帳號所致，並非系統損壞。請點選下方按鈕切換為學校信箱後再次進入。
+            </div>
+        </div>
+
+        <!-- 經後端拼接之 loginUrl 原始輸出，避開 HTML 逸出造成的 400 錯誤 -->
+        <a href="<?!= loginUrl ?>" class="btn-action">
+            <span>🔎</span> 確認 / 切換我的 Google 帳號 ↗
+        </a>
+
+        <div class="footer">
+            © 2026 CCSH Physics. All G Suite Security hardened.
+        </div>
+    </div>
+</body>
+
+</html>

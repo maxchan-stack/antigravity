@@ -1,0 +1,2106 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班級環境打掃分派與排程系統</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+  /* style.css - 209 班級環境打掃排程系統樣式表 (行政減量平台視覺風格) */
+
+  /* 核心設計系統變數 */
+  :root {
+    --teal-dark: #085351;       /* 導航欄深綠色 */
+    --teal-primary: #115e59;    /* 主要標題與強作用色 */
+    --teal-accent: #0d9488;     /* 輔助綠色與按鈕 */
+    --orange-accent: #b45309;   /* 橙黃色警告與焦點文字 */
+    --orange-light: #fffbeb;    /* 警告背景色 */
+    
+    --bg-main: #f4f7f6;         /* 背景淡灰綠 */
+    --bg-card: #ffffff;         /* 卡片純白 */
+    --border-light: #e2e8f0;    /* 卡片邊框 */
+    
+    --text-main: #1e293b;       /* 深灰內文 */
+    --text-secondary: #475569;  /* 中灰 */
+    --text-muted: #94a3b8;      /* 淺灰 */
+    
+    --font-family: 'Inter', 'Outfit', -apple-system, sans-serif;
+  }
+
+  /* 全域設定 */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: var(--font-family);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* 頂部導航欄 (Deep Teal) */
+  .app-header {
+    background-color: var(--teal-dark);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .header-logo-icon {
+    font-size: 1.8rem;
+  }
+
+  .header-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header-title {
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .header-subtitle {
+    color: #a5d8d6;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  /* 導航按鈕 (Pills) */
+  .header-nav {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .nav-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.5rem 1.15rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .nav-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .nav-btn.active {
+    background-color: #ffffff;
+    color: var(--teal-dark);
+    border-color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 橫幅廣告區域 (Hero Banner) */
+  .hero-banner {
+    background-color: #eaf3f2;
+    border-bottom: 1px solid #d2e4e2;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+  }
+
+  .hero-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .hero-tag {
+    color: var(--teal-primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-banner h2 {
+    color: var(--teal-primary);
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+  }
+
+  .hero-banner h3 {
+    color: var(--orange-accent);
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+  }
+
+  .hero-desc {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-badges {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-badges .badge {
+    background-color: #ffffff;
+    border: 1px solid #c2deda;
+    border-radius: 999px;
+    color: var(--teal-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.35rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  }
+
+  /* 容器佈局 */
+  .app-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+  }
+
+  .app-main {
+    display: grid;
+    grid-template-columns: 440px 1fr;
+    gap: 2rem;
+  }
+
+  @media (max-width: 1024px) {
+    .app-main {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* 警告/公告橫幅 */
+  .alert-banner {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .alert-banner.warning {
+    background-color: var(--orange-light);
+    border: 1px solid #fde68a;
+    color: #92400e;
+  }
+
+  .alert-icon {
+    font-size: 1.1rem;
+  }
+
+  /* 卡片與容器 */
+  .card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .card-header {
+    border-bottom: 1px solid var(--border-light);
+    padding: 1.15rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .card-icon {
+    font-size: 1.25rem;
+  }
+
+  .card-header h2 {
+    color: var(--teal-primary);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  /* 表單與輸入元件 */
+  .form-row {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .form-col {
+    flex: 1;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  .required {
+    color: #ef4444;
+    margin-left: 0.15rem;
+  }
+
+  input[type="date"],
+  input[type="text"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background-color: #ffffff;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-family: var(--font-family);
+    transition: all 0.2s ease;
+    resize: vertical;
+  }
+
+  input[type="date"]:focus,
+  input[type="text"]:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--teal-accent);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  }
+
+  /* 排除日期列表 */
+  .date-add-box {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .date-add-box input[type="date"] {
+    flex: 1.2;
+  }
+
+  .date-add-box input[type="text"] {
+    flex: 2;
+  }
+
+  .excluded-dates-list {
+    list-style: none;
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.5rem;
+    background-color: #f8fafc;
+  }
+
+  .excluded-dates-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    margin-bottom: 0.25rem;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+  }
+
+  .excluded-dates-list .date-text {
+    font-weight: 700;
+    color: var(--teal-primary);
+  }
+
+  .excluded-dates-list .reason-text {
+    color: var(--text-secondary);
+  }
+
+  .btn-remove {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+
+  /* 名單選擇與滾動 */
+  .roster-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .roster-scroll-container {
+    max-height: 380px;
+    overflow-y: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.6rem;
+    background-color: #f8fafc;
+  }
+
+  .student-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+  }
+
+  .student-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    transition: all 0.15s ease;
+  }
+
+  .student-item.is-cadre {
+    background-color: #fffbeb;
+    border-color: #fcd34d;
+  }
+
+  .student-item input[type="text"] {
+    border: none;
+    padding: 0.15rem 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background-color: transparent;
+    width: 100%;
+  }
+
+  .student-item input[type="text"]:focus {
+    background-color: #ffffff;
+    box-shadow: none;
+    border: 1px solid #cbd5e1;
+  }
+
+  .student-item input[type="checkbox"] {
+    accent-color: var(--teal-accent);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  /* 按鈕系統 */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background-color: var(--teal-primary);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background-color: #0f766e;
+  }
+
+  .btn-secondary {
+    background-color: #f1f5f9;
+    color: var(--text-secondary);
+    border: 1px solid #cbd5e1;
+  }
+
+  .btn-secondary:hover {
+    background-color: #e2e8f0;
+  }
+
+  .btn-block {
+    width: 100%;
+  }
+
+  .btn-text {
+    background: none;
+    border: none;
+    color: var(--teal-accent);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-text:hover {
+    text-decoration: underline;
+  }
+
+  /* 右側結果面板與標籤切換 */
+  .main-result-card {
+    min-height: 600px;
+  }
+
+  .tab-pane {
+    display: none;
+  }
+
+  .tab-pane.active {
+    display: block;
+  }
+
+  .section-title-box {
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e2eceb;
+    padding-bottom: 1rem;
+  }
+
+  .title-star {
+    color: #eab308;
+    font-size: 1.25rem;
+    margin-right: 0.25rem;
+  }
+
+  .section-title-box h3 {
+    color: var(--teal-primary);
+    font-size: 1.25rem;
+    font-weight: 800;
+    display: inline-block;
+  }
+
+  .section-desc {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+
+  /* 數據總覽 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 600px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .stat-card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem 0.85rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .stat-card.highlight {
+    background-color: #f0fdfa;
+    border-color: #99f6e4;
+  }
+
+  .stat-icon {
+    font-size: 1.4rem;
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 0.2rem;
+  }
+
+  .text-teal {
+    color: var(--teal-accent) !important;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  /* 階段卡片排版 */
+  .subheader-bar {
+    background-color: #f1f5f9;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .subheader-bar h4 {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+  }
+
+  .segment-cards-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .segment-cards-container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .segment-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.15rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .segment-card.group-a-active {
+    border-left: 5px solid #0d9488;
+  }
+
+  .segment-card.group-b-active {
+    border-left: 5px solid #db2777;
+  }
+
+  .segment-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--teal-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+
+  .segment-dates {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.85rem;
+  }
+
+  .segment-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+  }
+
+  .segment-info .days {
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .team-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+  }
+
+  .team-tag.a {
+    background-color: #ccfbf1;
+    color: #0f766e;
+  }
+
+  .team-tag.b {
+    background-color: #fce7f3;
+    color: #9d174d;
+  }
+
+  /* 分組排版 (痛點小工具卡片視覺) */
+  .groups-layout {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .groups-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .group-card {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  }
+
+  .group-card-header {
+    padding: 0.85rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  .group-card-header.group-a { background-color: #f0fdfa; }
+  .group-card-header.group-b { background-color: #fdf2f8; }
+
+  .group-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .group-dot.a { background-color: var(--teal-accent); }
+  .group-dot.b { background-color: #db2777; }
+
+  .group-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--text-main);
+    flex: 1;
+  }
+
+  .group-status {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+  }
+  .badge-a { background-color: #ccfbf1; color: #0f766e; }
+  .badge-b { background-color: #fce7f3; color: #9d174d; }
+
+  .group-card-body {
+    padding: 1.25rem;
+  }
+
+  .group-card-body h5 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--teal-primary);
+    margin-bottom: 0.5rem;
+    border-bottom: 1px dashed #cbd5e1;
+    padding-bottom: 0.25rem;
+  }
+
+  .role-list {
+    list-style: none;
+    font-size: 0.8rem;
+  }
+
+  .role-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .role-name {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .role-assigned {
+    font-weight: 700;
+    color: var(--text-main);
+    background-color: #ffffff;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+  }
+
+  /* 幹部盒子 */
+  .cadres-box {
+    background-color: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 1.15rem;
+  }
+
+  .cadre-box-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    color: #92400e;
+  }
+
+  .cadre-box-header h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .cadre-names {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .cadre-tag {
+    background-color: #ffffff;
+    border: 1px solid #f59e0b;
+    color: #b45309;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  /* 行事曆控制 */
+  .calendar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .calendar-controls h4 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--teal-primary);
+  }
+
+  .calendar-wrapper {
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #ffffff;
+  }
+
+  .calendar-header-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #f8fafc;
+    border-bottom: 1px solid #cbd5e1;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 0.5rem 0;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 85px;
+  }
+
+  .calendar-day {
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.4rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .calendar-day:not(.empty):not(.weekend-day):hover {
+    background-color: #e2eceb;
+  }
+
+  .calendar-day:nth-child(7n) { border-right: none; }
+
+  .calendar-day.empty {
+    background-color: #f8fafc;
+    cursor: default;
+  }
+
+  .day-number {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  .day-info {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.25rem;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-day.group-a-day { background-color: #f0fdfa; }
+  .calendar-day.group-a-day .day-number { color: #0d9488; }
+  .calendar-day.group-a-day .day-info { background-color: #ccfbf1; color: #0f766e; }
+
+  .calendar-day.group-b-day { background-color: #fdf2f8; }
+  .calendar-day.group-b-day .day-number { color: #db2777; }
+  .calendar-day.group-b-day .day-info { background-color: #fce7f3; color: #9d174d; }
+
+  .calendar-day.excluded-day { background-color: var(--orange-light); }
+  .calendar-day.excluded-day .day-number { color: #b45309; }
+  .calendar-day.excluded-day .day-info { background-color: #fde68a; color: #78350f; }
+
+  .calendar-day.weekend-day {
+    background-color: #f1f5f9;
+    cursor: default;
+  }
+  .calendar-day.weekend-day .day-number { color: #94a3b8; }
+
+  .calendar-legend {
+    display: flex;
+    gap: 1.25rem;
+    justify-content: center;
+    margin-top: 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .color-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  .color-box.group-a { background-color: #ccfbf1; border: 1px solid #99f6e4; }
+  .color-box.group-b { background-color: #fce7f3; border: 1px solid #fbcfe8; }
+  .color-box.excluded { background-color: #fde68a; border: 1px solid #fcd34d; }
+  .color-box.weekend { background-color: #e2e8f0; border: 1px solid #cbd5e1; }
+
+  /* 值日生排班表格 */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    background-color: #ffffff;
+  }
+
+  .duty-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    text-align: left;
+  }
+
+  .duty-table th {
+    background-color: #f8fafc;
+    color: var(--text-secondary);
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  .duty-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #cbd5e1;
+    color: var(--text-main);
+  }
+
+  .duty-table tr:last-child td { border-bottom: none; }
+
+  .duty-names {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .duty-tag {
+    background-color: #f0fdfa;
+    border: 1px solid #99f6e4;
+    color: #0f766e;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+
+  /* 操作按鈕欄 */
+  .action-bar {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  /* 頁尾 */
+  .app-footer {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  /* 列印樣式 */
+  @media print {
+    body {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      padding: 0 !important;
+    }
+    
+    .app-header,
+    .hero-banner,
+    .control-panel,
+    .action-bar,
+    .calendar-controls button,
+    .calendar-legend,
+    .app-footer {
+      display: none !important;
+    }
+    
+    .app-main {
+      grid-template-columns: 1fr !important;
+    }
+    
+    .card {
+      border: none !important;
+      box-shadow: none !important;
+      margin-bottom: 0 !important;
+    }
+    
+    .tab-pane {
+      display: block !important;
+      page-break-after: always;
+    }
+    
+    .role-list li {
+      border: 1px solid #cccccc !important;
+      background-color: #ffffff !important;
+    }
+    
+    .role-assigned {
+      border: 1px solid #000000 !important;
+    }
+    
+    .duty-table, .duty-table th, .duty-table td {
+      border: 1px solid #000000 !important;
+    }
+  }
+  </style>
+</head>
+<body>
+  <!-- Header Bar (Deep Teal) -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-brand">
+        <span class="header-logo-icon">🧼</span>
+        <div class="header-text">
+          <span class="header-title">班級環境打掃分派與排程系統</span>
+          <span class="header-subtitle">班級環境打掃分派管理系統</span>
+        </div>
+      </div>
+      <nav class="header-nav" aria-label="分頁導覽">
+        <button type="button" class="nav-btn active" data-tab="summary">數據總覽</button>
+        <button type="button" class="nav-btn" data-tab="groups">分組名單</button>
+        <button type="button" class="nav-btn" data-tab="calendar">排班行事曆</button>
+        <button type="button" class="nav-btn" data-tab="duty">值日生排班</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <main class="app-main">
+      <!-- Left Panel: Settings -->
+      <section class="control-panel" aria-label="設定面板">
+        <!-- Alert Banner -->
+        <div class="alert-banner warning">
+          <span class="alert-icon">⚠️</span>
+          <div class="alert-content">
+            <strong>請注意：</strong>請使用「真實日期」描述流程即可，不要貼入真實學生個資。可以寫「座號 01」等虛擬姓名。
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">📅</span>
+            <h2>1. 學期時間與排除設定</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-col">
+                <label for="startDate">學期開始日期 <span class="required">*</span></label>
+                <input type="date" id="startDate" value="2026-08-31">
+              </div>
+              <div class="form-col">
+                <label for="endDate">學期結束日期 <span class="required">*</span></label>
+                <input type="date" id="endDate" value="2027-01-15">
+              </div>
+            </div>
+
+            <div class="form-group mt-4">
+              <label>排除特定日期（如放假、段考、大活動）</label>
+              <div class="date-add-box">
+                <input type="date" id="excludeDate">
+                <input type="text" id="excludeReason" placeholder="排除原因（如：段考）">
+                <button type="button" id="btnExcludeDate" class="btn btn-secondary">新增</button>
+              </div>
+              <ul class="excluded-dates-list" id="excludedDatesList">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">👥</span>
+            <h2>2. 班級名單與幹部設定</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="cadreOption">日常打掃免除規則 <span class="required">*</span></label>
+              <select id="cadreOption">
+                <option value="exempt">6 名幹部完全免除日常打掃與值日生（推薦）</option>
+                <option value="clean-only">6 名幹部僅免除值日生，仍參與日常打掃</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <div class="roster-header">
+                <label>學生名單（共 <span id="studentCount">38</span> 人，請勾選 6 名幹部）</label>
+                <button type="button" id="btnResetRoster" class="btn-text">重設預設名單</button>
+              </div>
+              <div class="roster-scroll-container">
+                <div class="student-grid" id="studentGrid">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">⚙️</span>
+            <h2>3. 打掃工作內容設定</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="innerRolesInput">內掃區工作項目 (每行一個，共 8 項) <span class="required">*</span></label>
+              <textarea id="innerRolesInput" rows="8" placeholder="請輸入 8 行工作項目..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="outerRolesInput">外掃區工作項目 (每行一個，共 8 項) <span class="required">*</span></label>
+              <textarea id="outerRolesInput" rows="8" placeholder="請輸入 8 行工作項目..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="btnGenerate" class="btn btn-primary btn-block" style="margin-bottom: 0.5rem;">開始分組與排程計算</button>
+        <div class="generate-feedback" id="generateFeedback" style="display:none; text-align:center; margin-bottom: 2rem; font-size: 0.85rem; font-weight: 700; color: var(--teal-accent);">
+          ✓ 計算成功！已更新各分頁排程
+        </div>
+      </section>
+
+      <!-- Right Panel: Results -->
+      <section class="result-panel" aria-label="排程結果">
+        <div class="card main-result-card">
+          <div class="card-body result-container-body">
+            
+            <!-- Tab Pane: Summary -->
+            <div class="tab-pane active" id="tab-summary">
+              <div class="section-title-box">
+                <span class="title-star">★</span>
+                <h3>打掃排程數據統計與分析</h3>
+                <p class="section-desc">依據實際上課天數進行排程，將學期打掃日程自動均分為 4 個階段。</p>
+              </div>
+
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <span class="stat-icon">📅</span>
+                  <div class="stat-value" id="statTotalDays">0</div>
+                  <div class="stat-label">學期總天數</div>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-icon">🏖️</span>
+                  <div class="stat-value" id="statWeekendDays">0</div>
+                  <div class="stat-label">週末排除</div>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-icon">🚫</span>
+                  <div class="stat-value" id="statExcludedDays">0</div>
+                  <div class="stat-label">活動放假排除</div>
+                </div>
+                <div class="stat-card highlight">
+                  <span class="stat-icon text-teal">🧹</span>
+                  <div class="stat-value text-teal" id="statCleanDays">0</div>
+                  <div class="stat-label">實際打掃天數</div>
+                </div>
+              </div>
+
+              <div class="segment-breakdown">
+                <div class="subheader-bar">
+                  <h4>學期四階段分段計畫 (2 + 2 段)</h4>
+                </div>
+                <div class="segment-cards-container" id="segmentCards">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab Pane: Groups -->
+            <div class="tab-pane" id="tab-groups">
+              <div class="section-title-box">
+                <span class="title-star">★</span>
+                <h3>日常打掃分組與角色指派</h3>
+                <p class="section-desc">依據 16 人精簡打掃配置，自動分配 8 個內掃與 8 個外掃角色。</p>
+              </div>
+
+              <div class="groups-layout">
+                <!-- Group A Card -->
+                <div class="group-card">
+                  <div class="group-card-header group-a">
+                    <span class="group-dot a"></span>
+                    <span class="group-title">打掃 A 組 (16 人)</span>
+                    <span class="group-status badge-a">階段 1 & 3 執勤</span>
+                  </div>
+                  <div class="group-card-body">
+                    <h5>內掃區工作配置 (8 人)</h5>
+                    <ul class="role-list" id="groupAInnerList">
+                      <!-- Dynamically populated -->
+                    </ul>
+                    <h5 class="mt-4">外掃區工作配置 (8 人)</h5>
+                    <ul class="role-list" id="groupAOuterList">
+                      <!-- Dynamically populated -->
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Group B Card -->
+                <div class="group-card">
+                  <div class="group-card-header group-b">
+                    <span class="group-dot b"></span>
+                    <span class="group-title">打掃 B 組 (16 人)</span>
+                    <span class="group-status badge-b">階段 2 & 4 執勤</span>
+                  </div>
+                  <div class="group-card-body">
+                    <h5>內掃區工作配置 (8 人)</h5>
+                    <ul class="role-list" id="groupBInnerList">
+                      <!-- Dynamically populated -->
+                    </ul>
+                    <h5 class="mt-4">外掃區工作配置 (8 人)</h5>
+                    <ul class="role-list" id="groupBOuterList">
+                      <!-- Dynamically populated -->
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cadres-box mt-4">
+                <div class="cadre-box-header">
+                  <span class="cadre-icon">👑</span>
+                  <h4>免輪值日生幹部名單 (6 人)</h4>
+                </div>
+                <div class="cadre-names" id="cadreNamesList">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab Pane: Calendar -->
+            <div class="tab-pane" id="tab-calendar">
+              <div class="section-title-box">
+                <span class="title-star">★</span>
+                <h3>排班行事曆</h3>
+                <p class="section-desc">以視覺化月曆預覽每日打掃組別與值日生安排。<strong style="color:var(--orange-accent);"><br>💡 提示：滑鼠移至上方並點擊日曆上的任何上課日，即可手動排除或恢復該日打掃。</strong></p>
+              </div>
+
+              <div class="calendar-controls">
+                <button type="button" id="btnPrevMonth" class="btn btn-sm btn-secondary">&lt; 上個月</button>
+                <h4 id="currentMonthYear">2026 年 9 月</h4>
+                <button type="button" id="btnNextMonth" class="btn btn-sm btn-secondary">下個月 &gt;</button>
+              </div>
+
+              <div class="calendar-wrapper">
+                <div class="calendar-header-days">
+                  <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+
+              <div class="calendar-legend">
+                <span class="legend-item"><span class="color-box group-a"></span> A 組執勤</span>
+                <span class="legend-item"><span class="color-box group-b"></span> B 組執勤</span>
+                <span class="legend-item"><span class="color-box excluded"></span> 排除/放假</span>
+                <span class="legend-item"><span class="color-box weekend"></span> 週末</span>
+              </div>
+            </div>
+
+            <!-- Tab Pane: Duty -->
+            <div class="tab-pane" id="tab-duty">
+              <div class="section-title-box">
+                <span class="title-star">★</span>
+                <h3>值日生輪替排班表</h3>
+                <p class="section-desc">2 週 (10 天實際打掃) 輪替一次，共 20 週，6 名幹部免輪值。</p>
+              </div>
+
+              <div class="table-responsive">
+                <table class="duty-table">
+                  <thead>
+                    <tr>
+                      <th>回合</th>
+                      <th>負責週數</th>
+                      <th>打掃日期區間</th>
+                      <th>實際打掃天數</th>
+                      <th>值日生人員 (3 人)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dutyTableBody">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="action-bar mt-4">
+          <label for="btnImportJSON" class="btn btn-secondary" style="margin-bottom:0; cursor:pointer;">
+            📁 載入排程檔案
+            <input type="file" id="btnImportJSON" accept=".json" style="display:none;">
+          </label>
+          <button type="button" id="btnPrint" class="btn btn-secondary">🖨️ 列印 / 匯出 PDF</button>
+          <button type="button" id="btnExportJSON" class="btn btn-secondary">💾 匯出排程資料</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="app-footer">
+    <p>© 2026-2027 班級環境打掃管理專案</p>
+  </footer>
+
+  <script>
+  /* app.js - 班級環境打掃分組與排程系統核心邏輯 */
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // --- 狀態管理 (State) ---
+    const state = {
+      students: [],
+      excludedDates: new Map(), // Date string (YYYY-MM-DD) -> Reason string
+      segments: [], // Array of segments
+      dutySchedule: [], // Array of duty periods
+      groupA: { inner: [], outer: [], rest: [] },
+      groupB: { inner: [], outer: [], rest: [] },
+      currentCalendarDate: new Date(2026, 8, 1) // default: Sep 2026
+    };
+
+    // --- 預設資料設定 ---
+    const DEFAULT_STUDENTS_COUNT = 38;
+    const DEFAULT_CADRE_INDICES = [0, 1, 2, 3, 4, 5]; // 前 6 位為幹部
+
+    const DEFAULT_EXCLUDED_DATES = [
+      { date: '2026-09-28', reason: '教師節彈性放假' },
+      { date: '2026-10-09', reason: '國慶日彈性放假' },
+      { date: '2026-10-10', reason: '國慶日放假' },
+      { date: '2026-10-15', reason: '第一次段考' },
+      { date: '2026-10-16', reason: '第一次段考' },
+      { date: '2026-12-03', reason: '第二次段考' },
+      { date: '2026-12-04', reason: '第二次段考' },
+      { date: '2026-12-25', reason: '行憲紀念日放假' },
+      { date: '2027-01-01', reason: '元旦放假' },
+      { date: '2027-01-14', reason: '期末考試' },
+      { date: '2027-01-15', reason: '期末考試' }
+    ];
+
+    const INNER_ROLES = [
+      { name: '黑板清潔、窗台', count: 1 },
+      { name: '教室內拖地 (人員 1)', count: 1 },
+      { name: '教室內拖地 (人員 2)', count: 1 },
+      { name: '教室內拖地 (人員 3)', count: 1 },
+      { name: '教室內掃地 (人員 1)', count: 1 },
+      { name: '教室內掃地 (人員 2)', count: 1 },
+      { name: '教室內掃地 (人員 3)', count: 1 },
+      { name: '講台、走廊掃拖', count: 1 }
+    ];
+
+    const OUTER_ROLES = [
+      { name: '物理科辦公室掃拖', count: 1 },
+      { name: '各教室黑板清潔', count: 1 },
+      { name: '教室輪流掃拖與洗手槽 (人員 1)', count: 1 },
+      { name: '教室輪流掃拖與洗手槽 (人員 2)', count: 1 },
+      { name: '教室輪流掃拖與洗手槽 (人員 3)', count: 1 },
+      { name: '教室輪流掃拖與洗手槽 (人員 4)', count: 1 },
+      { name: '走廊掃拖 (人員 1)', count: 1 },
+      { name: '走廊掃拖 (人員 2)', count: 1 }
+    ];
+
+    // --- DOM 元素引用 ---
+    const elStartDate = document.getElementById('startDate');
+    const elEndDate = document.getElementById('endDate');
+    const elExcludeDate = document.getElementById('excludeDate');
+    const elExcludeReason = document.getElementById('excludeReason');
+    const elBtnExcludeDate = document.getElementById('btnExcludeDate');
+    const elExcludedDatesList = document.getElementById('excludedDatesList');
+    const elCadreOption = document.getElementById('cadreOption');
+    const elStudentGrid = document.getElementById('studentGrid');
+    const elBtnResetRoster = document.getElementById('btnResetRoster');
+    const elBtnGenerate = document.getElementById('btnGenerate');
+
+    // 數據面板
+    const elStatTotalDays = document.getElementById('statTotalDays');
+    const elStatWeekendDays = document.getElementById('statWeekendDays');
+    const elStatExcludedDays = document.getElementById('statExcludedDays');
+    const elStatCleanDays = document.getElementById('statCleanDays');
+    const elSegmentCards = document.getElementById('segmentCards');
+
+    // 分組面板
+    const elGroupAInnerList = document.getElementById('groupAInnerList');
+    const elGroupAOuterList = document.getElementById('groupAOuterList');
+    const elGroupBInnerList = document.getElementById('groupBInnerList');
+    const elGroupBOuterList = document.getElementById('groupBOuterList');
+    const elCadreNamesList = document.getElementById('cadreNamesList');
+
+    // 行事曆面板
+    const elCurrentMonthYear = document.getElementById('currentMonthYear');
+    const elCalendarGrid = document.getElementById('calendarGrid');
+    const elBtnPrevMonth = document.getElementById('btnPrevMonth');
+    const elBtnNextMonth = document.getElementById('btnNextMonth');
+    // 值日生面板
+    const elDutyTableBody = document.getElementById('dutyTableBody');
+
+    // 打掃工作設定面板
+    const elInnerRolesInput = document.getElementById('innerRolesInput');
+    const elOuterRolesInput = document.getElementById('outerRolesInput');
+
+    // 通用功能
+    const elPrint = document.getElementById('btnPrint');
+    const elExportJSON = document.getElementById('btnExportJSON');
+
+    // --- 初始化功能 (Initialization) ---
+    function init() {
+      // 1. 初始化名單
+      resetRoster();
+
+      // 初始化打掃工作設定
+      elInnerRolesInput.value = INNER_ROLES.map(r => r.name).join('\n');
+      elOuterRolesInput.value = OUTER_ROLES.map(r => r.name).join('\n');
+
+      // 2. 初始化排除日期
+      DEFAULT_EXCLUDED_DATES.forEach(item => {
+        state.excludedDates.set(item.date, item.reason);
+      });
+      renderExcludedDates();
+
+      // 3. 綁定事件監聽器
+      bindEvents();
+
+      // 4. 首次執行計算
+      calculateAndGenerate();
+    }
+
+    // --- 事件綁定 (Event Binding) ---
+    function bindEvents() {
+      // 排除日期新增
+      elBtnExcludeDate.addEventListener('click', () => {
+        const dateStr = elExcludeDate.value;
+        const reason = elExcludeReason.value.trim() || '自訂排除';
+        if (dateStr) {
+          state.excludedDates.set(dateStr, reason);
+          elExcludeDate.value = '';
+          elExcludeReason.value = '';
+          renderExcludedDates();
+          calculateAndGenerate();
+        }
+      });
+
+      // 重設名單
+      elBtnResetRoster.addEventListener('click', () => {
+        resetRoster();
+        calculateAndGenerate();
+      });
+
+      // 幹部選項變更
+      elCadreOption.addEventListener('change', () => {
+        calculateAndGenerate();
+      });
+
+      // 開始分組排程
+      elBtnGenerate.addEventListener('click', () => {
+        calculateAndGenerate();
+        
+        const feedback = document.getElementById('generateFeedback');
+        if (feedback) {
+          feedback.style.display = 'block';
+          if (window.feedbackTimeout) clearTimeout(window.feedbackTimeout);
+          window.feedbackTimeout = setTimeout(() => {
+            feedback.style.display = 'none';
+          }, 2000);
+        }
+      });
+
+      // 頁籤切換
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+          
+          btn.classList.add('active');
+          const tabId = `tab-${btn.dataset.tab}`;
+          document.getElementById(tabId).classList.add('active');
+
+          // 如果切換到行事曆，重新繪製
+          if (btn.dataset.tab === 'calendar') {
+            renderCalendar();
+          }
+        });
+      });
+
+      // 行事曆月份切換
+      elBtnPrevMonth.addEventListener('click', () => {
+        state.currentCalendarDate.setMonth(state.currentCalendarDate.getMonth() - 1);
+        renderCalendar();
+      });
+
+      elBtnNextMonth.addEventListener('click', () => {
+        state.currentCalendarDate.setMonth(state.currentCalendarDate.getMonth() + 1);
+        renderCalendar();
+      });
+
+      // 匯出與列印
+      elPrint.addEventListener('click', () => {
+        window.print();
+      });
+
+      elExportJSON.addEventListener('click', () => {
+        const exportData = {
+          semester: {
+            start: elStartDate.value,
+            end: elEndDate.value,
+            totalCleanDays: state.segments.reduce((acc, s) => acc + s.daysCount, 0)
+          },
+          excludedDates: Array.from(state.excludedDates.entries()),
+          students: state.students,
+          innerRolesText: elInnerRolesInput.value,
+          outerRolesText: elOuterRolesInput.value,
+          cadreOption: elCadreOption.value,
+          groups: {
+            groupA: state.groupA,
+            groupB: state.groupB
+          },
+          dutySchedule: state.dutySchedule,
+          segments: state.segments
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `班級打掃分組排程表_${getLocalDateString(new Date())}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      // 載入 JSON 檔案
+      const elImportJSON = document.getElementById('btnImportJSON');
+      if (elImportJSON) {
+        elImportJSON.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              const importData = JSON.parse(event.target.result);
+              
+              // 恢復日期
+              if (importData.semester) {
+                elStartDate.value = importData.semester.start || '2026-08-31';
+                elEndDate.value = importData.semester.end || '2027-01-15';
+              }
+
+              // 恢復排除日期
+              if (importData.excludedDates) {
+                state.excludedDates = new Map(importData.excludedDates);
+              } else {
+                state.excludedDates.clear();
+              }
+
+              // 恢復幹部選項
+              if (importData.cadreOption) {
+                elCadreOption.value = importData.cadreOption;
+              }
+
+              // 恢復名單與幹部
+              if (importData.students) {
+                state.students = importData.students;
+                renderRosterGrid();
+              }
+              
+              // 恢復工作項目設定
+              if (importData.innerRolesText) {
+                elInnerRolesInput.value = importData.innerRolesText;
+              }
+              if (importData.outerRolesText) {
+                elOuterRolesInput.value = importData.outerRolesText;
+              }
+
+              renderExcludedDates();
+              calculateAndGenerate();
+              
+              alert('檔案載入成功！排程已自動更新。');
+              elImportJSON.value = '';
+            } catch (err) {
+              alert('載入失敗：檔案格式不正確！');
+            }
+          };
+          reader.readAsText(file);
+        });
+      }
+    }
+
+    // --- 名單管理功能 (Roster Management) ---
+    function resetRoster() {
+      state.students = [];
+      for (let i = 1; i <= DEFAULT_STUDENTS_COUNT; i++) {
+        const formattedNum = String(i).padStart(2, '0');
+        state.students.push({
+          id: i,
+          name: `座號 ${formattedNum}`,
+          isCadre: DEFAULT_CADRE_INDICES.includes(i - 1)
+        });
+      }
+      renderRosterGrid();
+    }
+
+    function renderRosterGrid() {
+      elStudentGrid.innerHTML = '';
+      state.students.forEach((student, index) => {
+        const item = document.createElement('div');
+        item.className = `student-item ${student.isCadre ? 'is-cadre' : ''}`;
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = student.isCadre;
+        checkbox.id = `cadre-${student.id}`;
+        checkbox.addEventListener('change', (e) => {
+          // 限制最多勾選 6 人，或提示警告
+          const checkedCount = state.students.filter(s => s.isCadre).length;
+          if (e.target.checked && checkedCount >= 6) {
+            e.target.checked = false;
+            alert('依制度設計，幹部人數固定為 6 人！請先取消勾選其他幹部。');
+            return;
+          }
+          
+          student.isCadre = e.target.checked;
+          item.classList.toggle('is-cadre', student.isCadre);
+          updateCadresCount();
+        });
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = student.name;
+        nameInput.addEventListener('change', (e) => {
+          student.name = e.target.value.trim() || `座號 ${String(student.id).padStart(2, '0')}`;
+        });
+
+        item.appendChild(checkbox);
+        item.appendChild(nameInput);
+        elStudentGrid.appendChild(item);
+      });
+      updateCadresCount();
+    }
+
+    function updateCadresCount() {
+      const cadreCount = state.students.filter(s => s.isCadre).length;
+      const label = document.querySelector('.roster-header label');
+      if (cadreCount === 6) {
+        label.innerHTML = `學生名單（共 ${DEFAULT_STUDENTS_COUNT} 人，<span style="color:#f59e0b; font-weight:700;">已正確設定 6 名幹部</span>）`;
+      } else {
+        label.innerHTML = `學生名單（共 ${DEFAULT_STUDENTS_COUNT} 人，<span style="color:#ef4444; font-weight:700;">目前勾選了 ${cadreCount} 名幹部，請調整至 6 人</span>）`;
+      }
+    }
+
+    // --- 排除日期管理 (Excluded Dates) ---
+    function renderExcludedDates() {
+      elExcludedDatesList.innerHTML = '';
+      // 按日期排序顯示
+      const sortedDates = Array.from(state.excludedDates.keys()).sort();
+      sortedDates.forEach(dateStr => {
+        const li = document.createElement('li');
+        
+        const infoSpan = document.createElement('span');
+        infoSpan.innerHTML = `<span class="date-text">${dateStr}</span> <span class="reason-text">(${state.excludedDates.get(dateStr)})</span>`;
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-remove';
+        removeBtn.innerHTML = '×';
+        removeBtn.addEventListener('click', () => {
+          state.excludedDates.delete(dateStr);
+          renderExcludedDates();
+          calculateAndGenerate();
+        });
+
+        li.appendChild(infoSpan);
+        li.appendChild(removeBtn);
+        elExcludedDatesList.appendChild(li);
+      });
+    }
+
+    // --- 核心演算法：計算排程與分組 (Generation Algorithm) ---
+    function calculateAndGenerate() {
+      const startStr = elStartDate.value;
+      const endStr = elEndDate.value;
+      if (!startStr || !endStr) return;
+
+      const startDate = parseLocalDate(startStr);
+      const endDate = parseLocalDate(endStr);
+      if (startDate > endDate) {
+        alert('結束日期不能早於開始日期！');
+        return;
+      }
+
+      // 1. 篩選實際打掃日期
+      const allDates = [];
+      let weekendCount = 0;
+      let excludedCount = 0;
+      
+      let curDate = new Date(startDate);
+      while (curDate <= endDate) {
+        const dateStr = getLocalDateString(curDate);
+        const dayOfWeek = curDate.getDay();
+        
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          weekendCount++;
+        } else if (state.excludedDates.has(dateStr)) {
+          excludedCount++;
+        } else {
+          allDates.push(dateStr);
+        }
+        
+        curDate.setDate(curDate.getDate() + 1);
+      }
+
+      const totalDays = allDates.length + weekendCount + excludedCount;
+      elStatTotalDays.textContent = totalDays;
+      elStatWeekendDays.textContent = weekendCount;
+      elStatExcludedDays.textContent = excludedCount;
+      elStatCleanDays.textContent = allDates.length;
+
+      // 2. 切分 4 個階段 (2 + 2 段)
+      divideSegments(allDates);
+
+      // 3. 學生分組 (A / B 組)
+      performStudentGrouping();
+
+      // 4. 值日生排班 (2 週輪替一次)
+      generateDutySchedule(allDates);
+
+      // 5. 渲染結果
+      renderSummaryTab();
+      renderGroupsTab();
+      renderCalendar();
+    }
+
+    // 將實際打掃日均分成 4 段
+    function divideSegments(allCleanDates) {
+      state.segments = [];
+      const totalCleanDays = allCleanDates.length;
+      if (totalCleanDays < 4) {
+        // 避免天數過少導致除以 4 產生錯誤
+        for (let i = 0; i < 4; i++) {
+          state.segments.push({
+            index: i + 1,
+            dates: [],
+            daysCount: 0,
+            activeGroup: i % 2 === 0 ? 'A' : 'B'
+          });
+        }
+        return;
+      }
+
+      const baseSize = Math.floor(totalCleanDays / 4);
+      const remainder = totalCleanDays % 4;
+
+      let currentIndex = 0;
+      for (let i = 0; i < 4; i++) {
+        // 餘數均攤給前幾個階段
+        const size = baseSize + (i < remainder ? 1 : 0);
+        const segmentDates = allCleanDates.slice(currentIndex, currentIndex + size);
+        currentIndex += size;
+
+        state.segments.push({
+          index: i + 1,
+          dates: segmentDates,
+          daysCount: segmentDates.length,
+          activeGroup: i % 2 === 0 ? 'A' : 'B' // 1、3段 A組，2、4段 B組
+        });
+      }
+    }
+
+    // 學生分組演算
+    function performStudentGrouping() {
+      const cadres = state.students.filter(s => s.isCadre);
+      const nonCadres = state.students.filter(s => !s.isCadre);
+
+      // 讀取並解析手動輸入的打掃工作內容
+      const parsedInner = elInnerRolesInput.value.split('\n')
+        .map(r => r.trim())
+        .filter(r => r.length > 0);
+      const parsedOuter = elOuterRolesInput.value.split('\n')
+        .map(r => r.trim())
+        .filter(r => r.length > 0);
+
+      // 補齊不足 8 項的工作以防出錯
+      while (parsedInner.length < 8) parsedInner.push(`未指派內掃工作 ${parsedInner.length + 1}`);
+      while (parsedOuter.length < 8) parsedOuter.push(`未指派外掃工作 ${parsedOuter.length + 1}`);
+
+      // 隨機打亂非幹部名單（確保公平）
+      const shuffledNonCadres = shuffleArray([...nonCadres]);
+
+      const cadreMode = elCadreOption.value;
+      let cleaners = [];
+      
+      if (cadreMode === 'exempt') {
+        cleaners = shuffledNonCadres;
+      } else {
+        cleaners = shuffleArray([...state.students]);
+      }
+
+      const mid = Math.ceil(cleaners.length / 2);
+      const groupANames = cleaners.slice(0, mid);
+      const groupBNames = cleaners.slice(mid);
+
+      state.groupA = assignRoles(groupANames, parsedInner, parsedOuter);
+      state.groupB = assignRoles(groupBNames, parsedInner, parsedOuter);
+    }
+
+    // 統一指派打掃角色 (支援任意人數，自動處理輪空/休息)
+    function assignRoles(studentList, innerRoles, outerRoles) {
+      const inner = [];
+      const outer = [];
+      const rest = [];
+
+      // 前 8 人內掃
+      for (let i = 0; i < 8; i++) {
+        inner.push({
+          role: innerRoles[i],
+          student: studentList[i] ? studentList[i].name : '未分派'
+        });
+      }
+
+      // 後 8 人外掃
+      for (let i = 0; i < 8; i++) {
+        outer.push({
+          role: outerRoles[i],
+          student: studentList[i + 8] ? studentList[i + 8].name : '未分派'
+        });
+      }
+
+      // 剩餘的人休息
+      for (let i = 16; i < studentList.length; i++) {
+        rest.push(studentList[i] ? studentList[i].name : '無');
+      }
+
+      return { inner, outer, rest };
+    }
+
+    // 值日生排班演算 (2 週輪替一次)
+    function generateDutySchedule(allCleanDates) {
+      state.dutySchedule = [];
+      const nonCadres = state.students.filter(s => !s.isCadre);
+      
+      // 公平輪替隊列：當人數不夠填滿時，重新打亂追加
+      let dutyQueue = [];
+      const getNextDutyTrio = () => {
+        if (dutyQueue.length < 3) {
+          const nextRound = shuffleArray([...nonCadres]).map(s => s.name);
+          dutyQueue = dutyQueue.concat(nextRound);
+        }
+        return [dutyQueue.shift(), dutyQueue.shift(), dutyQueue.shift()];
+      };
+
+      // 每 10 個實際打掃日為一回合 (2 週)
+      const DAYS_PER_PERIOD = 10;
+      const totalPeriods = Math.ceil(allCleanDates.length / DAYS_PER_PERIOD);
+
+      for (let i = 0; i < totalPeriods; i++) {
+        const periodDates = allCleanDates.slice(i * DAYS_PER_PERIOD, (i + 1) * DAYS_PER_PERIOD);
+        const dateRangeStr = periodDates.length > 0 
+          ? `${formatChineseDate(periodDates[0])} ~ ${formatChineseDate(periodDates[periodDates.length - 1])}`
+          : '無';
+
+        state.dutySchedule.push({
+          periodIndex: i + 1,
+          dates: periodDates,
+          dateRange: dateRangeStr,
+          daysCount: periodDates.length,
+          assigned: getNextDutyTrio()
+        });
+      }
+
+      renderDutyTab();
+    }
+
+    // --- 畫面渲染功能 (UI Rendering) ---
+
+    // 1. 總覽分頁
+    function renderSummaryTab() {
+      elSegmentCards.innerHTML = '';
+      state.segments.forEach(seg => {
+        const card = document.createElement('div');
+        card.className = `segment-card ${seg.activeGroup === 'A' ? 'group-a-active' : 'group-b-active'}`;
+        
+        const title = document.createElement('div');
+        title.className = 'segment-title';
+        title.innerHTML = `<span>階段 ${seg.index}</span> <span class="team-tag ${seg.activeGroup.toLowerCase()}">${seg.activeGroup} 組打掃</span>`;
+
+        const dateStr = seg.dates.length > 0
+          ? `${formatChineseDate(seg.dates[0])} 至 ${formatChineseDate(seg.dates[seg.dates.length - 1])}`
+          : '此階段無打掃天數';
+          
+        const dates = document.createElement('div');
+        dates.className = 'segment-dates';
+        dates.textContent = dateStr;
+
+        const info = document.createElement('div');
+        info.className = 'segment-info';
+        info.innerHTML = `<span>實際執勤天數</span><span class="days">${seg.daysCount} 天</span>`;
+
+        card.appendChild(title);
+        card.appendChild(dates);
+        card.appendChild(info);
+        elSegmentCards.appendChild(card);
+      });
+    }
+
+    // 2. 分組名單分頁
+    function renderGroupsTab() {
+      // 渲染 A 組
+      elGroupAInnerList.innerHTML = state.groupA.inner.map(r => 
+        `<li><span class="role-name">${r.role}</span><span class="role-assigned">${r.student}</span></li>`
+      ).join('');
+      
+      elGroupAOuterList.innerHTML = state.groupA.outer.map(r => 
+        `<li><span class="role-name">${r.role}</span><span class="role-assigned">${r.student}</span></li>`
+      ).join('');
+
+      if (state.groupA.rest && state.groupA.rest.length > 0) {
+        const restLi = `<li><span class="role-name" style="color:#e2e8f0;">階段輪空/休息</span><span class="role-assigned" style="color:#94a3b8;">${state.groupA.rest.join(', ')}</span></li>`;
+        elGroupAInnerList.innerHTML += restLi;
+      }
+
+      // 渲染 B 組
+      elGroupBInnerList.innerHTML = state.groupB.inner.map(r => 
+        `<li><span class="role-name">${r.role}</span><span class="role-assigned">${r.student}</span></li>`
+      ).join('');
+      
+      elGroupBOuterList.innerHTML = state.groupB.outer.map(r => 
+        `<li><span class="role-name">${r.role}</span><span class="role-assigned">${r.student}</span></li>`
+      ).join('');
+
+      if (state.groupB.rest && state.groupB.rest.length > 0) {
+        const restLi = `<li><span class="role-name" style="color:#e2e8f0;">階段輪空/休息</span><span class="role-assigned" style="color:#94a3b8;">${state.groupB.rest.join(', ')}</span></li>`;
+        elGroupBInnerList.innerHTML += restLi;
+      }
+
+      // 渲染免輪值幹部
+      const cadres = state.students.filter(s => s.isCadre);
+      elCadreNamesList.innerHTML = cadres.map(c => 
+        `<span class="cadre-tag">${c.name}</span>`
+      ).join('');
+    }
+
+    // 3. 值日生分頁
+    function renderDutyTab() {
+      elDutyTableBody.innerHTML = '';
+      state.dutySchedule.forEach(p => {
+        const tr = document.createElement('tr');
+        
+        const weekRange = `第 ${((p.periodIndex - 1) * 2) + 1} ~ ${p.periodIndex * 2} 週`;
+        
+        const dutyTags = p.assigned.map(name => `<span class="duty-tag">${name}</span>`).join(' ');
+
+        tr.innerHTML = `
+          <td><strong>第 ${p.periodIndex} 回合</strong></td>
+          <td>${weekRange}</td>
+          <td>${p.dateRange}</td>
+          <td>${p.daysCount} 天</td>
+          <td><div class="duty-names">${dutyTags}</div></td>
+        `;
+        elDutyTableBody.appendChild(tr);
+      });
+    }
+
+    // 4. 行事曆分頁
+    function renderCalendar() {
+      elCalendarGrid.innerHTML = '';
+      
+      const year = state.currentCalendarDate.getFullYear();
+      const month = state.currentCalendarDate.getMonth(); // 0-indexed
+
+      elCurrentMonthYear.textContent = `${year} 年 ${month + 1} 月`;
+
+      // 取得該月第一天與最後一天
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+
+      // 第一天是星期幾 (0是星期日)
+      const startOffset = firstDay.getDay();
+
+      // 填寫月前空白
+      for (let i = 0; i < startOffset; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'calendar-day empty';
+        elCalendarGrid.appendChild(emptyDiv);
+      }
+
+      // 填寫日期
+      const daysInMonth = lastDay.getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const curDate = new Date(year, month, day);
+        const dateStr = getLocalDateString(curDate);
+        const dayOfWeek = curDate.getDay();
+
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
+
+        const numSpan = document.createElement('span');
+        numSpan.className = 'day-number';
+        numSpan.textContent = day;
+        dayDiv.appendChild(numSpan);
+
+        // 行事曆的點選排除/取消排除功能 (高互動)
+        dayDiv.addEventListener('click', () => {
+          if (dayOfWeek === 0 || dayOfWeek === 6) return; // 週末不可手動編輯
+          if (state.excludedDates.has(dateStr)) {
+            state.excludedDates.delete(dateStr);
+          } else {
+            state.excludedDates.set(dateStr, '自訂排除');
+          }
+          renderExcludedDates();
+          calculateAndGenerate();
+        });
+
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          dayDiv.classList.add('weekend-day');
+        } else if (state.excludedDates.has(dateStr)) {
+          dayDiv.classList.add('excluded-day');
+          
+          const info = document.createElement('div');
+          info.className = 'day-info';
+          info.textContent = state.excludedDates.get(dateStr);
+          dayDiv.appendChild(info);
+        } else {
+          // 尋找此日期在哪一個階段 (Segment)
+          const segment = state.segments.find(s => s.dates.includes(dateStr));
+          if (segment) {
+            dayDiv.classList.add(segment.activeGroup === 'A' ? 'group-a-day' : 'group-b-day');
+            
+            const info = document.createElement('div');
+            info.className = 'day-info';
+            info.textContent = `${segment.activeGroup} 組打掃`;
+            dayDiv.appendChild(info);
+
+            // 尋找當天值日生
+            const dutyPeriod = state.dutySchedule.find(p => p.dates.includes(dateStr));
+            if (dutyPeriod) {
+              const dutyText = document.createElement('div');
+              dutyText.style.fontSize = '0.65rem';
+              dutyText.style.color = '#a5b4fc';
+              dutyText.style.marginTop = '0.2rem';
+              // 取三個值日生名字縮寫/尾字，或僅顯示 "值:..."
+              const initials = dutyPeriod.assigned.map(n => n.slice(-2)).join('/');
+              dutyText.textContent = `值: ${initials}`;
+              dayDiv.appendChild(dutyText);
+            }
+          }
+        }
+
+        elCalendarGrid.appendChild(dayDiv);
+      }
+    }
+
+    // --- 輔助函式 (Helper Functions) ---
+    
+    // 陣列隨機打亂 (Fisher-Yates Shuffle)
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // 格式化日期為中文顯示 (月/日)
+    function formatChineseDate(dateStr) {
+      const parts = dateStr.split('-');
+      return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+    }
+
+    // 取得本機時區日期字串 (YYYY-MM-DD)
+    function getLocalDateString(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // 本機時區解析日期字串
+    function parseLocalDate(dateStr) {
+      const parts = dateStr.split('-');
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+
+    // 啟動系統
+    init();
+  });
+  </script>
+</body>
+</html>

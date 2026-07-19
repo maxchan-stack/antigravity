@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <!-- v32.1.2 改接新 API 部署，修正 UNKNOWN_ACTION -->
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>高二甲班電子佈告欄</title>
   <meta name="description" content="高二甲班作業、小考、老師交代事項、學校行政公告查詢平台">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,6 +24,8 @@
       --c-text-muted:   #5b6c6a;
       --c-text-dim:     #8b9997;
       --c-primary:      #1a5d57;
+      --c-primary-dark: #134843;
+      --c-primary-hover: rgba(26,93,87,0.25);
       --c-primary-dim:  rgba(26,93,87,0.08);
       --c-hw:           #4C729F;
       --c-hw-dim:       rgba(76,114,159,0.09);
@@ -44,12 +47,19 @@
       --shadow-card:    0 2px 10px rgba(20,40,38,0.09);
       --shadow-lg:      0 6px 28px rgba(20,40,38,0.14);
       --transition:     0.18s ease;
+      
+      --bg-image: 
+        repeating-linear-gradient(0deg, rgba(20, 40, 38, 0.035) 0px, rgba(20, 40, 38, 0.035) 1px, transparent 1px, transparent 4px),
+        repeating-linear-gradient(90deg, rgba(20, 40, 38, 0.035) 0px, rgba(20, 40, 38, 0.035) 1px, transparent 1px, transparent 4px),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8) 0%, rgba(220, 225, 225, 0.35) 100%);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Noto Sans TC', -apple-system, sans-serif;
-      background: var(--c-bg); color: var(--c-text);
+      background-color: var(--c-bg);
+      background-image: var(--bg-image);
+      color: var(--c-text);
       min-height: 100vh; line-height: 1.65;
       -webkit-font-smoothing: antialiased;
       font-size: clamp(14px, 1.5vw + 10px, 16px);
@@ -65,7 +75,7 @@
       transition: var(--transition); white-space: nowrap; letter-spacing: 0.04em;
     }
     .btn-primary { background: var(--c-primary); color: #FAF8F5; border-color: var(--c-primary); }
-    .btn-primary:hover { background: #4A3D34; border-color: #4A3D34; }
+    .btn-primary:hover { background: var(--c-primary-dark); border-color: var(--c-primary-dark); }
     .btn-ghost { background: transparent; color: var(--c-text-muted); border-color: var(--c-border); }
     .btn-ghost:hover { border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-dim); }
     .btn-danger { background: transparent; color: var(--c-danger); border-color: rgba(181,112,90,0.3); }
@@ -98,7 +108,7 @@
     /* ── Header ── */
     .header {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(247,244,241,0.92);
+      background: rgba(244,246,247,0.92);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--c-border); padding: 0 28px;
     }
@@ -113,6 +123,12 @@
     .badge-viewer { background: var(--c-note-dim); color: var(--c-note); border: 1px solid rgba(106,158,124,0.2); }
     .badge-editor { background: var(--c-primary-dim); color: var(--c-primary); border: 1px solid rgba(92,77,67,0.2); }
     .badge-admin  { background: rgba(184,154,74,0.08); color: var(--c-warn); border: 1px solid rgba(184,154,74,0.25); }
+    .header-switch-btn {
+      font-size: 0.68rem; color: var(--c-text-dim); background: none; border: none;
+      cursor: pointer; font-family: inherit; padding: 4px 8px; letter-spacing: 0.04em;
+      transition: var(--transition); margin-left: 6px;
+    }
+    .header-switch-btn:hover { color: var(--c-primary); text-decoration: underline; }
 
     /* ── 主版面 ── */
     .main { max-width: 860px; margin: 0 auto; padding: 44px 28px 88px; }
@@ -157,7 +173,7 @@
 
     .huge-date-month-day {
       font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-      font-size: 2.25rem;
+      font-size: 3.5rem;
       font-weight: 800;
       color: var(--c-primary);
       line-height: 1.1;
@@ -166,74 +182,203 @@
       letter-spacing: -0.02em;
     }
     .huge-date-label {
-      font-size: 0.95rem;
+      font-size: 1.1rem;
       font-weight: 600;
       color: var(--c-text-muted);
-      margin: 0 2px;
+      margin: 0 4px;
     }
     .huge-date-dayofweek {
-      font-size: 0.75rem;
+      font-size: 0.88rem;
       color: var(--c-text-dim);
       font-weight: 600;
-      margin-top: 4px;
+      margin-top: 6px;
       letter-spacing: 0.1em;
     }
     .role-eyebrow { font-size: 0.73rem; color: var(--c-text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
     .role-header h1 { font-family: 'Noto Serif TC', serif; font-size: 1.75rem; font-weight: 500; color: var(--c-text); letter-spacing: 0.05em; line-height: 1.35; margin-bottom: 10px; }
-    .role-header p { font-size: 0.87rem; color: var(--c-text-muted); line-height: 1.8; }
+    .role-header p { font-size: 1.05rem; color: var(--c-text-muted); line-height: 1.8; }
 
     @media (max-width: 580px) {
       .role-header h1 {
         font-size: 1.45rem;
       }
       .role-header p {
-        font-size: 0.8rem;
+        font-size: 0.9rem;
         line-height: 1.6;
       }
       .role-huge-date {
-        padding: 8px 14px;
-        min-width: 110px;
+        padding: 0;
+        min-width: 0;
+        margin-left: 12px;
       }
       .huge-date-month-day {
-        font-size: 1.85rem;
+        font-size: 2.5rem;
       }
       .huge-date-label {
-        font-size: 0.85rem;
+        font-size: 0.95rem;
       }
       .huge-date-dayofweek {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
       }
     }
 
-    .role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    /* ── 角色卡區域優化 ── */
+    .role-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    
     .role-card {
-      background: var(--c-surface); border: 1px solid var(--c-border);
-      border-radius: var(--radius-lg); padding: 28px 20px;
-      cursor: pointer; transition: var(--transition); text-align: left; position: relative;
-      box-shadow: var(--shadow-sm);
+      background: var(--c-surface);
+      border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      padding: 32px 24px 28px 24px;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: left;
+      position: relative;
+      box-shadow: 0 4px 14px rgba(20,40,38,0.04);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
+    
+    /* 頂部主題顏色條 */
+    .role-card-top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      transition: var(--transition);
+    }
+    .r-viewer .role-card-top-bar { background-color: var(--c-hw); }
+    .r-cadre .role-card-top-bar { background-color: var(--c-quiz); }
+    .r-teacher .role-card-top-bar { background-color: var(--c-primary); }
+
+    /* 圖示容器 */
+    .role-card-icon-wrap {
+      width: 44px;
+      height: 44px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+    .role-icon-svg {
+      width: 32px;
+      height: 32px;
+      stroke-width: 1.8px;
+    }
+    .r-viewer .role-icon-svg { color: var(--c-hw); }
+    .r-cadre .role-icon-svg { color: var(--c-quiz); }
+    .r-teacher .role-icon-svg { color: var(--c-primary); }
+
+    /* 標題 */
+    .role-card-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--c-text);
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+    }
+
+    /* 徽章標籤 */
+    .role-card-badge-wrap {
+      margin-bottom: 14px;
+    }
+    .role-card-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+    .r-viewer .role-card-badge {
+      background-color: var(--c-hw-dim);
+      color: var(--c-hw);
+      border: 1px solid rgba(76,114,159,0.15);
+    }
+    .r-cadre .role-card-badge {
+      background-color: var(--c-quiz-dim);
+      color: var(--c-quiz);
+      border: 1px solid rgba(200,134,42,0.15);
+    }
+    .r-teacher .role-card-badge {
+      background-color: var(--c-primary-dim);
+      color: var(--c-primary);
+      border: 1px solid rgba(26,93,87,0.15);
+    }
+
+    /* 描述 */
+    .role-card-desc {
+      font-size: 0.8rem;
+      color: var(--c-text-muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+
+    /* 底部進入連結 */
+    .role-card-link {
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: var(--transition);
+      margin-top: auto;
+    }
+    .r-viewer .role-card-link { color: var(--c-hw); }
+    .r-cadre .role-card-link { color: var(--c-quiz); }
+    .r-teacher .role-card-link { color: var(--c-primary); }
+
+    /* Hover 與選中狀態微動畫 */
     .role-card:hover {
-      border-color: rgba(92, 77, 67, 0.4);
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-card);
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(20,40,38,0.12);
+      border-color: rgba(20,40,38,0.18);
     }
+    .r-viewer:hover { border-color: rgba(76,114,159,0.4); }
+    .r-cadre:hover { border-color: rgba(200,134,42,0.4); }
+    .r-teacher:hover { border-color: rgba(26,93,87,0.4); }
+
     .role-card.selected {
-      border-color: var(--c-primary);
-      background: var(--c-primary-dim);
-      box-shadow: var(--shadow-card);
+      box-shadow: 0 6px 20px rgba(20,40,38,0.1);
     }
+    .r-viewer.selected { border-color: var(--c-hw); background-color: var(--c-hw-dim); }
+    .r-cadre.selected { border-color: var(--c-quiz); background-color: var(--c-quiz-dim); }
+    .r-teacher.selected { border-color: var(--c-primary); background-color: var(--c-primary-dim); }
+
     .role-card.selected::before {
-      content: '✓'; position: absolute; top: 12px; right: 12px;
-      width: 18px; height: 18px; background: var(--c-primary);
-      color: #fff; border-radius: 50%; font-size: 0.65rem;
-      display: flex; align-items: center; justify-content: center;
+      content: '✓';
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 20px;
+      height: 20px;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-weight: bold;
+      animation: checkFade 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+      z-index: 5;
     }
-    .role-card-icon { font-size: 1.4rem; margin-bottom: 12px; display: block; }
-    .role-card-name { font-size: 0.97rem; font-weight: 600; color: var(--c-text); margin-bottom: 5px; white-space: nowrap; }
-    .role-name-student { color: var(--c-primary); }
-    .role-name-parent { color: var(--c-quiz); }
-    .role-card-desc { font-size: 0.77rem; color: var(--c-text-muted); line-height: 1.6; }
+    .r-viewer.selected::before { background-color: var(--c-hw); }
+    .r-cadre.selected::before { background-color: var(--c-quiz); }
+    .r-teacher.selected::before { background-color: var(--c-primary); }
+
+    @keyframes checkFade {
+      from { opacity: 0; transform: scale(0.6); }
+      to { opacity: 1; transform: scale(1); }
+    }
 
     .role-sub-select {
       background: var(--c-surface); border: 1.5px solid var(--c-border);
@@ -281,7 +426,7 @@
       color: var(--c-text-muted); transition: var(--transition); letter-spacing: 0.04em;
     }
     .filter-chip:hover { border-color: var(--c-primary); color: var(--c-primary); }
-    .filter-chip.active-all  { background: var(--c-primary-dim); border-color: rgba(92,77,67,0.3); color: var(--c-primary); }
+    .filter-chip.active-all  { background: var(--c-primary-dim); border-color: var(--c-primary-hover); color: var(--c-primary); }
     .filter-chip.active-hw   { background: var(--c-hw-dim);   border-color: rgba(91,127,168,0.3);   color: var(--c-hw); }
     .filter-chip.active-quiz { background: var(--c-quiz-dim); border-color: rgba(181,112,90,0.3);   color: var(--c-quiz); }
     .filter-chip.active-note { background: var(--c-note-dim); border-color: rgba(106,158,124,0.3);  color: var(--c-note); }
@@ -300,7 +445,7 @@
       background: var(--c-surface);
       box-shadow: var(--shadow-card);
       transform: translateY(-2px);
-      border-color: rgba(92, 77, 67, 0.2);
+      border-color: var(--c-primary-hover);
     }
     @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -319,6 +464,26 @@
     .tag-admin { background: var(--c-admin-dim); color: var(--c-admin); }
     .subject-tag { font-size: 0.73rem; font-weight: 400; color: var(--c-text-muted); background: var(--c-surface-2); padding: 2px 9px; border-radius: 2px; border: 1px solid var(--c-border); }
     .card-content { font-size: 0.88rem; color: var(--c-text); line-height: 1.75; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+    .card-content.truncated {
+      max-height: 5.25em;
+      overflow: hidden;
+      position: relative;
+    }
+    .card-content.truncated::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1.8em;
+      background: linear-gradient(to bottom, transparent, var(--c-surface));
+      pointer-events: none;
+    }
+    .card-expand-btn {
+      font-size: 0.78rem; color: var(--c-primary); cursor: pointer;
+      border: none; background: none; padding: 2px 0; margin-top: -2px;
+      font-family: inherit; font-weight: 500; letter-spacing: 0.04em;
+      transition: var(--transition);
+    }
+    .card-expand-btn:hover { opacity: 0.7; }
     .card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
     .card-date { font-size: 0.75rem; color: var(--c-text-muted); }
     .days-left { font-size: 0.7rem; font-weight: 500; padding: 2px 10px; border-radius: 12px; letter-spacing: 0.03em; }
@@ -388,7 +553,8 @@
     }
 
     .empty-state { text-align: center; padding: 64px 24px; }
-    .empty-state-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.35; }
+    .empty-state-icon { margin-bottom: 16px; }
+    .empty-state-icon svg { width: 48px; height: 48px; stroke: var(--c-text-dim); opacity: 0.4; }
     .empty-state-text { font-size: 0.87rem; color: var(--c-text-muted); }
     .divider { border: none; border-top: 1px solid var(--c-border); margin: 32px 0; }
 
@@ -429,7 +595,8 @@
 
     /* ── Toast 通知 ── */
     #toast-container { position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-    .toast { min-width: 220px; max-width: 340px; padding: 12px 16px; border-radius: var(--radius-md); font-size: 0.84rem; font-weight: 500; box-shadow: var(--shadow-lg); animation: toastIn 0.22s ease both; cursor: pointer; border: 1.5px solid transparent; letter-spacing: 0.02em; pointer-events: all; }
+    .toast { min-width: 220px; max-width: 340px; padding: 12px 16px; border-radius: var(--radius-md); font-size: 0.84rem; font-weight: 500; box-shadow: var(--shadow-lg); animation: toastIn 0.22s ease both; cursor: pointer; border: 1.5px solid transparent; letter-spacing: 0.02em; pointer-events: all; display: flex; align-items: center; gap: 8px; }
+    .toast-icon { flex-shrink: 0; width: 16px; height: 16px; }
     .toast-success { background: #FAFDF7; border-color: rgba(106,158,124,0.35); color: #3A6B4D; }
     .toast-error   { background: #FDF8F6; border-color: rgba(181,112,90,0.35);  color: #7A3D28; }
     .toast-info    { background: var(--c-surface); border-color: var(--c-border); color: var(--c-text); }
@@ -444,12 +611,19 @@
       .header-title { font-size: 0.86rem; letter-spacing: 0.05em; }
       .header-subtitle { display: none; }
       .main { padding: 20px 14px 72px; }
-      .role-cards { grid-template-columns: 1fr; gap: 10px; }
-      .role-card { padding: 18px 16px; display: flex; align-items: center; gap: 14px; }
-      .role-card-icon { font-size: 1.6rem; margin-bottom: 0; flex-shrink: 0; }
+      .role-cards { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .role-card { padding: 18px 6px 14px 6px; align-items: center; text-align: center; }
+      .role-card-icon-wrap { width: 32px; height: 32px; margin-bottom: 8px; }
+      .role-icon-svg { width: 24px; height: 24px; }
+      .role-card-name { font-size: 0.78rem; margin-bottom: 6px; }
+      .role-card-badge { font-size: 0.58rem; padding: 2px 4px; }
+      .role-card-desc { display: none; }
+      .role-card-link { display: none; }
+      .role-card.selected::before { top: 8px; right: 8px; width: 16px; height: 16px; font-size: 0.55rem; }
       .role-header { margin-bottom: 28px; }
       .role-header h1 { font-size: 1.3rem; }
-      .role-header p { font-size: 0.79rem; }
+      .role-header p { font-size: 0.88rem; line-height: 1.5; }
+      .role-huge-date { padding: 0; min-width: 0; margin-left: 10px; }
       .card { padding: 14px 16px; gap: 10px; }
       .card-content { font-size: 0.84rem; }
       .section-title { font-size: 1.15rem; }
@@ -465,8 +639,14 @@
     @media (min-width: 480px) and (max-width: 767px) {
       .header { padding: 0 20px; }
       .main { padding: 28px 20px 80px; }
-      .role-cards { grid-template-columns: 1fr 1fr; gap: 12px; }
-      .role-card { padding: 22px 16px; }
+      .role-cards { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .role-card { padding: 24px 12px 20px 12px; }
+      .role-card-icon-wrap { width: 36px; height: 36px; margin-bottom: 12px; }
+      .role-icon-svg { width: 26px; height: 26px; }
+      .role-card-name { font-size: 1.05rem; margin-bottom: 6px; }
+      .role-card-badge { font-size: 0.68rem; padding: 3px 8px; }
+      .role-card-desc { font-size: 0.74rem; margin-bottom: 12px; line-height: 1.5; }
+      .role-card-link { font-size: 0.82rem; }
       .card { padding: 16px 18px; }
       .editor-card { padding: 24px 20px; }
       #toast-container { right: 16px; left: 16px; bottom: 16px; }
@@ -483,6 +663,252 @@
       .editor-layout { max-width: 560px; }
       .section-title { font-size: 1.55rem; }
       .role-header h1 { font-size: 1.9rem; }
+    }
+
+    /* ── 今日儀表板 ── */
+    .dashboard-box {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;
+      background: rgba(26,93,87,0.03); border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-sm);
+    }
+    .dashboard-item {
+      text-align: center; display: flex; flex-direction: column; gap: 4px; justify-content: center;
+    }
+    .dashboard-item:not(:first-child) {
+      border-left: 1px solid var(--c-border);
+    }
+    .dashboard-label {
+      font-size: 0.72rem; color: var(--c-text-muted); font-weight: 600; letter-spacing: 0.04em;
+    }
+    .dashboard-value {
+      font-size: 1.45rem; font-weight: 700;
+    }
+    .val-hw { color: var(--c-hw); }
+    .val-quiz { color: var(--c-quiz); }
+    .val-note { color: var(--c-note); }
+    .val-admin { color: var(--c-admin); }
+
+    /* ── 月曆視圖 ── */
+    .calendar-container {
+      background: var(--c-surface); border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 18px; margin-bottom: 20px;
+      box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 14px;
+    }
+    .calendar-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .calendar-month-title {
+      font-family: 'Noto Serif TC', serif; font-size: 1.15rem; font-weight: 600; color: var(--c-text);
+    }
+    .calendar-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    }
+    .calendar-day-header {
+      text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--c-text-muted);
+      padding: 6px 0; border-bottom: 1.5px solid var(--c-border); letter-spacing: 0.04em;
+    }
+    .calendar-day {
+      min-height: 86px; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+      padding: 6px; display: flex; flex-direction: column; gap: 4px; transition: var(--transition);
+      cursor: pointer; background: var(--c-surface);
+    }
+    .calendar-day:hover {
+      border-color: var(--c-primary); background: var(--c-primary-dim);
+    }
+    .calendar-day.other-month {
+      background: var(--c-bg); color: var(--c-text-dim); opacity: 0.55; cursor: not-allowed;
+    }
+    .calendar-day.other-month:hover { border-color: var(--c-border); background: var(--c-bg); }
+    .calendar-day.today {
+      border-color: var(--c-primary); background: rgba(26,93,87,0.04);
+    }
+    .calendar-day.today .calendar-day-num {
+      color: var(--c-primary); font-weight: 700;
+    }
+    .calendar-day-num {
+      font-size: 0.76rem; font-weight: 500; color: var(--c-text-muted);
+    }
+    .calendar-day-events {
+      display: flex; flex-direction: column; gap: 3px; flex: 1; overflow: hidden;
+    }
+    .calendar-event-tag {
+      font-size: 0.65rem; padding: 2px 4px; border-radius: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-weight: 500; letter-spacing: 0.02em; text-align: center;
+    }
+    .cal-tag-hw   { background: var(--c-hw-dim);   color: var(--c-hw); }
+    .cal-tag-quiz { background: var(--c-quiz-dim); color: var(--c-quiz); }
+    .cal-tag-note { background: var(--c-note-dim); color: var(--c-note); }
+    .cal-tag-admin { background: var(--c-admin-dim); color: var(--c-admin); }
+    .calendar-more-badge {
+      font-size: 0.62rem; color: var(--c-text-dim); text-align: right; font-weight: 500; margin-top: auto;
+    }
+    .calendar-dot-bar {
+      display: none; gap: 3px; justify-content: center; margin-top: auto;
+    }
+    .calendar-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+    }
+    .dot-hw { background: var(--c-hw); }
+    .dot-quiz { background: var(--c-quiz); }
+    .dot-note { background: var(--c-note); }
+    .dot-admin { background: var(--c-admin); }
+
+    /* ── Modal 彈出視窗 ── */
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(36,50,49,0.48); backdrop-filter: blur(4px);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+    }
+    .modal.show {
+      opacity: 1; pointer-events: all;
+    }
+    .modal-content {
+      background: var(--c-surface); border-radius: var(--radius-lg);
+      width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto;
+      box-shadow: var(--shadow-lg); border: 1.5px solid var(--c-border);
+      animation: modalIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes modalIn { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--c-border);
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: var(--c-surface); z-index: 10;
+    }
+    .modal-header h3 {
+      font-family: 'Noto Serif TC', serif; font-size: 1.1rem; color: var(--c-text);
+    }
+    .modal-close {
+      background: none; border: none; font-size: 1.6rem; color: var(--c-text-dim);
+      cursor: pointer; line-height: 1; transition: var(--transition);
+    }
+    .modal-close:hover { color: var(--c-danger); }
+    .modal-body {
+      padding: 20px; display: flex; flex-direction: column; gap: 14px;
+    }
+
+    /* ── 發布歷史紀錄樣式 ── */
+    .history-item {
+      background: var(--c-surface); border: 1px solid var(--c-border);
+      border-radius: var(--radius-md); padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 8px; transition: var(--transition);
+    }
+    .history-item:hover { border-color: var(--c-primary); }
+    .history-meta { display: flex; align-items: center; gap: 6px; }
+    .history-content { font-size: 0.8rem; color: var(--c-text-muted); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .history-btns { display: flex; gap: 6px; justify-content: flex-end; }
+
+    @media (max-width: 479px) {
+      .calendar-day {
+        min-height: 52px; padding: 4px;
+      }
+      .calendar-day-events {
+        display: none;
+      }
+      .calendar-dot-bar {
+        display: flex;
+      }
+      .calendar-more-badge {
+        display: none;
+      }
+      .dashboard-box {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 12px;
+      }
+      .dashboard-item:nth-child(even) {
+        border-left: none;
+      }
+      .dashboard-item:nth-child(3), .dashboard-item:nth-child(4) {
+        margin-top: 4px;
+        padding-top: 4px;
+        border-top: 1px solid var(--c-border);
+      }
+      .dashboard-item:nth-child(3) {
+        border-left: none;
+      }
+      .dashboard-item:nth-child(4) {
+        border-left: 1px solid var(--c-border);
+      }
+    }
+
+    /* ── 今日課表樣式 ── */
+    .timetable-card {
+      background: var(--c-surface); border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 18px 20px; margin-top: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .timetable-title {
+      font-family: 'Noto Serif TC', serif; font-size: 0.95rem; font-weight: 600;
+      color: var(--c-text); margin-bottom: 12px; letter-spacing: 0.06em;
+    }
+    .timetable-grid {
+      display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
+    }
+    .timetable-period {
+      background: var(--c-bg); border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm); padding: 8px 4px; text-align: center;
+      display: flex; flex-direction: column; gap: 4px; transition: var(--transition);
+    }
+    .timetable-period:hover {
+      border-color: var(--c-primary); background: var(--c-primary-dim);
+    }
+    .period-num {
+      font-size: 0.65rem; color: var(--c-text-dim); font-weight: 500;
+    }
+    .period-name {
+      font-size: 0.78rem; font-weight: 600; color: var(--c-text);
+    }
+    .timetable-weekend {
+      text-align: center; font-size: 0.82rem; color: var(--c-text-muted); padding: 10px 0;
+    }
+
+    /* ── 倒數計時器樣式 ── */
+    .role-countdown-banner {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
+      padding: 6px 12px; background: rgba(219,68,85,0.06); border: 1px solid rgba(219,68,85,0.22);
+      border-radius: var(--radius-sm); font-size: 0.77rem; font-weight: 500; color: #db4455;
+      animation: labelPulse 2.5s infinite ease-in-out;
+    }
+    .countdown-tag {
+      font-weight: 600; color: #FAF8F5; background: #db4455;
+      padding: 2px 8px; border-radius: 2px; font-size: 0.68rem; letter-spacing: 0.05em;
+    }
+
+    /* ── 常用連結樣式 ── */
+    .resources-card {
+      background: var(--c-surface); border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-lg); padding: 18px 20px; margin-top: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .resources-title {
+      font-family: 'Noto Serif TC', serif; font-size: 0.95rem; font-weight: 600;
+      color: var(--c-text); margin-bottom: 12px; letter-spacing: 0.06em;
+    }
+    .resources-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    }
+    .resource-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 8px 10px; font-size: 0.78rem; font-weight: 500; text-decoration: none;
+      color: var(--c-text-muted); background: var(--c-bg); border: 1px solid var(--c-border);
+      border-radius: var(--radius-md); transition: var(--transition); text-align: center;
+    }
+    .resource-btn:hover {
+      border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-dim);
+    }
+
+    @media (max-width: 479px) {
+      .timetable-grid {
+        grid-template-columns: repeat(4, 1fr); gap: 6px;
+      }
+      .timetable-period {
+        padding: 6px 2px;
+      }
+      .resources-grid {
+        grid-template-columns: 1fr 1fr; gap: 8px;
+      }
     }
   </style>
 </head>
@@ -502,6 +928,7 @@
       <button class="btn btn-ghost btn-sm" onclick="showAdminEdit()" style="padding: 5px 10px; font-size: 0.75rem;">✏️ 新增公告</button>
     </div>
     <span class="header-role-badge badge-viewer" id="role-badge">瀏覽</span>
+    <button class="header-switch-btn hidden" id="header-switch-btn" onclick="clearSavedRoleAndGoBack()">切換身份</button>
   </div>
 </header>
 
@@ -526,7 +953,12 @@
       <div class="role-header-left">
         <div class="role-eyebrow">CLASSROOM BULLETIN BOARD</div>
         <h1>您的身份是？</h1>
-        <p>請選擇您的角色以繼續。<br>幹部與小老師需輸入授權碼以發布公告。</p>
+        <p>請選擇您的角色以繼續。</p>
+        <!-- 倒數計時器橫幅 -->
+        <div id="role-countdown-banner" class="role-countdown-banner hidden">
+          <span class="countdown-tag">倒數計時</span>
+          <span id="role-countdown-text">距離 -- 還有 -- 天</span>
+        </div>
       </div>
       <div class="role-huge-date" id="role-huge-date">
         <div class="huge-date-month-day"><span id="role-date-month">--</span><span class="huge-date-label">月</span><span id="role-date-day">--</span><span class="huge-date-label">日</span></div>
@@ -535,20 +967,64 @@
     </div>
 
     <div class="role-cards">
-      <div class="role-card" id="role-card-viewer" onclick="selectRoleCard('viewer')">
-        <span class="role-card-icon">📖</span>
-        <div class="role-card-name"><span class="role-name-student">學生</span><br><span class="role-name-parent">家長</span></div>
-        <div class="role-card-desc">瀏覽作業、小考、老師交代事項與學校行政公告</div>
+      <!-- 📖 學生 / 家長 -->
+      <div class="role-card r-viewer" id="role-card-viewer" tabindex="0" role="button" onclick="selectRoleCard('viewer')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRoleCard('viewer')}">
+        <div class="role-card-top-bar"></div>
+        <div class="role-card-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="role-icon-svg">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <line x1="19" y1="8" x2="19" y2="14" />
+            <line x1="16" y1="11" x2="22" y2="11" />
+          </svg>
+        </div>
+        <div class="role-card-name">家長／學生</div>
+        <div class="role-card-badge-wrap">
+          <span class="role-card-badge">僅供觀看</span>
+        </div>
+        <div class="role-card-desc">查詢學校公告、老師交代事項、作業考試範圍與幹部注意事項。無法新增或修改內容。</div>
+        <div class="role-card-link">進入瀏覽 ➔</div>
       </div>
-      <div class="role-card" id="role-card-cadre" onclick="selectRoleCard('cadre')">
-        <span class="role-card-icon">💼</span>
+
+      <!-- 💼 班級幹部 -->
+      <div class="role-card r-cadre" id="role-card-cadre" tabindex="0" role="button" onclick="selectRoleCard('cadre')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRoleCard('cadre')}">
+        <div class="role-card-top-bar"></div>
+        <div class="role-card-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="role-icon-svg">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            <line x1="8" y1="10" x2="16" y2="10" />
+            <line x1="8" y1="14" x2="12" y2="14" />
+            <circle cx="17" cy="17" r="4" fill="currentColor" stroke="none" />
+            <line x1="17" y1="15" x2="17" y2="19" stroke="white" stroke-width="1.5" />
+            <line x1="15" y1="17" x2="19" y2="17" stroke="white" stroke-width="1.5" />
+          </svg>
+        </div>
         <div class="role-card-name">班級幹部</div>
-        <div class="role-card-desc">班長、股長發布班級公告</div>
+        <div class="role-card-badge-wrap">
+          <span class="role-card-badge">可發布注意事項</span>
+        </div>
+        <div class="role-card-desc">發布與管理幹部注意事項（值日、繳費、活動集合等）。</div>
+        <div class="role-card-link">進入管理 ➔</div>
       </div>
-      <div class="role-card" id="role-card-teacher" onclick="selectRoleCard('teacher')">
-        <span class="role-card-icon">🎓</span>
+
+      <!-- 🎓 學科小老師 -->
+      <div class="role-card r-teacher" id="role-card-teacher" tabindex="0" role="button" onclick="selectRoleCard('teacher')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRoleCard('teacher')}">
+        <div class="role-card-top-bar"></div>
+        <div class="role-card-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="role-icon-svg">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <circle cx="17" cy="17" r="4" fill="currentColor" stroke="none" />
+            <polyline points="15.5 17 16.5 18 18.5 16" stroke="white" stroke-width="1.5" fill="none" />
+          </svg>
+        </div>
         <div class="role-card-name">學科小老師</div>
-        <div class="role-card-desc">發布各科作業與小考公告</div>
+        <div class="role-card-badge-wrap">
+          <span class="role-card-badge">可記錄作業考試</span>
+        </div>
+        <div class="role-card-desc">登記各科作業、考試內容與範圍。</div>
+        <div class="role-card-link">進入登錄 ➔</div>
       </div>
     </div>
 
@@ -572,7 +1048,7 @@
     <div id="role-pin-wrap" class="pin-verify-wrap hidden">
       <div class="pin-verify-label">輸入授權碼</div>
       <div class="pin-verify-row">
-        <input type="text" id="role-pin" placeholder="授權碼" maxlength="10" autocomplete="off"
+        <input type="password" id="role-pin" placeholder="授權碼" maxlength="10" autocomplete="off"
                onkeydown="if(event.key==='Enter') verifyRolePin()"
                oninput="document.getElementById('pin-error').textContent=''">
         <button class="btn btn-primary" id="btn-verify-pin" onclick="verifyRolePin()">驗證</button>
@@ -583,6 +1059,41 @@
     <!-- 繼續按鈕（學生用） -->
     <div id="role-continue-wrap" class="role-continue-wrap hidden">
       <button class="btn btn-primary" id="btn-role-continue" onclick="proceedFromRole()">進入佈告欄</button>
+    </div>
+
+    <!-- 課表區塊 -->
+    <div class="timetable-card" id="timetable-card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="timetable-title" id="timetable-title" style="margin-bottom: 0;">課表</div>
+        <button class="btn btn-ghost" id="btn-toggle-weekly" onclick="toggleWeeklyTimetable()" style="font-size: 0.72rem; padding: 4px 8px; color: var(--c-primary); height: auto; min-height: 0; line-height: 1;">展開課表</button>
+      </div>
+      
+      <!-- 整週課表摺疊收納區 -->
+      <div id="weekly-timetable-wrap" class="hidden" style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--c-border); overflow-x: auto;">
+        <table class="weekly-table" style="width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: center; color: var(--c-text);">
+          <thead>
+            <tr style="background: var(--c-bg); border-bottom: 1px solid var(--c-border);">
+              <th style="padding: 6px 4px; font-weight: 600;">節</th>
+              <th style="padding: 6px 4px; font-weight: 600;">一</th>
+              <th style="padding: 6px 4px; font-weight: 600;">二</th>
+              <th style="padding: 6px 4px; font-weight: 600;">三</th>
+              <th style="padding: 6px 4px; font-weight: 600;">四</th>
+              <th style="padding: 6px 4px; font-weight: 600;">五</th>
+            </tr>
+          </thead>
+          <tbody id="weekly-timetable-body">
+            <!-- 由 JS 動態生成 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 常用資源區塊 -->
+    <div class="resources-card hidden" id="resources-card">
+      <div class="resources-title">常用資源</div>
+      <div class="resources-grid" id="resources-list-container">
+        <!-- 由 JS 動態生成 -->
+      </div>
     </div>
   </div>
 
@@ -596,24 +1107,66 @@
       <button class="btn btn-ghost btn-sm" onclick="loadBoard()">重新整理</button>
     </div>
 
-    <!-- 統計資訊面版 (僅管理員可見) -->
-    <div id="admin-stats-box" class="hidden" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; background: rgba(92,77,67,0.05); border: 1.5px solid var(--c-border); border-radius: var(--radius-md); padding: 12px 16px;">
-      <div style="text-align: center;"><div style="font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500;">作業總數</div><div id="stat-hw" style="font-size: 1.3rem; font-weight: 600; color: var(--c-hw);">0</div></div>
-      <div style="text-align: center; border-left: 1px solid var(--c-border);"><div style="font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500;">小考總數</div><div id="stat-quiz" style="font-size: 1.3rem; font-weight: 600; color: var(--c-quiz);">0</div></div>
-      <div style="text-align: center; border-left: 1px solid var(--c-border); border-right: 1px solid var(--c-border);"><div style="font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500;">老師交代</div><div id="stat-note" style="font-size: 1.3rem; font-weight: 600; color: var(--c-note);">0</div></div>
-      <div style="text-align: center;"><div style="font-size: 0.75rem; color: var(--c-text-muted); font-weight: 500;">行政公告</div><div id="stat-admin" style="font-size: 1.3rem; font-weight: 600; color: var(--c-admin);">0</div></div>
+    <!-- 倒數計時器橫幅 (公告欄頁面) -->
+    <div id="board-countdown-banner" class="role-countdown-banner hidden" style="margin-top: 0; margin-bottom: 16px; width: 100%; box-sizing: border-box; display: inline-flex;">
+      <span class="countdown-tag">倒數計時</span>
+      <span id="board-countdown-text">距離 -- 還有 -- 天</span>
     </div>
 
-    <div class="filter-bar">
-      <div class="filter-chip active-all" data-filter="all" onclick="setFilter('all')">全部</div>
-      <div class="filter-chip" data-filter="作業" onclick="setFilter('作業')">作業</div>
-      <div class="filter-chip" data-filter="小考" onclick="setFilter('小考')">小考</div>
-      <div class="filter-chip" data-filter="老師交代事項" onclick="setFilter('老師交代事項')">老師交代事項</div>
-      <div class="filter-chip" data-filter="學校行政公告" onclick="setFilter('學校行政公告')">學校行政公告</div>
-      <div class="filter-chip" data-filter="expired" onclick="setFilter('expired')">已過期</div>
+    <!-- 今日速覽儀表板 -->
+    <div id="dashboard-box" class="dashboard-box">
+      <div class="dashboard-item">
+        <span class="dashboard-label">今日作業</span>
+        <span class="dashboard-value val-hw" id="dash-hw">0</span>
+      </div>
+      <div class="dashboard-item">
+        <span class="dashboard-label">明日小考</span>
+        <span class="dashboard-value val-quiz" id="dash-quiz">0</span>
+      </div>
+      <div class="dashboard-item">
+        <span class="dashboard-label">老師交代</span>
+        <span class="dashboard-value val-note" id="dash-note">0</span>
+      </div>
+      <div class="dashboard-item">
+        <span class="dashboard-label">行政公告</span>
+        <span class="dashboard-value val-admin" id="dash-admin">0</span>
+      </div>
+    </div>
+
+    <div class="filter-bar" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; flex: 1;">
+        <div class="filter-chip active-all" data-filter="all" onclick="setFilter('all')">全部</div>
+        <div class="filter-chip" data-filter="作業" onclick="setFilter('作業')">作業</div>
+        <div class="filter-chip" data-filter="小考" onclick="setFilter('小考')">小考</div>
+        <div class="filter-chip" data-filter="老師交代事項" onclick="setFilter('老師交代事項')">老師交代事項</div>
+        <div class="filter-chip" data-filter="學校行政公告" onclick="setFilter('學校行政公告')">學校行政公告</div>
+        <div class="filter-chip" data-filter="expired" onclick="setFilter('expired')">已過期</div>
+      </div>
+      <div style="display: flex; gap: 6px; margin-left: 12px;" id="view-toggle-wrap">
+        <button class="filter-chip active-all" id="btn-view-list" onclick="switchView('list')">列表檢視</button>
+        <button class="filter-chip" id="btn-view-calendar" onclick="switchView('calendar')">月曆檢視</button>
+      </div>
+    </div>
+
+    <!-- 月曆視圖容器 -->
+    <div id="calendar-view" class="calendar-container hidden">
+      <div class="calendar-header">
+        <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">◀ 上個月</button>
+        <span class="calendar-month-title" id="calendar-month-title">-- 年 -- 月</span>
+        <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">下個月 ▶</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid">
+        <!-- 由 JS 動態生成 -->
+      </div>
     </div>
 
     <div id="bulletin-list"></div>
+
+    <!-- 常用資源（公告欄頁也要顯示，否則學生進入後看不到導師改的連結） -->
+    <div class="resources-card hidden" id="board-resources-card" style="margin-top: 20px;">
+      <div class="resources-title">常用資源</div>
+      <div class="resources-grid" id="board-resources-list-container"></div>
+    </div>
   </div>
 
   <!-- Page: Edit 發布公告 -->
@@ -675,15 +1228,68 @@
 
       <!-- 導師管理說明 -->
       <div class="teacher-panel hidden" id="teacher-panel">
-        <div class="teacher-panel-title">⚙️ 導師管理公告</div>
-        <div class="teacher-panel-desc">若需要隱藏已發布的公告，請直接在 Google 試算表操作：</div>
-        <ol class="teacher-panel-steps">
-          <li>點擊下方連結開啟試算表</li>
-          <li>找到要隱藏的公告所在列</li>
-          <li>在最右側「狀態」欄位填入「<strong>隱藏</strong>」</li>
-          <li>回到佈告欄重新整理即可</li>
+        <div class="teacher-panel-title">導師管理說明</div>
+        <div class="teacher-panel-desc">如需進行進階管理，請直接開啟 Google 試算表操作：</div>
+        <ol class="teacher-panel-steps" style="margin-bottom: 18px;">
+          <li><strong>隱藏公告</strong>：於「表單回覆 2」工作表中，將欲隱藏公告之最右側「狀態」欄位填入「<strong>隱藏</strong>」。</li>
+          <li><strong>修改今日課表</strong>：於試算表中新增一個名為「<strong>timetable</strong>」的工作表。第一列（A1~F1）填寫標題（節次、星期一至五），第 2 列至第 9 列填寫第 1 節至第 8 節的課程（例如 A2 寫 1，B2~F2 寫週一至週五的課程）。網頁會自動讀取並排除首列標題，依序排列。</li>
         </ol>
         <a id="teacher-sheet-link" href="#" target="_blank" class="btn btn-ghost btn-sm">開啟 Google 試算表管理</a>
+
+        <!-- 倒數計時器設定（僅導師可見） -->
+        <div id="teacher-countdown-config" style="margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--c-border);">
+          <div class="teacher-panel-title">倒數計時器設定</div>
+          <div id="teacher-countdown-status" style="font-size: 0.77rem; color: var(--c-text-muted); margin-bottom: 12px; padding: 8px 12px; background: var(--c-bg); border-radius: var(--radius-sm); border: 1px solid var(--c-border); line-height: 1.5;">
+            目前狀態：讀取中...
+          </div>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="countdown-title-input">活動名稱</label>
+              <input type="text" id="countdown-title-input" placeholder="例如：第一次段考" maxlength="15">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="countdown-date-input">活動日期</label>
+              <input type="date" id="countdown-date-input">
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button class="btn btn-danger btn-sm hidden" id="btn-delete-countdown" onclick="deleteCountdownConfig()">刪除倒數</button>
+            <button class="btn btn-primary btn-sm" id="btn-save-countdown" onclick="saveCountdownConfig()">儲存倒數</button>
+          </div>
+        </div>
+
+        <!-- 常用連結設定（僅導師可見） -->
+        <div id="teacher-links-config" style="margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--c-border);">
+          <div class="teacher-panel-title">資源連結入口設定</div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+            <div class="form-grid" style="grid-template-columns: 1fr 2fr; gap: 8px; margin-bottom: 0;">
+              <input type="text" id="link-1-title-input" placeholder="連結一標題">
+              <input type="text" id="link-1-url-input" placeholder="連結一網址 (URL)">
+            </div>
+            <div class="form-grid" style="grid-template-columns: 1fr 2fr; gap: 8px; margin-bottom: 0;">
+              <input type="text" id="link-2-title-input" placeholder="連結二標題">
+              <input type="text" id="link-2-url-input" placeholder="連結二網址 (URL)">
+            </div>
+            <div class="form-grid" style="grid-template-columns: 1fr 2fr; gap: 8px; margin-bottom: 0;">
+              <input type="text" id="link-3-title-input" placeholder="連結三標題">
+              <input type="text" id="link-3-url-input" placeholder="連結三網址 (URL)">
+            </div>
+            <div class="form-grid" style="grid-template-columns: 1fr 2fr; gap: 8px; margin-bottom: 0;">
+              <input type="text" id="link-4-title-input" placeholder="連結四標題">
+              <input type="text" id="link-4-url-input" placeholder="連結四網址 (URL)">
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary btn-sm" id="btn-save-links" onclick="saveLinksConfig()">儲存連結設定</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 幹部/小老師個人發布歷史紀錄 -->
+      <div class="editor-card hidden" id="editor-history-card" style="margin-top: 24px;">
+        <div class="editor-card-title">發布歷史紀錄</div>
+        <div class="editor-card-desc">您發布過的公告，可在此直接編輯內容或將其隱藏</div>
+        <div id="editor-history-list"></div>
       </div>
     </div>
   </div>
@@ -693,8 +1299,20 @@
 <!-- Toast 容器 -->
 <div id="toast-container"></div>
 
-<!-- 隱藏 iframe（用於 Google Form 提交） -->
-<iframe name="hidden-submit-frame" style="display:none;" title="submit"></iframe>
+<!-- 隱藏 iframe（改為 API 發送後已廢棄） -->
+
+<!-- 月曆詳細資訊 Modal -->
+<div id="calendar-modal" class="modal" onclick="if(event.target===this) closeCalendarModal()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="calendar-modal-title">日期公告</h3>
+      <button class="modal-close" onclick="closeCalendarModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="calendar-modal-body">
+      <!-- 由 JS 動態生成 -->
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -702,76 +1320,297 @@
 // ═══════════════════════════════════════════════════════
 const CONFIG = {
   SPREADSHEET_ID: '1p2Ii2M8dOGdBffuLe0hvE40P6qmfj4SS55uQ4_9bQrQ',
-  FORM_ID:        '1_GTG8t2-uI96uG7hi1d0IuTkUCk_kz_GTPC26Binxv0',
   RESPONSE_SHEET: '表單回覆 2',
-  WEB_APP_URL:    'https://script.google.com/macros/s/AKfycby_3DMV8oHJmNp04l0YJbgb0cm1I6N07zuWR4UI1KeMvvZ8n2YDvWw9EyZorPzXFT4t/exec',
-  FORM_ENTRIES: {
-    category:   'entry.881129735',
-    subject:    'entry.511209487',
-    dueDate:    'entry.302347305',
-    content:    'entry.440674452',
-    posterName: 'entry.2075420315',
-    posterType: 'entry.1414592064'
-  },
+  // 專用 API 部署（v32.1.2，含 publishAnnouncement；勿與舊版 UNKNOWN_ACTION 部署混用）
+  WEB_APP_URL:    'https://script.google.com/macros/s/AKfycbyQr4WjfdF_sNs7z1VyngP0rPxYJJEpGsp1i7dO_MHR5w5egCvJIjVMFavea_CnHHgPeA/exec',
   // 幹部職稱列表
   CADRE_TITLES: ['班長','副班長','學藝股長','風紀股長','衛生股長','體育股長','資訊股長','總務股長','環保股長'],
   // 小老師科目列表
   TEACHER_SUBJECTS: ['班級公告','國文','英文','數學','物理','化學','生物','地科','歷史','地理','公民與社會','體育','音樂','美術','自主學習','探究','本土語文']
 };
 
+/**
+ * 呼叫後端 API：
+ * 0) 若頁面由 GAS HtmlService 開啟 → google.script.run（最穩）
+ * 1) 否則 POST
+ * 2) POST 失敗 → GET ?action=api&payload=
+ */
+async function apiCall(body) {
+  // 0) google.script.run（僅當開啟 script.google.com Web App 頁面時可用）
+  if (typeof google !== 'undefined' && google.script && google.script.run && google.script.run.routeApiActionRaw) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          .routeApiActionRaw(body);
+      });
+      if (result && typeof result === 'object') return result;
+    } catch (e) {
+      console.warn('google.script.run 失敗，改 HTTP', e);
+    }
+  }
+
+  // 1) POST
+  try {
+    const response = await fetch(CONFIG.WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    });
+    const text = await response.text();
+    try {
+      const json = JSON.parse(text);
+      return json;
+    } catch (parseErr) {
+      console.warn('POST 回傳非 JSON，改試 GET 備援', text.slice(0, 120));
+    }
+  } catch (e) {
+    console.warn('POST 失敗，改試 GET 備援', e);
+  }
+
+  // 2) GET 備援
+  const payload = encodeURIComponent(JSON.stringify(body));
+  const url = `${CONFIG.WEB_APP_URL}?action=api&payload=${payload}`;
+  if (url.length > 1800) {
+    return {
+      success: false,
+      error: 'REQUEST_TOO_LONG',
+      detail: '內容過長且 POST 通道不可用，請縮短公告，或請導師重新部署 Web App'
+    };
+  }
+  try {
+    const res2 = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store', redirect: 'follow' });
+    const text2 = await res2.text();
+    try {
+      return JSON.parse(text2);
+    } catch (e2) {
+      console.error('GET 備援也非 JSON', text2.slice(0, 200));
+    }
+  } catch (e3) {
+    console.error('GET 備援失敗', e3);
+  }
+
+  return {
+    success: false,
+    error: 'NETWORK_OR_DEPLOY',
+    detail: '無法連線後端。請用「無痕」重試；若仍失敗，請導師在 script.google.com → 部署 → 管理部署 → 新版本（執行身分：我、誰可以存取：任何人）'
+  };
+}
+
 // ═══════════════════════════════════════════════════════
 //  App 狀態
 // ═══════════════════════════════════════════════════════
 const APP = {
-  role:         null,   // 'viewer' | 'editor'
-  posterType:   null,   // 'viewer' | 'cadre' | 'teacher'
-  posterLabel:  '',
+  role:          null,   // 'viewer' | 'editor'
+  posterType:    null,   // 'viewer' | 'cadre' | 'teacher'
+  posterLabel:   '',
   posterSubject: '',
-  verifiedPin:  false,
-  allBulletins: [],
-  activeFilter: 'all',
-  isSubmitting: false,
-  adminSecret:  null    // 儲存管理員金鑰
+  verifiedPin:   false,
+  allBulletins:  [],
+  activeFilter:  'all',
+  isSubmitting:  false,
+  adminSecret:   null,   // 儲存管理員金鑰
+  currentView:   'list', // 'list' | 'calendar'
+  currentYear:   new Date().getFullYear(),
+  currentMonth:  new Date().getMonth(), // 0 = 1月, 11 = 12月
+  isEditing:     false,  // 是否處於編輯舊公告狀態
+  editingTimestamp: null, // 被編輯公告的時間戳記
+  editingRowId:  null,   // 被編輯公告的穩定 ID
+  verifiedPinVal: null   // 暫存驗證過的 PIN 碼用於後續編輯與隱藏驗證
 };
 
-// 判斷公告是否已過期
+// ═══════════════════════════════════════════════════════
+//  角色記憶（localStorage）
+// ═══════════════════════════════════════════════════════
+const ROLE_STORAGE_KEY = 'BULLETIN_SAVED_ROLE';
+
+function saveRole() {
+  try {
+    localStorage.setItem(ROLE_STORAGE_KEY, JSON.stringify({
+      role: APP.role, posterType: APP.posterType,
+      posterLabel: APP.posterLabel, posterSubject: APP.posterSubject,
+      verifiedPin: APP.verifiedPin,
+      verifiedPinVal: APP.verifiedPinVal,
+      adminSecret: APP.adminSecret // 儲存管理員金鑰，重整網頁時才不會被登出
+    }));
+  } catch (e) { /* localStorage 不可用 */ }
+}
+
+function getSavedRole() {
+  try {
+    const raw = localStorage.getItem(ROLE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function clearSavedRole() {
+  try { localStorage.removeItem(ROLE_STORAGE_KEY); } catch (e) {}
+}
+
+function clearSavedRoleAndGoBack() {
+  clearSavedRole();
+  goToRolePage();
+}
+
+// 判斷公告是否已過期（YYYY-MM-DD 用本地日期解析，避免 UTC 差一天）
+function parseLocalDate(dateStr) {
+  if (!dateStr) return null;
+  const s = String(dateStr).trim();
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function isExpired(b) {
   if (!b.dueDate) return false;
   const today = new Date();
   today.setHours(0,0,0,0);
-  const due = new Date(b.dueDate);
+  const due = parseLocalDate(b.dueDate);
+  if (!due) return false;
   due.setHours(0,0,0,0);
   return due < today;
+}
+
+function normalizeCategoryClient(cat) {
+  const c = String(cat || '').trim();
+  if (c === '交代事項') return '老師交代事項';
+  return c;
+}
+
+/** 驗證導師密鑰（必須後端通過才進入管理 UI） */
+async function verifyAdminSecret(secret) {
+  if (!secret) return false;
+  try {
+    const result = await apiCall({ action: 'verifyAdmin', adminSecret: secret });
+    if (result && result.success) return true;
+
+    // 後端尚未部署新 action 時：用既有 getPin 探測密鑰
+    if (result && (result.error === 'UNKNOWN_ACTION' || result.error === 'PARSE_ERROR' || result.error === 'NETWORK_OR_DEPLOY')) {
+      const j2 = await apiCall({ action: 'getPin', adminSecret: secret });
+      return !!(j2 && j2.success);
+    }
+    return false;
+  } catch (e) {
+    console.error('verifyAdminSecret error:', e);
+    return false;
+  }
+}
+
+function enterTeacherMode(adminSecret) {
+  APP.role = 'editor';
+  APP.posterType = 'teacher';
+  APP.posterLabel = '導師';
+  APP.verifiedPin = true;
+  APP.adminSecret = adminSecret;
+  updateHeader();
+  showPage('edit');
+  document.getElementById('selected-poster-text').textContent = '導師';
+  document.getElementById('editor-verified-label').textContent = '導師';
+  document.getElementById('poster-display-name').textContent = '導師';
+  document.getElementById('teacher-panel').classList.remove('hidden');
+  document.getElementById('teacher-sheet-link').href =
+    `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/edit`;
+  setEditorDefaultDate();
+  saveRole();
+  initEditorPanel();
+  initCountdownBanner();
+  initQuickLinks(true);
+  initMarqueeData();
+  hideLoading();
 }
 
 // ═══════════════════════════════════════════════════════
 //  初始化
 // ═══════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', () => {
-  // 管理後台：URL 包含 ?admin=XXX 時
+window.addEventListener('DOMContentLoaded', async () => {
+  // 管理後台：URL 含 ?admin= 時，必須後端驗證通過才進入導師模式
   const urlParams = new URLSearchParams(window.location.search);
-  const adminSecret = urlParams.get('admin');
+  let adminSecret = urlParams.get('admin');
+  if (!adminSecret && window.GAS_PARAMS && window.GAS_PARAMS.admin) {
+    adminSecret = window.GAS_PARAMS.admin;
+  }
+
   if (adminSecret) {
-    APP.role = 'editor';
-    APP.posterType = 'teacher';
-    APP.posterLabel = '導師';
-    APP.verifiedPin = true;
-    APP.adminSecret = adminSecret; // 儲存管理員金鑰
+    document.getElementById('page-loading')?.classList.remove('hidden');
+    const ok = await verifyAdminSecret(adminSecret);
+    if (ok) {
+      enterTeacherMode(adminSecret);
+      return;
+    }
+    // 密鑰錯誤：清掉 URL 參數與本機快取，回身份頁
+    showToast('導師密鑰無效，已返回一般模式', 'error');
+    clearSavedRole();
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete('admin');
+    window.history.replaceState({}, '', clean.toString());
+  }
+
+  populateRoleSelects();
+
+  // 嘗試從 localStorage 還原上次選擇的角色
+  const saved = getSavedRole();
+  if (saved && saved.role) {
+    // 若本機記的是導師，重新向後端驗證密鑰
+    if (saved.posterLabel === '導師' && saved.adminSecret) {
+      const ok = await verifyAdminSecret(saved.adminSecret);
+      if (ok) {
+        enterTeacherMode(saved.adminSecret);
+        return;
+      }
+      clearSavedRole();
+    } else if (saved.role === 'editor' && saved.adminSecret) {
+      // 舊快取若誤存 adminSecret 但不是導師標籤，仍驗證一次
+      const ok = await verifyAdminSecret(saved.adminSecret);
+      if (ok) {
+        enterTeacherMode(saved.adminSecret);
+        return;
+      }
+      clearSavedRole();
+    }
+
+    APP.role = saved.role;
+    APP.posterType = saved.posterType;
+    APP.posterLabel = saved.posterLabel || '';
+    APP.posterSubject = saved.posterSubject || '';
+    APP.verifiedPin = saved.verifiedPin || false;
+    APP.verifiedPinVal = saved.verifiedPinVal || null;
+    APP.adminSecret = null; // 非導師不保留密鑰
     updateHeader();
-    showPage('edit');
-    document.getElementById('selected-poster-text').textContent = '導師';
-    document.getElementById('editor-verified-label').textContent = '導師';
-    document.getElementById('teacher-panel').classList.remove('hidden');
-    document.getElementById('teacher-sheet-link').href =
-      `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/edit`;
-    setEditorDefaultDate();
+    hideLoading();
+
+    if (saved.role === 'viewer') {
+      loadBoard(true);
+      initMarqueeData();
+      hideLoading();
+    } else if (saved.role === 'editor' && saved.verifiedPin) {
+      showPage('edit');
+      setEditorDefaultDate();
+      if (APP.posterSubject) document.getElementById('ed-subject').value = APP.posterSubject;
+      document.getElementById('selected-poster-text').textContent = APP.posterLabel;
+      document.getElementById('editor-verified-label').textContent = APP.posterLabel;
+      document.getElementById('poster-display-name').textContent = APP.posterLabel;
+      document.getElementById('teacher-panel').classList.add('hidden');
+      initEditorPanel();
+      initCountdownBanner();
+      initQuickLinks(true);
+      initMarqueeData();
+    } else {
+      showPage('role');
+      setRolePageDate();
+      initMarqueeData();
+      hideLoading();
+    }
     return;
   }
+
   showPage('role');
-  populateRoleSelects();
-  hideLoading();
-  initMarqueeData();
   setRolePageDate();
+  initMarqueeData();
+  hideLoading();
 });
 
 function populateRoleSelects() {
@@ -812,12 +1651,17 @@ function hideLoading() { document.getElementById('page-loading').classList.add('
 function handleLogoClick() {
   if (APP.adminSecret) {
     showPage('board');
+  } else if (APP.role === 'viewer') {
+    loadBoard();
+  } else if (APP.role === 'editor') {
+    showPage('edit');
   } else {
     goToRolePage();
   }
 }
 
 function goToRolePage() {
+  clearSavedRole();
   APP.role = null; APP.posterType = null; APP.posterLabel = '';
   APP.posterSubject = ''; APP.verifiedPin = false; APP.adminSecret = null;
   // 清除 URL 中的 admin 參數，徹底結束管理模式
@@ -851,14 +1695,25 @@ async function initMarqueeData() {
     });
     
     if (activeAnnouncements.length > 0) {
-      const text = activeAnnouncements.map(b => `【${b.category} / ${b.subject || '一般'}】${b.content}`).join('　　★　　');
+      const text = activeAnnouncements.map(b => {
+        const cleanCat = b.category.replace(/[【】]/g, '').trim();
+        return `【${cleanCat} / ${b.subject || '一般'}】${b.content}`;
+      }).join('　　★　　');
+      
       const marqueeTextEl = document.getElementById('role-marquee-text');
       const marqueeContainerEl = document.getElementById('role-marquee-container');
       if (marqueeTextEl && marqueeContainerEl) {
         marqueeTextEl.textContent = text;
         marqueeContainerEl.classList.remove('hidden');
         
-        // 根據文字寬度，動態調整跑馬燈的播放時間
+        // 還原跑馬燈滾動動畫設定
+        marqueeTextEl.style.animation = '';
+        marqueeTextEl.style.position = '';
+        marqueeTextEl.style.paddingLeft = '';
+        marqueeTextEl.style.display = '';
+        marqueeTextEl.style.textAlign = '';
+        marqueeTextEl.style.width = '';
+        
         const speed = 40;
         const textWidth = marqueeTextEl.offsetWidth || (text.length * 14);
         const duration = Math.max(12, textWidth / speed);
@@ -885,6 +1740,15 @@ function setRolePageDate() {
   if (monthEl) monthEl.textContent = monthStr;
   if (dayEl) dayEl.textContent = dayStr;
   if (dayOfWeekEl) dayOfWeekEl.textContent = dayOfWeekStr;
+
+  // 預先在背景拉取雲端課表（不阻塞開屏）
+  fetchTimetable().catch(() => {});
+
+  // 載入倒數計時器
+  initCountdownBanner();
+
+  // 載入常用資源連結
+  initQuickLinks();
 }
 
 
@@ -908,19 +1772,28 @@ function resetRolePage() {
 function updateHeader() {
   const badge = document.getElementById('role-badge');
   const nav = document.getElementById('header-nav');
+  const switchBtn = document.getElementById('header-switch-btn');
   badge.className = 'header-role-badge';
   if (APP.adminSecret) {
     badge.className = 'header-role-badge badge-admin';
     badge.textContent = '導師管理';
     if (nav) nav.classList.remove('hidden');
+    if (switchBtn) switchBtn.classList.add('hidden');
   } else if (APP.role === 'editor') {
     badge.classList.add('badge-editor');
     badge.textContent = '發布者';
     if (nav) nav.classList.add('hidden');
+    if (switchBtn) switchBtn.classList.remove('hidden');
+  } else if (APP.role === 'viewer') {
+    badge.className = 'header-role-badge badge-viewer';
+    badge.textContent = '瀏覽';
+    if (nav) nav.classList.add('hidden');
+    if (switchBtn) switchBtn.classList.remove('hidden');
   } else {
     badge.className = 'header-role-badge badge-viewer';
     badge.textContent = '瀏覽';
     if (nav) nav.classList.add('hidden');
+    if (switchBtn) switchBtn.classList.add('hidden');
   }
 }
 
@@ -994,97 +1867,207 @@ async function verifyRolePin() {
   document.getElementById('pin-error').textContent = '';
 
   try {
-    const correctPin = await fetchConfigPin();
-    if (pin === String(correctPin)) {
+    const result = await apiCall({ action: 'verifyPin', pin: pin });
+    if (result && result.success) {
       APP.verifiedPin = true;
+      APP.verifiedPinVal = pin; // 暫存驗證過的 PIN 碼
+      saveRole();
       proceedFromRole();
+    } else if (result && (result.error === 'NETWORK_OR_DEPLOY' || result.error === 'REQUEST_TOO_LONG')) {
+      document.getElementById('pin-error').textContent =
+        '無法連線後端（' + (result.detail || result.error) + '）。請導師重新部署 Web App。';
     } else {
       document.getElementById('pin-error').textContent = '授權碼錯誤，請再試一次';
       document.getElementById('role-pin').value = '';
       document.getElementById('role-pin').focus();
     }
   } catch (e) {
-    document.getElementById('pin-error').textContent = '驗證出錯: ' + e.message + ' (請嘗試強制重新整理網頁)';
-    console.error('PIN fetch error:', e);
+    document.getElementById('pin-error').textContent = '驗證連線失敗，請稍後再試';
+    console.error('PIN verification error:', e);
   } finally {
     btn.disabled = false;
     btn.textContent = '驗證';
   }
 }
 
-async function fetchConfigPin() {
-  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=config&nocache=${Date.now()}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
-  if (!match) throw new Error('無法解析 config 工作表');
-  const data = JSON.parse(match[1]);
-  const rows = data.table?.rows || [];
+let CONFIG_CACHE = null;
+let CONFIG_PROMISE = null;
 
-  // 1. 標準做法：尋找第一欄為 'pin' 的那一列，取第二欄的值
-  for (const row of rows) {
-    const cells = row.c || [];
-    if (cells[0]?.v && String(cells[0].v).toLowerCase().trim() === 'pin') {
-      return String(cells[1]?.v ?? '').trim();
+/** @param {boolean} forceRefresh 為 true 時略過記憶體快取，重新向試算表抓設定 */
+async function fetchConfig(forceRefresh = false) {
+  if (forceRefresh) {
+    CONFIG_CACHE = null;
+    CONFIG_PROMISE = null;
+  }
+  if (CONFIG_CACHE) return CONFIG_CACHE;
+  if (CONFIG_PROMISE) return CONFIG_PROMISE;
+
+  CONFIG_PROMISE = (async () => {
+    // 優先走 Web App（較不易被 gviz CDN 快取）
+    try {
+      const apiUrl = `${CONFIG.WEB_APP_URL}?action=getPublicConfig&_=${Date.now()}`;
+      const apiRes = await fetch(apiUrl, { cache: 'no-store' });
+      const apiJson = await apiRes.json();
+      if (apiJson && apiJson.success && apiJson.config) {
+        CONFIG_CACHE = apiJson.config;
+        return CONFIG_CACHE;
+      }
+    } catch (e) {
+      console.warn('getPublicConfig 失敗，改走 gviz：', e);
     }
-  }
 
-  // 2. 容錯備份一：如果使用者直接把 PIN 碼打在 A1 儲存格（或者整個工作表的第一格）
-  if (rows.length > 0) {
-    const firstRowCells = rows[0]?.c || [];
-    const val1 = firstRowCells[0]?.v;
-    if (val1 !== null && val1 !== undefined && val1 !== '') {
-      return String(val1).trim();
+    try {
+      const bust = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=config&headers=0&tq=${encodeURIComponent('select *')}&cachebust=${bust}`;
+      const res = await fetch(url, { cache: 'no-store' });
+      const text = await res.text();
+      const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
+      if (!match) throw new Error('無法解析 config 工作表');
+      const data = JSON.parse(match[1]);
+      const rows = data.table?.rows || [];
+
+      const config = {};
+      rows.forEach((row, idx) => {
+        const cells = row.c || [];
+        if (cells[0]?.v !== null && cells[0]?.v !== undefined) {
+          const key = String(cells[0].v).toLowerCase().trim();
+          if (key === 'pin' || key === 'key') return;
+          if (idx === 0 && /^\d+$/.test(key)) return;
+          let raw = cells[1]?.v;
+          if (raw === null || raw === undefined) raw = cells[1]?.f;
+          const val = raw !== null && raw !== undefined ? String(raw).trim() : '';
+          config[key] = val;
+        }
+      });
+
+      CONFIG_CACHE = config;
+      return config;
+    } catch (e) {
+      console.error('fetchConfig error:', e);
+      CONFIG_PROMISE = null;
+      throw e;
     }
-  }
+  })();
 
-  // 3. 容錯備份二：如果 Google 試算表將第一列當作標頭（header），而 A1 就是密碼
-  const cols = data.table?.cols || [];
-  if (cols[0]?.label && cols[0].label !== 'key') {
-    return String(cols[0].label).trim();
-  }
-
-  throw new Error('config 工作表無任何設定值');
+  return CONFIG_PROMISE;
 }
 
 function proceedFromRole() {
   if (APP.posterType === 'viewer') {
     APP.role = 'viewer';
     updateHeader();
+    saveRole();
     loadBoard();
   } else if ((APP.posterType === 'cadre' || APP.posterType === 'teacher') && APP.verifiedPin) {
     APP.role = 'editor';
     updateHeader();
+    saveRole();
     showPage('edit');
     setEditorDefaultDate();
     if (APP.posterSubject) document.getElementById('ed-subject').value = APP.posterSubject;
     document.getElementById('selected-poster-text').textContent = APP.posterLabel;
     document.getElementById('editor-verified-label').textContent = APP.posterLabel;
     document.getElementById('poster-display-name').textContent = APP.posterLabel;
+    
+    initEditorPanel();
   }
 }
 
 // ═══════════════════════════════════════════════════════
 //  讀取公告（Google Sheets gviz API）
 // ═══════════════════════════════════════════════════════
-async function loadBoard() {
+async function loadBoard(forceRefresh = false) {
   showPage('board');
   updateHeader();
   const now = new Date();
   document.getElementById('board-date').textContent = `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日`;
-  document.getElementById('bulletin-list').innerHTML = `<div style="text-align:center;padding:48px;color:var(--c-text-dim)"><div class="spinner" style="margin:0 auto 16px;"></div>讀取中…</div>`;
+
+  // 進入／重整公告欄時先強制重抓 config，再更新連結／倒數（避免並行競態吃到舊快取）
+  fetchConfig(true)
+    .then(() => Promise.all([initQuickLinks(false), initCountdownBanner()]))
+    .catch(() => {
+      initQuickLinks(true).catch(() => {});
+      initCountdownBanner().catch(() => {});
+    });
+
+  const hasCache = !!BULLETINS_CACHE;
+  if (forceRefresh || !hasCache) {
+    document.getElementById('bulletin-list').innerHTML = `<div style="text-align:center;padding:48px;color:var(--c-text-dim)"><div class="spinner" style="margin:0 auto 16px;"></div>讀取中…</div>`;
+  }
 
   try {
-    const bulletins = await fetchBulletins();
+    const bulletins = await fetchBulletins(forceRefresh);
     APP.allBulletins = bulletins;
-    renderBulletins(bulletins);
+    
+    // 更新今日速覽儀表板
+    updateDashboard(bulletins);
+    
+    // 依據目前檢視模式進行渲染
+    if (APP.currentView === 'calendar') {
+      renderCalendar();
+    } else {
+      renderBulletins(bulletins);
+    }
   } catch (e) {
     console.error('fetchBulletins error:', e);
-    document.getElementById('bulletin-list').innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">無法載入公告，請稍後再試<br><small style="color:var(--c-text-dim)">${e.message}</small></div></div>`;
+    document.getElementById('bulletin-list').innerHTML = `<div class="empty-state"><div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="empty-state-text">無法載入公告，請稍後再試<br><small style="color:var(--c-text-dim)">${e.message}</small></div></div>`;
   }
 }
 
-async function fetchBulletins() {
+function updateDashboard(bulletins) {
+  let hwCount = 0;
+  let quizCount = 0;
+  let noteCount = 0;
+  let adminCount = 0;
+
+  bulletins.forEach(b => {
+    if (b.status === '隱藏') return;
+    
+    if (b.category === '作業' && isToday(b.dueDate)) {
+      hwCount++;
+    } else if (b.category === '小考' && isTomorrow(b.dueDate)) {
+      quizCount++;
+    } else if ((b.category === '老師交代事項' || b.category === '交代事項') && !isExpired(b)) {
+      noteCount++;
+    } else if (b.category === '學校行政公告' && !isExpired(b)) {
+      adminCount++;
+    }
+  });
+
+  document.getElementById('dash-hw').textContent = hwCount;
+  document.getElementById('dash-quiz').textContent = quizCount;
+  document.getElementById('dash-note').textContent = noteCount;
+  document.getElementById('dash-admin').textContent = adminCount;
+}
+
+function isToday(dateStr) {
+  if (!dateStr) return false;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const d = parseLocalDate(dateStr);
+  if (!d) return false;
+  d.setHours(0,0,0,0);
+  return today.getTime() === d.getTime();
+}
+
+function isTomorrow(dateStr) {
+  if (!dateStr) return false;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0,0,0,0);
+  const d = parseLocalDate(dateStr);
+  if (!d) return false;
+  d.setHours(0,0,0,0);
+  return tomorrow.getTime() === d.getTime();
+}
+
+let BULLETINS_CACHE = null;
+
+async function fetchBulletins(forceRefresh = false) {
+  if (BULLETINS_CACHE && !forceRefresh) {
+    return BULLETINS_CACHE;
+  }
+
   const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CONFIG.RESPONSE_SHEET)}&nocache=${Date.now()}`;
   const res = await fetch(url);
   const text = await res.text();
@@ -1101,14 +2084,16 @@ async function fetchBulletins() {
   if (!data.table) return [];
 
   const rows = data.table.rows || [];
-  // 欄位順序（Google Form 回應表）：
-  // 0:Timestamp 1:類別 2:科目 3:截止日期 4:內容 5:發布者 6:角色 7:狀態
-  return rows.map((row, i) => {
+  // 欄位：0時間 1類別 2科目 3截止 4內容 5發布者 6角色 7狀態 8跑馬燈 9公告ID
+  const list = rows.map((row, i) => {
     const c = row.c || [];
     const getVal = (idx) => {
       const cell = c[idx];
-      if (!cell || cell.v === null || cell.v === undefined) return '';
-      // Google gviz date format: Date(y,m,d) -> 0-based month, 支援時間戳記解析
+      if (!cell || cell.v === null || cell.v === undefined) {
+        if (cell && cell.f != null) return String(cell.f);
+        return '';
+      }
+      // Google gviz date format: Date(y,m,d) -> 0-based month
       if (typeof cell.v === 'string' && cell.v.startsWith('Date(')) {
         const m = cell.v.match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/);
         if (m) {
@@ -1129,18 +2114,22 @@ async function fetchBulletins() {
     return {
       id:         i,
       timestamp:  getVal(0),
-      category:   getVal(1),
+      category:   normalizeCategoryClient(getVal(1)),
       subject:    getVal(2),
       dueDate:    getVal(3),
       content:    getVal(4),
       posterName: getVal(5),
       posterType:    getVal(6),
       status:        getVal(7),
-      marqueeStatus: getVal(8)
+      marqueeStatus: getVal(8),
+      rowId:         getVal(9)
     };
   })
   .filter(b => b.content && b.status !== '隱藏')
-  .reverse(); // 最新的排最前
+  .reverse();
+
+  BULLETINS_CACHE = list;
+  return list;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1233,7 +2222,7 @@ function calculateStats(bulletins) {
 function renderBulletinList(list) {
   const container = document.getElementById('bulletin-list');
   if (!list.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">目前沒有公告</div></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div><div class="empty-state-text">目前沒有公告</div></div>`;
     return;
   }
 
@@ -1272,13 +2261,17 @@ function renderBulletinList(list) {
         const btnText = isMarquee ? '🔇 關閉跑馬燈' : '📢 開啟跑馬燈';
         const btnClass = isMarquee ? 'btn-ghost' : 'btn-primary';
         const nextStatus = isMarquee ? 'no_marquee' : 'marquee';
-        marqueeBtnHTML = `<button class="btn ${btnClass} btn-sm" onclick="toggleMarquee('${b.timestamp}', '${nextStatus}', event)" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); margin-right: 6px;">${btnText}</button>`;
+        marqueeBtnHTML = `<button class="btn ${btnClass} btn-sm" onclick="toggleMarquee('${b.timestamp}', '${nextStatus}', event, '${b.rowId || ''}')" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); margin-right: 6px;">${btnText}</button>`;
       }
       adminControlsHTML = `<div style="margin-left: auto; display: flex; align-items: center;">
         ${marqueeBtnHTML}
-        <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${b.timestamp}', event)" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-sm);">🗑️ 隱藏</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${b.timestamp}', event, '${b.rowId || ''}')" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-sm);">🗑️ 隱藏</button>
       </div>`;
     }
+
+    const needsTruncate = b.content.length > 100 || (b.content.match(/\n/g) || []).length > 2;
+    const truncatedClass = needsTruncate ? ' truncated' : '';
+    const expandBtnHTML = needsTruncate ? '<button class="card-expand-btn" onclick="toggleCardContent(this)">展開全文 ▾</button>' : '';
 
     const card = document.createElement('div');
     card.className = 'card';
@@ -1291,7 +2284,8 @@ function renderBulletinList(list) {
           <span class="subject-tag">${b.subject || '一般'}</span>
           ${adminControlsHTML}
         </div>
-        <div class="card-content">${escHtml(b.content)}</div>
+        <div class="card-content${truncatedClass}">${escHtml(b.content)}</div>
+        ${expandBtnHTML}
         <div class="card-footer">
           <span class="card-date">
             ${b.dueDate ? `截止 ${b.dueDate}` : ''}
@@ -1306,7 +2300,18 @@ function renderBulletinList(list) {
   container.appendChild(grid);
 }
 
-async function deleteAnnouncement(timestamp, event) {
+function toggleCardContent(btn) {
+  const content = btn.previousElementSibling;
+  if (content.classList.contains('truncated')) {
+    content.classList.remove('truncated');
+    btn.textContent = '收合 ▴';
+  } else {
+    content.classList.add('truncated');
+    btn.textContent = '展開全文 ▾';
+  }
+}
+
+async function deleteAnnouncement(timestamp, event, rowId) {
   if (event) event.stopPropagation();
   if (!confirm('確定要將此公告從佈告欄中隱藏嗎？')) return;
 
@@ -1315,26 +2320,21 @@ async function deleteAnnouncement(timestamp, event) {
   try {
     const payload = {
       action: 'updateStatus',
-      adminSecret: APP.adminSecret,
+      adminSecret: APP.adminSecret || undefined,
+      pin: APP.verifiedPinVal || undefined,
+      posterName: APP.posterLabel,
       timestamp: timestamp,
+      rowId: rowId || '',
       status: 'hidden'
     };
 
-    const response = await fetch(CONFIG.WEB_APP_URL, {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const result = await response.json();
-    if (result.success) {
+    const result = await apiCall(payload);
+    if (result && result.success) {
       showToast('公告已成功隱藏', 'success');
-      loadBoard(); // 重新整理佈告欄
+      BULLETINS_CACHE = null;
+      loadBoard(true);
     } else {
-      showToast('操作失敗：' + (result.error || '未知錯誤'), 'error');
+      showToast('操作失敗：' + ((result && result.error) || '未知錯誤'), 'error');
     }
   } catch (e) {
     showToast('網路連線失敗或權限不足', 'error');
@@ -1342,33 +2342,26 @@ async function deleteAnnouncement(timestamp, event) {
   }
 }
 
-async function toggleMarquee(timestamp, nextStatus, event) {
+async function toggleMarquee(timestamp, nextStatus, event, rowId) {
   if (event) event.stopPropagation();
   showToast('正在設定跑馬燈狀態...', 'info');
 
   try {
     const payload = {
       action: 'updateMarquee',
-      adminSecret: APP.adminSecret,
+      adminSecret: APP.adminSecret || undefined,
       timestamp: timestamp,
+      rowId: rowId || '',
       marqueeStatus: nextStatus
     };
 
-    const response = await fetch(CONFIG.WEB_APP_URL, {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const result = await response.json();
-    if (result.success) {
+    const result = await apiCall(payload);
+    if (result && result.success) {
       showToast('已更新跑馬燈設定', 'success');
-      loadBoard(); // 重新整理佈告欄
+      BULLETINS_CACHE = null;
+      loadBoard(true);
     } else {
-      showToast('設定失敗：' + (result.error || '未知錯誤'), 'error');
+      showToast('設定失敗：' + ((result && result.error) || '未知錯誤'), 'error');
     }
   } catch (e) {
     showToast('網路連線失敗或權限不足', 'error');
@@ -1385,9 +2378,27 @@ function showAdminEdit() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  發布公告（提交 Google Form 透過隱藏 iframe）
+//  發布公告（打後端 API + 驗證 PIN 碼）
 // ═══════════════════════════════════════════════════════
-function submitBulletin() {
+async function ensureEditorAuth() {
+  // 導師用 adminSecret；幹部／小老師必須有 PIN
+  if (APP.adminSecret) return true;
+  if (APP.verifiedPinVal) return true;
+
+  const pin = window.prompt('授權階段已失效，請重新輸入授權碼（PIN）才能發布：');
+  if (!pin) return false;
+  const result = await apiCall({ action: 'verifyPin', pin: pin.trim() });
+  if (result && result.success) {
+    APP.verifiedPin = true;
+    APP.verifiedPinVal = pin.trim();
+    saveRole();
+    return true;
+  }
+  showToast('授權碼錯誤，無法發布', 'error');
+  return false;
+}
+
+async function submitBulletin() {
   if (APP.isSubmitting) return;
   const category = document.getElementById('ed-category').value;
   const subject  = document.getElementById('ed-subject').value;
@@ -1399,9 +2410,9 @@ function submitBulletin() {
     return;
   }
 
-  // 檢查 CONFIG 是否已設定
-  if (CONFIG.FORM_ID === 'SETUP_REQUIRED') {
-    showStatusMsg('系統尚未完成設定，請聯繫管理員', 'error');
+  // 檢查是否為編輯模式
+  if (APP.isEditing) {
+    submitEditedBulletin(category, subject, dueDate, content);
     return;
   }
 
@@ -1409,42 +2420,71 @@ function submitBulletin() {
   const btn = document.getElementById('btn-submit');
   btn.disabled = true; btn.textContent = '發布中…';
 
-  // 使用隱藏 form 提交（規避 CORS 限制）
-  const formUrl = `https://docs.google.com/forms/d/${CONFIG.FORM_ID}/formResponse`;
+  try {
+    const okAuth = await ensureEditorAuth();
+    if (!okAuth) {
+      showStatusMsg('請先通過授權碼驗證再發布', 'error');
+      return;
+    }
 
-  const hiddenForm = document.createElement('form');
-  hiddenForm.method  = 'POST';
-  hiddenForm.action  = formUrl;
-  hiddenForm.target  = 'hidden-submit-frame';
-  hiddenForm.style.display = 'none';
+    const payload = {
+      action: 'publishAnnouncement',
+      adminSecret: APP.adminSecret || undefined,
+      pin: APP.verifiedPinVal || undefined,
+      category: normalizeCategoryClient(category),
+      subject: subject,
+      dueDate: dueDate,
+      content: content,
+      posterName: APP.posterLabel,
+      posterType: APP.posterType
+    };
 
-  const fields = {
-    [CONFIG.FORM_ENTRIES.category]:   category,
-    [CONFIG.FORM_ENTRIES.subject]:    subject,
-    [CONFIG.FORM_ENTRIES.dueDate]:    dueDate,
-    [CONFIG.FORM_ENTRIES.content]:    content,
-    [CONFIG.FORM_ENTRIES.posterName]: APP.posterLabel,
-    [CONFIG.FORM_ENTRIES.posterType]: APP.posterType
-  };
-
-  Object.entries(fields).forEach(([name, value]) => {
-    const inp = document.createElement('input');
-    inp.type = 'hidden'; inp.name = name; inp.value = value;
-    hiddenForm.appendChild(inp);
-  });
-
-  document.body.appendChild(hiddenForm);
-  hiddenForm.submit();
-
-  // 等待約 1.5 秒後回傳成功（無法讀取 iframe 的回應，樂觀假設成功）
-  setTimeout(() => {
-    document.body.removeChild(hiddenForm);
+    const result = await apiCall(payload);
+    if (result && result.success) {
+      showToast('公告發布成功', 'success');
+      showStatusMsg('公告已成功發布！請到公告欄按「重新整理」查看。', 'success');
+      
+      clearAutosaveDraft();
+      resetEditorForm();
+      BULLETINS_CACHE = null;
+      initEditorPanel();
+    } else {
+      const err = (result && result.error) || '未知錯誤';
+      const detail = (result && result.detail) ? `（${result.detail}）` : '';
+      if (err === 'UNAUTHORIZED') {
+        APP.verifiedPin = false;
+        APP.verifiedPinVal = null;
+        saveRole();
+        showToast('驗證失敗：請重新輸入授權碼', 'error');
+        showStatusMsg('驗證失敗：PIN 錯誤或已失效，請回身份頁重新驗證', 'error');
+      } else if (err === 'UNKNOWN_ACTION') {
+        showToast('後端版本過舊（UNKNOWN_ACTION）', 'error');
+        showStatusMsg(
+          '發布失敗：UNKNOWN_ACTION（線上 Web App 沒有 publish 動作）。請導師用學校帳號開啟授權頁完成一次授權：' +
+          'https://maxchan-stack.github.io/bulletin-board-web/authorize-api.html',
+          'error'
+        );
+      } else if (err === 'NETWORK_OR_DEPLOY' || err === 'REQUEST_TOO_LONG') {
+        showToast('發布失敗：後端連線異常', 'error');
+        showStatusMsg(
+          '發布失敗：' + err + detail +
+          '。請導師開啟 https://maxchan-stack.github.io/bulletin-board-web/authorize-api.html 完成 API 授權。',
+          'error'
+        );
+      } else {
+        showToast('發布失敗：' + err, 'error');
+        showStatusMsg('發布失敗：' + err + detail, 'error');
+      }
+    }
+  } catch (e) {
+    showToast('網路連線失敗或權限不足', 'error');
+    showStatusMsg('發布失敗：網路錯誤或連線逾時，請重試', 'error');
+    console.error('Publish submit error:', e);
+  } finally {
     APP.isSubmitting = false;
-    btn.disabled = false; btn.textContent = '發布公告';
-    showStatusMsg('公告已成功發布！公告欄將在幾分鐘內更新。', 'success');
-    resetEditorForm();
-    showToast('公告發布成功', 'success');
-  }, 1800);
+    btn.disabled = false;
+    btn.textContent = APP.isEditing ? '儲存修改' : '發布公告';
+  }
 }
 
 function resetEditorForm() {
@@ -1484,11 +2524,925 @@ function showToast(msg, type = 'info') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  toast.textContent = msg;
+
+  const iconMap = {
+    success: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    error:   '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    info:    '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+  };
+  toast.innerHTML = (iconMap[type] || iconMap.info) + `<span>${msg}</span>`;
   toast.onclick = () => container.removeChild(toast);
   container.appendChild(toast);
   setTimeout(() => { if (toast.parentNode) container.removeChild(toast); }, 4000);
 }
+
+// ═══════════════════════════════════════════════════════
+//  月曆與視圖切換邏輯
+// ═══════════════════════════════════════════════════════
+function switchView(view) {
+  APP.currentView = view;
+  
+  // 切換選單的 active 樣式
+  const btnList = document.getElementById('btn-view-list');
+  const btnCalendar = document.getElementById('btn-view-calendar');
+  
+  if (view === 'calendar') {
+    btnList.classList.remove('active-all');
+    btnCalendar.classList.add('active-all');
+    document.getElementById('bulletin-list').classList.add('hidden');
+    document.getElementById('calendar-view').classList.remove('hidden');
+    renderCalendar();
+  } else {
+    btnCalendar.classList.remove('active-all');
+    btnList.classList.add('active-all');
+    document.getElementById('calendar-view').classList.add('hidden');
+    document.getElementById('bulletin-list').classList.remove('hidden');
+    renderBulletins(APP.allBulletins);
+  }
+}
+
+function changeMonth(dir) {
+  let newMonth = APP.currentMonth + dir;
+  let newYear = APP.currentYear;
+  
+  if (newMonth < 0) {
+    newMonth = 11;
+    newYear--;
+  } else if (newMonth > 11) {
+    newMonth = 0;
+    newYear++;
+  }
+  
+  APP.currentYear = newYear;
+  APP.currentMonth = newMonth;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const container = document.getElementById('calendar-grid');
+  if (!container) return;
+  
+  // 更新月曆標題
+  const titleEl = document.getElementById('calendar-month-title');
+  titleEl.textContent = `${APP.currentYear} 年 ${APP.currentMonth + 1} 月`;
+  
+  container.innerHTML = '';
+  
+  // 建立星期標頭
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+  weekdays.forEach(day => {
+    const dayHeader = document.createElement('div');
+    dayHeader.className = 'calendar-day-header';
+    dayHeader.textContent = day;
+    container.appendChild(dayHeader);
+  });
+  
+  // 取得該月第一天是星期幾，以及該月總天數
+  const firstDay = new Date(APP.currentYear, APP.currentMonth, 1).getDay();
+  const totalDays = new Date(APP.currentYear, APP.currentMonth + 1, 0).getDate();
+  
+  // 取得前一個月最後幾天補齊開頭
+  const prevMonthTotalDays = new Date(APP.currentYear, APP.currentMonth, 0).getDate();
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const dayBox = document.createElement('div');
+    dayBox.className = 'calendar-day other-month';
+    const num = prevMonthTotalDays - i;
+    dayBox.innerHTML = `<span class="calendar-day-num">${num}</span>`;
+    container.appendChild(dayBox);
+  }
+  
+  // 渲染當月日期
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
+  for (let d = 1; d <= totalDays; d++) {
+    const dayBox = document.createElement('div');
+    dayBox.className = 'calendar-day';
+    
+    const curDate = new Date(APP.currentYear, APP.currentMonth, d);
+    if (curDate.getTime() === today.getTime()) {
+      dayBox.classList.add('today');
+    }
+    
+    // 找出該截止日期匹配的公告項目
+    const curYearStr = String(APP.currentYear);
+    const curMonthStr = String(APP.currentMonth + 1).padStart(2, '0');
+    const curDayStr = String(d).padStart(2, '0');
+    const dateStr = `${curYearStr}-${curMonthStr}-${curDayStr}`;
+    
+    const dayEvents = APP.allBulletins.filter(b => {
+      if (b.status === '隱藏') return false;
+      if (!b.dueDate) return false;
+      const due = new Date(b.dueDate);
+      due.setHours(0,0,0,0);
+      return due.getTime() === curDate.getTime();
+    });
+    
+    // 格式化日期數字
+    let eventsHTML = '';
+    let dotHTML = '';
+    
+    if (dayEvents.length > 0) {
+      // 桌面版顯示前 2 筆文字
+      eventsHTML = '<div class="calendar-day-events">';
+      dayEvents.slice(0, 2).forEach(b => {
+        const catMap = { '作業': 'hw', '小考': 'quiz', '交代事項': 'note', '老師交代事項': 'note', '學校行政公告': 'admin' };
+        const cls = catMap[b.category] || 'note';
+        eventsHTML += `<span class="calendar-event-tag cal-tag-${cls}">[${b.category.substring(0,2)}] ${b.subject || '一般'}</span>`;
+      });
+      
+      if (dayEvents.length > 2) {
+        eventsHTML += `<span class="calendar-more-badge">+ ${dayEvents.length - 2} 筆</span>`;
+      }
+      eventsHTML += '</div>';
+      
+      // 行動端顯示彩色圓點
+      dotHTML = '<div class="calendar-dot-bar">';
+      dayEvents.forEach(b => {
+        const catMap = { '作業': 'hw', '小考': 'quiz', '交代事項': 'note', '老師交代事項': 'note', '學校行政公告': 'admin' };
+        const cls = catMap[b.category] || 'note';
+        dotHTML += `<span class="calendar-dot dot-${cls}"></span>`;
+      });
+      dotHTML += '</div>';
+    }
+    
+    dayBox.innerHTML = `
+      <span class="calendar-day-num">${d}</span>
+      ${eventsHTML}
+      ${dotHTML}
+    `;
+    
+    // 點選日期格時，彈出 Modal 顯示該日詳細公告
+    dayBox.onclick = () => {
+      if (dayEvents.length > 0) {
+        openCalendarModal(dateStr, dayEvents);
+      }
+    };
+    
+    container.appendChild(dayBox);
+  }
+  
+  // 補齊結尾格數 (以 42 格為基準)
+  const currentTotalCells = firstDay + totalDays;
+  const remainingCells = 42 - currentTotalCells;
+  for (let i = 1; i <= remainingCells; i++) {
+    const dayBox = document.createElement('div');
+    dayBox.className = 'calendar-day other-month';
+    dayBox.innerHTML = `<span class="calendar-day-num">${i}</span>`;
+    container.appendChild(dayBox);
+  }
+}
+
+function openCalendarModal(dateStr, dayEvents) {
+  const modal = document.getElementById('calendar-modal');
+  const title = document.getElementById('calendar-modal-title');
+  const body = document.getElementById('calendar-modal-body');
+  
+  title.textContent = `${dateStr} 公告明細 (${dayEvents.length} 筆)`;
+  body.innerHTML = '';
+  
+  dayEvents.forEach(b => {
+    const catMap = { 
+      '作業': ['hw','tag-hw'], 
+      '小考': ['quiz','tag-quiz'], 
+      '交代事項': ['note','tag-note'],
+      '老師交代事項': ['note','tag-note'],
+      '學校行政公告': ['admin','tag-admin']
+    };
+    const [accentKey, tagClass] = catMap[b.category] || ['note','tag-note'];
+    
+    const eventCard = document.createElement('div');
+    eventCard.style.padding = '12px 14px';
+    eventCard.style.background = 'var(--c-bg)';
+    eventCard.style.border = '1px solid var(--c-border)';
+    eventCard.style.borderRadius = 'var(--radius-md)';
+    eventCard.style.borderLeft = `4px solid var(--c-${accentKey})`;
+    eventCard.style.marginBottom = '10px';
+    
+    eventCard.innerHTML = `
+      <div class="card-meta" style="margin-bottom: 6px; display: flex; align-items: center;">
+        <span class="tag ${tagClass}">${b.category}</span>
+        <span class="subject-tag" style="margin-left: 6px;">${b.subject || '一般'}</span>
+        <span class="card-date" style="margin-left: auto; font-size: 0.72rem; color: var(--c-text-muted);">${b.posterName || ''}</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--c-text); white-space: pre-wrap; word-break: break-word; line-height: 1.6;">${escHtml(b.content)}</div>
+    `;
+    body.appendChild(eventCard);
+  });
+  
+  modal.classList.add('show');
+}
+
+function closeCalendarModal() {
+  document.getElementById('calendar-modal').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════
+//  幹部與小老師發布歷史管理、編輯與草稿暫存邏輯
+// ═══════════════════════════════════════════════════════
+async function initEditorPanel() {
+  if (APP.role !== 'editor') return;
+
+  const historyCard = document.getElementById('editor-history-card');
+  if (!historyCard) return;
+
+  if (APP.adminSecret || !APP.posterLabel) {
+    historyCard.classList.add('hidden');
+    return;
+  }
+
+  historyCard.classList.remove('hidden');
+
+  registerDraftListeners();
+  loadAutosaveDraft();
+  loadEditorHistory();
+}
+
+async function loadEditorHistory() {
+  const container = document.getElementById('editor-history-list');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--c-text-dim)">載入中...</div>';
+
+  try {
+    const bulletins = await fetchBulletins();
+    APP.allBulletins = bulletins;
+
+    const myBulletins = bulletins.filter(b => b.posterName === APP.posterLabel);
+
+    if (myBulletins.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--c-text-dim);font-size:0.8rem;">尚無發布歷史紀錄</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    myBulletins.forEach(b => {
+      const catMap = { 
+        '作業': ['hw','tag-hw'], 
+        '小考': ['quiz','tag-quiz'], 
+        '交代事項': ['note','tag-note'],
+        '老師交代事項': ['note','tag-note'],
+        '學校行政公告': ['admin','tag-admin']
+      };
+      const [accentKey, tagClass] = catMap[b.category] || ['note','tag-note'];
+      const isHidden = b.status === '隱藏';
+
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      if (isHidden) item.style.opacity = '0.55';
+
+      const safeContent = escHtml(b.content);
+
+      item.innerHTML = `
+        <div class="history-meta">
+          <span class="tag ${tagClass}">${b.category}</span>
+          <span class="subject-tag">${b.subject || '一般'}</span>
+          <span style="font-size: 0.73rem; color: var(--c-text-dim); margin-left: auto;">截止日: ${b.dueDate || '無'}</span>
+          ${isHidden ? '<span style="font-size: 0.72rem; color: var(--c-danger); font-weight: 500;">[已隱藏]</span>' : ''}
+        </div>
+        <div class="history-content">${safeContent}</div>
+        <div class="history-btns">
+          <button class="btn btn-ghost btn-sm" onclick="startEditMode('${b.timestamp}', '${b.category}', '${b.subject}', '${b.dueDate}', \`${safeContent.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`, '${b.rowId || ''}')">修改內容</button>
+          ${isHidden ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${b.timestamp}', event, '${b.rowId || ''}')">隱藏公告</button>`}
+        </div>
+      `;
+      container.appendChild(item);
+    });
+  } catch (e) {
+    console.error('loadEditorHistory error:', e);
+    container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--c-danger);font-size:0.8rem;">無法載入發布歷史</div>';
+  }
+}
+
+function startEditMode(timestamp, category, subject, dueDate, content, rowId) {
+  APP.isEditing = true;
+  APP.editingTimestamp = timestamp;
+  APP.editingRowId = rowId || '';
+
+  document.querySelector('.editor-card-title').textContent = '編輯公告';
+  document.getElementById('editor-verified-label').textContent = `${APP.posterLabel} (編輯模式)`;
+  
+  const submitBtn = document.getElementById('btn-submit');
+  submitBtn.textContent = '儲存修改';
+  
+  document.getElementById('ed-category').value = category;
+  document.getElementById('ed-subject').value = subject;
+  document.getElementById('ed-date').value = dueDate;
+  
+  const contentArea = document.getElementById('ed-content');
+  contentArea.value = content;
+  
+  updateCharCount();
+
+  document.getElementById('editor-card').scrollIntoView({ behavior: 'smooth' });
+  showToast('已載入公告內容至表單，修改後請點選「儲存修改」', 'info');
+}
+
+function cancelEditMode() {
+  APP.isEditing = false;
+  APP.editingTimestamp = null;
+  APP.editingRowId = null;
+
+  document.querySelector('.editor-card-title').textContent = '新增公告';
+  document.getElementById('editor-verified-label').textContent = APP.posterLabel;
+  
+  const submitBtn = document.getElementById('btn-submit');
+  submitBtn.textContent = '發布公告';
+
+  resetEditorForm();
+}
+
+async function submitEditedBulletin(category, subject, dueDate, content) {
+  APP.isSubmitting = true;
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = '更新中…';
+
+  try {
+    const okAuth = await ensureEditorAuth();
+    if (!okAuth) {
+      showStatusMsg('請先通過授權碼驗證', 'error');
+      return;
+    }
+
+    const payload = {
+      action: 'editAnnouncement',
+      adminSecret: APP.adminSecret || undefined,
+      pin: APP.verifiedPinVal || undefined,
+      timestamp: APP.editingTimestamp,
+      rowId: APP.editingRowId || '',
+      category: normalizeCategoryClient(category),
+      subject: subject,
+      dueDate: dueDate,
+      content: content,
+      posterName: APP.posterLabel
+    };
+
+    const result = await apiCall(payload);
+    if (result && result.success) {
+      showToast('公告更新成功', 'success');
+      showStatusMsg('公告已成功更新！', 'success');
+      
+      clearAutosaveDraft();
+      cancelEditMode();
+      initEditorPanel();
+    } else {
+      showToast('更新失敗：' + (result.error || '未知錯誤'), 'error');
+      showStatusMsg('更新失敗：' + (result.error || '未知錯誤'), 'error');
+    }
+  } catch (e) {
+    showToast('網路連線失敗或權限不足', 'error');
+    console.error('Edit submit error:', e);
+  } finally {
+    APP.isSubmitting = false;
+    btn.disabled = false;
+    btn.textContent = '發布公告';
+  }
+}
+
+async function initCountdownBanner() {
+  const roleBanner = document.getElementById('role-countdown-banner');
+  const roleText = document.getElementById('role-countdown-text');
+  const boardBanner = document.getElementById('board-countdown-banner');
+  const boardText = document.getElementById('board-countdown-text');
+  
+  const statusEl = document.getElementById('teacher-countdown-status');
+  const deleteBtn = document.getElementById('btn-delete-countdown');
+
+  try {
+    const config = await fetchConfig();
+    const title = config['countdown_title'];
+    const dateStr = config['countdown_date'];
+
+    const hideAllBanners = () => {
+      if (roleBanner) roleBanner.classList.add('hidden');
+      if (boardBanner) boardBanner.classList.add('hidden');
+    };
+
+    if (!title || !dateStr) {
+      hideAllBanners();
+      if (statusEl) statusEl.textContent = '目前狀態：未設定任何倒數活動';
+      if (deleteBtn) deleteBtn.classList.add('hidden');
+      if (APP.adminSecret) {
+        const titleInput = document.getElementById('countdown-title-input');
+        const dateInput = document.getElementById('countdown-date-input');
+        if (titleInput) titleInput.value = '';
+        if (dateInput) dateInput.value = '';
+      }
+      return;
+    }
+
+    // 只要有設定倒數資料且具有管理權限，即自動載入設定數值至輸入欄位以利修改
+    if (APP.adminSecret) {
+      const titleInput = document.getElementById('countdown-title-input');
+      const dateInput = document.getElementById('countdown-date-input');
+      if (titleInput) titleInput.value = title;
+      if (dateInput) dateInput.value = dateStr;
+    }
+
+    const targetDate = new Date(dateStr);
+    targetDate.setHours(0,0,0,0);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const timeDiff = targetDate.getTime() - today.getTime();
+    const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+    if (daysLeft >= 0) {
+      const displayText = `距離 ${title} 還有 ${daysLeft} 天`;
+      if (roleBanner && roleText) {
+        roleText.textContent = displayText;
+        roleBanner.classList.remove('hidden');
+      }
+      if (boardBanner && boardText) {
+        boardText.textContent = displayText;
+        boardBanner.classList.remove('hidden');
+      }
+
+      if (statusEl) {
+        statusEl.innerHTML = `目前狀態：<strong>正在倒數【${title}】</strong><br>目標日期：${dateStr} (剩餘 ${daysLeft} 天)`;
+      }
+      if (deleteBtn) deleteBtn.classList.remove('hidden');
+    } else {
+      hideAllBanners();
+      if (statusEl) {
+        statusEl.innerHTML = `目前狀態：倒數活動【${title}】已過期 (${dateStr})`;
+      }
+      if (deleteBtn) deleteBtn.classList.remove('hidden');
+    }
+  } catch (e) {
+    console.warn('載入倒數計時器失敗：', e);
+    if (roleBanner) roleBanner.classList.add('hidden');
+    if (boardBanner) boardBanner.classList.add('hidden');
+    if (statusEl) statusEl.textContent = '目前狀態：載入倒數設定失敗';
+  }
+}
+
+async function saveCountdownConfig() {
+  const title = document.getElementById('countdown-title-input').value.trim();
+  const dateStr = document.getElementById('countdown-date-input').value;
+
+  if (!title || !dateStr) {
+    showToast('請填寫活動名稱與日期', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-countdown');
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+
+  try {
+    const payload = {
+      action: 'updateCountdown',
+      adminSecret: APP.adminSecret,
+      title: title,
+      date: dateStr
+    };
+
+    const response = await fetch(CONFIG.WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast('倒數計時器設定成功', 'success');
+      if (!CONFIG_CACHE) CONFIG_CACHE = {};
+      CONFIG_CACHE['countdown_title'] = title;
+      CONFIG_CACHE['countdown_date'] = dateStr;
+      CONFIG_PROMISE = Promise.resolve(CONFIG_CACHE);
+      await initCountdownBanner();
+    } else {
+      showToast('儲存失敗：' + (result.error || '未知錯誤'), 'error');
+    }
+  } catch (e) {
+    showToast('連線失敗，請稍後再試', 'error');
+    console.error('Save countdown error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '儲存倒數';
+  }
+}
+
+async function deleteCountdownConfig() {
+  if (!confirm('確定要刪除目前的倒數計時活動嗎？')) return;
+
+  if (!APP.adminSecret) {
+    showToast('錯誤：未找到管理員金鑰，請確認您使用管理員連結進入', 'error');
+    console.error('[deleteCountdown] APP.adminSecret 為空，無法刪除');
+    return;
+  }
+
+  const btn = document.getElementById('btn-delete-countdown');
+  btn.disabled = true;
+  btn.textContent = '刪除中…';
+
+  try {
+    const payload = {
+      action: 'updateCountdown',
+      adminSecret: APP.adminSecret,
+      title: '',
+      date: ''
+    };
+
+    console.log('[deleteCountdown] 傳送 payload:', JSON.stringify(payload));
+
+    const response = await fetch(CONFIG.WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    console.log('[deleteCountdown] 後端回傳:', result);
+
+    if (result.success) {
+      showToast('倒數計時器已成功刪除', 'success');
+      
+      const titleInput = document.getElementById('countdown-title-input');
+      const dateInput = document.getElementById('countdown-date-input');
+      if (titleInput) titleInput.value = '';
+      if (dateInput) dateInput.value = '';
+
+      if (!CONFIG_CACHE) CONFIG_CACHE = {};
+      CONFIG_CACHE['countdown_title'] = '';
+      CONFIG_CACHE['countdown_date'] = '';
+      CONFIG_PROMISE = Promise.resolve(CONFIG_CACHE);
+      await initCountdownBanner();
+    } else {
+      const errMsg = result.error || '未知錯誤';
+      showToast('刪除失敗：' + errMsg, 'error');
+      console.error('[deleteCountdown] 後端回傳失敗：', errMsg);
+    }
+  } catch (e) {
+    showToast('連線失敗，請稍後再試', 'error');
+    console.error('[deleteCountdown] 例外錯誤：', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '刪除倒數';
+  }
+}
+
+function renderQuickLinksGrid(container, links) {
+  if (!container) return;
+  container.innerHTML = '';
+  if (links.length === 0) {
+    container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; font-size: 0.77rem; color: var(--c-text-dim); padding: 8px 0;">未設定任何資源連結</div>';
+    return;
+  }
+  links.forEach(link => {
+    const btn = document.createElement('a');
+    btn.href = link.url;
+    btn.target = '_blank';
+    btn.rel = 'noopener noreferrer';
+    btn.className = 'resource-btn';
+    btn.textContent = link.title;
+    container.appendChild(btn);
+  });
+}
+
+/**
+ * 載入並渲染常用資源連結
+ * @param {boolean} forceRefresh 強制略過前端快取、重抓試算表
+ */
+async function initQuickLinks(forceRefresh = true) {
+  const containers = [
+    document.getElementById('resources-list-container'),
+    document.getElementById('board-resources-list-container')
+  ].filter(Boolean);
+  const cards = [
+    document.getElementById('resources-card'),
+    document.getElementById('board-resources-card')
+  ].filter(Boolean);
+
+  if (containers.length === 0) return;
+
+  try {
+    // 預設強制重抓，避免導師改完後其他人重整仍吃到舊記憶體／gviz 快取
+    const config = await fetchConfig(forceRefresh);
+    const links = [];
+    for (let i = 1; i <= 4; i++) {
+      const titleVal = config[`link_${i}_title`];
+      const urlVal = config[`link_${i}_url`];
+
+      const finalTitle = titleVal ? String(titleVal).trim() : '';
+      let finalUrl = urlVal ? String(urlVal).trim() : '';
+      // 自動補 https://（使用者常只填域名）
+      if (finalUrl && !/^https?:\/\//i.test(finalUrl) && !finalUrl.startsWith('/') && !finalUrl.startsWith('#')) {
+        finalUrl = 'https://' + finalUrl;
+      }
+
+      if (finalTitle && finalUrl) {
+        links.push({ title: finalTitle, url: finalUrl });
+      }
+
+      if (APP.adminSecret) {
+        const titleInput = document.getElementById(`link-${i}-title-input`);
+        const urlInput = document.getElementById(`link-${i}-url-input`);
+        const chineseMap = { 1: '一', 2: '二', 3: '三', 4: '四' };
+        if (titleInput) {
+          titleInput.value = finalTitle;
+          titleInput.placeholder = `連結${chineseMap[i]}標題`;
+        }
+        if (urlInput) {
+          urlInput.value = urlVal ? String(urlVal).trim() : '';
+          urlInput.placeholder = `連結${chineseMap[i]}網址 (URL)`;
+        }
+      }
+    }
+
+    // 僅在「完全沒有任何自訂連結」時才顯示預設行事曆，避免蓋掉導師設定的觀感
+    if (links.length === 0) {
+      links.push({
+        title: '學校行事曆',
+        url: 'https://maxchan-stack.github.io/bulletin-board-web/calendar.pdf'
+      });
+      if (APP.adminSecret) {
+        const titleInput = document.getElementById('link-1-title-input');
+        const urlInput = document.getElementById('link-1-url-input');
+        if (titleInput && !titleInput.value) titleInput.placeholder = '連結一標題 (預設：學校行事曆)';
+        if (urlInput && !urlInput.value) urlInput.placeholder = '連結一網址 (可填行事曆 PDF)';
+      }
+    }
+
+    containers.forEach(c => renderQuickLinksGrid(c, links));
+    cards.forEach(card => {
+      if (links.length > 0) card.classList.remove('hidden');
+      else card.classList.add('hidden');
+    });
+  } catch (e) {
+    console.warn('背景載入常用連結失敗：', e);
+    cards.forEach(card => card.classList.add('hidden'));
+  }
+}
+
+async function saveLinksConfig() {
+  if (!APP.adminSecret) {
+    showToast('錯誤：缺少管理員金鑰，請用導師專用連結進入', 'error');
+    return;
+  }
+
+  const payload = {
+    action: 'updateLinks',
+    adminSecret: APP.adminSecret
+  };
+
+  for (let i = 1; i <= 4; i++) {
+    const titleEl = document.getElementById(`link-${i}-title-input`);
+    const urlEl = document.getElementById(`link-${i}-url-input`);
+    const title = titleEl ? titleEl.value.trim() : '';
+    let url = urlEl ? urlEl.value.trim() : '';
+
+    if (title && !url) {
+      showToast(`請為連結 ${i}【${title}】填寫對應的網址 (URL)`, 'error');
+      return;
+    }
+    if (url && !title) {
+      showToast(`請為連結 ${i} 填寫標題`, 'error');
+      return;
+    }
+    // 寫入前正規化網址
+    if (url && !/^https?:\/\//i.test(url) && !url.startsWith('/') && !url.startsWith('#')) {
+      url = 'https://' + url;
+      if (urlEl) urlEl.value = url;
+    }
+
+    payload[`title${i}`] = title;
+    payload[`url${i}`] = url;
+  }
+
+  const btn = document.getElementById('btn-save-links');
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+
+  try {
+    const response = await fetch(CONFIG.WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast('資源連結已寫入試算表，其他人重新整理即可看到', 'success');
+      // 清快取後強制重抓，確認與試算表一致
+      CONFIG_CACHE = null;
+      CONFIG_PROMISE = null;
+      await initQuickLinks(true);
+    } else {
+      showToast('儲存失敗：' + (result.error || '未知錯誤'), 'error');
+    }
+  } catch (e) {
+    showToast('連線失敗，請稍後再試', 'error');
+    console.error('Save links error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '儲存連結設定';
+  }
+}
+
+// ── 草稿暫存實作 ──
+const DRAFT_STORAGE_PREFIX = 'BULLETIN_DRAFT_';
+
+function getDraftKey() {
+  return DRAFT_STORAGE_PREFIX + (APP.posterLabel || 'default');
+}
+
+function registerDraftListeners() {
+  const fields = ['ed-category', 'ed-subject', 'ed-date', 'ed-content'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.removeEventListener('input', saveAutosaveDraft);
+      el.addEventListener('input', saveAutosaveDraft);
+    }
+  });
+}
+
+function saveAutosaveDraft() {
+  if (APP.isEditing) return; // 編輯舊公告模式不寫入草稿存檔
+  try {
+    const category = document.getElementById('ed-category').value;
+    const subject  = document.getElementById('ed-subject').value;
+    const dueDate  = document.getElementById('ed-date').value;
+    const content  = document.getElementById('ed-content').value;
+    
+    localStorage.setItem(getDraftKey(), JSON.stringify({
+      category, subject, dueDate, content
+    }));
+  } catch (e) { /* localStorage 異常 */ }
+}
+
+function loadAutosaveDraft() {
+  try {
+    const raw = localStorage.getItem(getDraftKey());
+    if (!raw) return;
+    
+    const draft = JSON.parse(raw);
+    if (draft.category) document.getElementById('ed-category').value = draft.category;
+    if (draft.subject) document.getElementById('ed-subject').value = draft.subject;
+    if (draft.dueDate) document.getElementById('ed-date').value = draft.dueDate;
+    if (draft.content) {
+      document.getElementById('ed-content').value = draft.content;
+      updateCharCount();
+    }
+  } catch (e) { /* 還原草稿失敗 */ }
+}
+
+function clearAutosaveDraft() {
+  try {
+    localStorage.removeItem(getDraftKey());
+  } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+//  今日課表與倒數計時器邏輯
+// ═══════════════════════════════════════════════════════
+const TIMETABLE_DATA = {
+  1: ['國文', '英文', '數學', '物理', '化學', '歷史', '班會', '社團'],
+  2: ['數學', '數學', '英文', '體育', '國文', '地科', '公民', '自主學習'],
+  3: ['物理', '化學', '生物', '國文', '英文', '數學', '美術', '探究'],
+  4: ['英文', '國文', '數學', '歷史', '地理', '音樂', '體育', '本土語文'],
+  5: ['自主學習', '自主學習', '國文', '英文', '數學', '物理', '化學', '地科']
+};
+
+let TIMETABLE_CACHE = null;
+
+async function fetchTimetable() {
+  if (TIMETABLE_CACHE) return TIMETABLE_CACHE;
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=timetable&nocache=${Date.now()}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('無法讀取試算表中的課表分頁');
+    const text = await res.text();
+    const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
+    if (!match) throw new Error('無法解析課表資料');
+    
+    const data = JSON.parse(match[1]);
+    const rows = data.table?.rows || [];
+
+    const timetable = {
+      1: [], 2: [], 3: [], 4: [], 5: []
+    };
+
+    rows.forEach(row => {
+      const cells = row.c || [];
+      // 排除第一列標題（當含有「節次」或第二欄為「星期」等標籤時）
+      const cell0Val = cells[0]?.v ? String(cells[0].v).toLowerCase().trim() : '';
+      const cell1Val = cells[1]?.v ? String(cells[1].v).toLowerCase().trim() : '';
+      if (cell0Val.includes('節次') || cell1Val.includes('星期')) {
+        return; // 跳過標題列
+      }
+
+      for (let day = 1; day <= 5; day++) {
+        const val = cells[day]?.v !== null && cells[day]?.v !== undefined ? String(cells[day].v).trim() : '—';
+        timetable[day].push(val);
+      }
+    });
+
+    for (let day = 1; day <= 5; day++) {
+      while (timetable[day].length < 8) {
+        timetable[day].push('—');
+      }
+    }
+
+    TIMETABLE_CACHE = timetable;
+    return timetable;
+  } catch (e) {
+    console.warn('雲端課表加載失敗，採用系統預設課表：', e.message);
+    return null;
+  }
+}
+
+
+
+function toggleWeeklyTimetable() {
+  const wrap = document.getElementById('weekly-timetable-wrap');
+  const btn = document.getElementById('btn-toggle-weekly');
+  if (!wrap || !btn) return;
+
+  if (wrap.classList.contains('hidden')) {
+    wrap.classList.remove('hidden');
+    btn.textContent = '收合整週課表';
+    renderWeeklyTimetable();
+  } else {
+    wrap.classList.add('hidden');
+    btn.textContent = '展開整週課表';
+  }
+}
+
+async function renderWeeklyTimetable() {
+  const tbody = document.getElementById('weekly-timetable-body');
+  if (!tbody) return;
+
+  // 1. 優先使用快取或本地預設
+  let timetable = TIMETABLE_CACHE;
+  if (!timetable) {
+    // 嘗試拉取（可能已經有快取）
+    timetable = await fetchTimetable() || TIMETABLE_DATA;
+  }
+
+  const now = new Date();
+  const currentDay = now.getDay(); // 0 = 日, 1 = 一, ..., 6 = 六
+
+  tbody.innerHTML = '';
+  // 8堂課
+  for (let period = 0; period < 8; period++) {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--c-border)';
+    
+    // 節次欄
+    const tdNum = document.createElement('td');
+    tdNum.style.padding = '8px 4px';
+    tdNum.style.fontWeight = '600';
+    tdNum.style.color = 'var(--c-text-muted)';
+    tdNum.textContent = period + 1;
+    tr.appendChild(tdNum);
+
+    // 週一到週五
+    for (let day = 1; day <= 5; day++) {
+      const td = document.createElement('td');
+      td.style.padding = '8px 4px';
+      
+      const subject = timetable[day]?.[period] || '—';
+      td.textContent = subject;
+
+      // 如果是今天，高亮顯示該欄
+      if (day === currentDay) {
+        td.style.background = 'rgba(90, 140, 110, 0.08)';
+        td.style.color = 'var(--c-primary)';
+        td.style.fontWeight = '600';
+      }
+
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+
+  // 同時高亮 header 的星期幾
+  const headers = document.querySelectorAll('#weekly-timetable-wrap th');
+  headers.forEach((th, index) => {
+    // index 0 is '節', index 1 is '一', etc.
+    if (index === currentDay) {
+      th.style.background = 'rgba(90, 140, 110, 0.08)';
+      th.style.color = 'var(--c-primary)';
+    } else {
+      th.style.background = '';
+      th.style.color = '';
+    }
+  });
+}
+
+
+
 
 // ═══════════════════════════════════════════════════════
 //  工具函式

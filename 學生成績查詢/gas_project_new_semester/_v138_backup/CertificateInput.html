@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            padding: 24px;
+            background: #F3F1E5;
+            color: #1D1D1F;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #45464D;
+            margin-bottom: 24px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #45464D;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(155, 138, 94, 0.3);
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            color: #1D1D1F;
+            transition: all 0.2s ease;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #9B8A5E;
+            box-shadow: 0 0 0 3px rgba(155, 138, 94, 0.1);
+        }
+
+        input::placeholder {
+            color: rgba(29, 29, 31, 0.4);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #794425 0%, #B4745A 50%, #794425 100%);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 24px;
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(180, 116, 90, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(180, 116, 90, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #86868b;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>📄 產生成績證明</h2>
+
+        <div class="form-group">
+            <label>學生學號</label>
+            <textarea id="studentId" placeholder="請輸入學號，多筆請用換行、逗號或空格隔開" rows="4" autofocus></textarea>
+            <div class="hint">例如：<br>114001<br>114002</div>
+        </div>
+
+        <div class="form-group">
+            <label>段考次數</label>
+            <select id="examType">
+                <option value="第一次段考">第一次段考</option>
+                <option value="第二次段考">第二次段考</option>
+                <option value="期末考">期末考</option>
+            </select>
+        </div>
+
+        <button class="btn-primary" onclick="generate()">產生證明</button>
+    </div>
+
+    <script>
+        // 不再綁定 Enter 鍵觸發產生，因為 Textarea 需要 Enter 換行
+
+        function generate() {
+            const rawStudentIds = document.getElementById('studentId').value.trim();
+            const examType = document.getElementById('examType').value;
+
+            if (!rawStudentIds) {
+                alert('請輸入學號');
+                document.getElementById('studentId').focus();
+                return;
+            }
+
+            // 支援使用換行、逗號、空白分割學號
+            const studentIds = rawStudentIds.split(/[\s,]+/).filter(id => id.trim() !== '');
+
+            if (studentIds.length === 0) {
+                alert('請輸入有效的學號');
+                return;
+            }
+
+            // 禁用按鈕防止重複點擊
+            const btn = document.querySelector('.btn-primary');
+            btn.disabled = true;
+            btn.textContent = '產生中...';
+
+            // 呼叫後端函式，將目前視窗內容替換為成績單 HTML
+            google.script.run
+                .withSuccessHandler(function (html) {
+                    google.script.host.setWidth(800);
+                    google.script.host.setHeight(800);
+                    document.open();
+                    document.write(html);
+                    document.close();
+                })
+                .withFailureHandler(function (error) {
+                    // 失敗時顯示錯誤並恢復按鈕
+                    alert('產生失敗：' + error.message);
+                    btn.disabled = false;
+                    btn.textContent = '產生證明';
+                })
+                .getCertificateHtml(studentIds, examType);
+        }
+    </script>
+</body>
+
+</html>

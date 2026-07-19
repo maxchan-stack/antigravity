@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --muji-white: #FAF9F6;
+      --muji-red: #7F1921;
+      --muji-grey-dark: #333333;
+      --muji-grey-light: #7F7F7F;
+      --muji-sand: #EAE6DF;
+      --muji-border: #D9D2C9;
+      --muji-card-bg: #FFFFFF;
+      --error: #7F1921;
+    }
+
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      background-color: var(--muji-white);
+      color: var(--muji-grey-dark);
+      font-family: "Noto Sans TC", -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    header {
+      border-bottom: 2px solid var(--muji-red);
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0;
+      color: var(--muji-grey-dark);
+      font-weight: 500;
+      letter-spacing: 1px;
+    }
+
+    .btn-refresh {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      color: var(--muji-grey-dark);
+      padding: 6px 16px;
+      cursor: pointer;
+      font-weight: 400;
+      font-size: 12px;
+      border-radius: 0;
+      transition: all 0.2s ease;
+    }
+
+    .btn-refresh:hover {
+      background: var(--muji-sand);
+      border-color: var(--muji-grey-light);
+    }
+
+    /* 考試區間選擇器 */
+    .filter-section {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      border-radius: 0;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      color: var(--muji-grey-light);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--muji-border);
+      border-radius: 0;
+      background: var(--muji-white);
+      color: var(--muji-grey-dark);
+      font-family: "Noto Sans TC", -apple-system, sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237F7F7F'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--muji-red);
+    }
+
+    .custom-date-row {
+      display: none;
+      margin-top: 12px;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .custom-date-row.visible {
+      display: flex;
+    }
+
+    .date-field {
+      flex: 1;
+    }
+
+    .date-field label {
+      display: block;
+      font-size: 11px;
+      color: var(--muji-grey-light);
+      margin-bottom: 4px;
+    }
+
+    .date-field input[type="date"] {
+      width: 100%;
+      padding: 7px 8px;
+      border: 1px solid var(--muji-border);
+      border-radius: 0;
+      background: var(--muji-white);
+      color: var(--muji-grey-dark);
+      font-family: "Noto Sans TC", -apple-system, sans-serif;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    .date-field input[type="date"]:focus {
+      outline: none;
+      border-color: var(--muji-red);
+    }
+
+    .btn-apply {
+      background: var(--muji-red);
+      border: 1px solid var(--muji-red);
+      color: #FFFFFF;
+      padding: 7px 16px;
+      cursor: pointer;
+      font-weight: 400;
+      font-size: 12px;
+      border-radius: 0;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      font-family: "Noto Sans TC", -apple-system, sans-serif;
+    }
+
+    .btn-apply:hover {
+      background: #5C1118;
+      border-color: #5C1118;
+    }
+
+    .filter-active-label {
+      display: none;
+      font-size: 11px;
+      color: var(--muji-red);
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
+    .filter-active-label.visible {
+      display: block;
+    }
+
+    /* 全體進度區域 */
+    .progress-section {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      padding: 24px;
+      margin-bottom: 24px;
+      border-radius: 0;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .progress-title {
+      font-size: 13px;
+      color: var(--muji-grey-light);
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    .progress-percentage {
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--muji-red);
+      line-height: 1;
+    }
+
+    .progress-bar-bg {
+      background: var(--muji-sand);
+      height: 8px;
+      width: 100%;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      background: var(--muji-red);
+      height: 100%;
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-details {
+      font-size: 12px;
+      color: var(--muji-grey-light);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* 班級列表區域 */
+    .section-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muji-grey-dark);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+      border-left: 2px solid var(--muji-red);
+      padding-left: 8px;
+    }
+
+    .class-list-container {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      padding: 24px;
+      margin-bottom: 24px;
+      border-radius: 0;
+    }
+
+    .class-item {
+      margin-bottom: 20px;
+    }
+
+    .class-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .class-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .class-name {
+      font-weight: 500;
+      color: var(--muji-grey-dark);
+    }
+
+    .class-count {
+      color: var(--muji-grey-light);
+      font-size: 12px;
+    }
+
+    .class-percentage {
+      font-weight: 500;
+      color: var(--muji-red);
+      font-size: 13px;
+    }
+
+    .class-bar-bg {
+      background: var(--muji-sand);
+      height: 6px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .class-bar-fill {
+      background: var(--muji-red);
+      height: 100%;
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 安全統計區域 */
+    .stats-secondary {
+      background: var(--muji-card-bg);
+      border: 1px solid var(--muji-border);
+      border-radius: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 24px;
+    }
+
+    .stat-item {
+      text-align: center;
+      flex: 1;
+    }
+
+    .stat-item:not(:last-child) {
+      border-right: 1px solid var(--muji-sand);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--muji-grey-light);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .stat-value.fail {
+      color: var(--muji-grey-dark);
+    }
+
+    .stat-value.lock {
+      color: var(--error);
+    }
+
+    .empty-state {
+      padding: 30px;
+      text-align: center;
+      color: var(--muji-grey-light);
+      font-size: 12px;
+    }
+
+    /* 載入動畫 */
+    .loader-container {
+      position: fixed;
+      inset: 0;
+      background: var(--muji-white);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      transition: opacity 0.2s ease;
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--muji-sand);
+      border-top-color: var(--muji-red);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    .loader-text {
+      font-size: 12px;
+      color: var(--muji-grey-light);
+      letter-spacing: 1px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="loader" class="loader-container">
+    <div class="spinner"></div>
+    <div class="loader-text">資料整理中</div>
+  </div>
+
+  <div class="container">
+    <header>
+      <h1>成績查詢統計儀表板</h1>
+      <button class="btn-refresh" onclick="applyCurrentFilter()">重新整理</button>
+    </header>
+
+    <!-- 考試區間選擇器 -->
+    <div class="filter-section">
+      <div class="filter-label">統計區間</div>
+      <select id="exam-select" class="filter-select" onchange="onExamSelectChange()">
+        <option value="all">全部時間</option>
+        <option value="custom">自訂日期區間</option>
+      </select>
+      <div id="custom-date-row" class="custom-date-row">
+        <div class="date-field">
+          <label>開始日期</label>
+          <input type="date" id="date-start">
+        </div>
+        <div class="date-field">
+          <label>結束日期</label>
+          <input type="date" id="date-end">
+        </div>
+        <button class="btn-apply" onclick="applyCustomDate()">套用</button>
+      </div>
+      <div id="filter-active-label" class="filter-active-label"></div>
+    </div>
+
+    <!-- 全體學生查詢進度 -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="progress-title">全體學生查詢進度</span>
+        <span id="query-percentage" class="progress-percentage">0.0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="progress-bar" class="progress-bar-fill"></div>
+      </div>
+      <div class="progress-details">
+        <span>已查詢學生：<span id="unique-count">0</span> 位</span>
+        <span>全體學生總數：<span id="total-students">0</span> 位</span>
+      </div>
+    </div>
+
+    <!-- 各班級查詢佔比 -->
+    <div class="section-title">班級查詢進度</div>
+    <div id="class-list" class="class-list-container">
+      <div class="empty-state">資料載入中...</div>
+    </div>
+
+    <!-- 安全事件統計 -->
+    <div class="section-title">安全事件統計</div>
+    <div class="stats-secondary">
+      <div class="stat-item">
+        <div class="stat-label">登入失敗次數</div>
+        <div id="fail-count" class="stat-value fail">0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">帳號鎖定次數</div>
+        <div id="locked-count" class="stat-value lock">0</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var examPeriods = [];
+    var currentFilter = null;
+
+    function loadExamPeriods() {
+      google.script.run
+        .withSuccessHandler(function(periods) {
+          examPeriods = periods || [];
+          populateExamSelect();
+          loadStatistics(null);
+        })
+        .withFailureHandler(function(err) {
+          loadStatistics(null);
+        })
+        .getExamPeriods();
+    }
+
+    function populateExamSelect() {
+      var select = document.getElementById('exam-select');
+      // 保留前兩個選項（全部時間、自訂日期區間），移除多餘的
+      while (select.options.length > 2) {
+        select.remove(2);
+      }
+
+      // 將自訂日期區間選項移到最後
+      var customOption = select.options[1];
+      select.remove(1);
+
+      // 動態插入考試區間選項
+      examPeriods.forEach(function(period, index) {
+        var option = document.createElement('option');
+        option.value = 'exam_' + index;
+        var startStr = formatDateLabel(period.startDate);
+        var endStr = formatDateLabel(period.endDate);
+        option.textContent = period.name + '（' + startStr + ' ~ ' + endStr + '）';
+        select.appendChild(option);
+      });
+
+      // 將自訂日期區間選項放回最後
+      select.appendChild(customOption);
+    }
+
+    function formatDateLabel(isoStr) {
+      var d = new Date(isoStr);
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '/' + m + '/' + day;
+    }
+
+    function onExamSelectChange() {
+      var select = document.getElementById('exam-select');
+      var value = select.value;
+      var customRow = document.getElementById('custom-date-row');
+      var activeLabel = document.getElementById('filter-active-label');
+
+      if (value === 'custom') {
+        customRow.classList.add('visible');
+        activeLabel.classList.remove('visible');
+        return;
+      }
+
+      customRow.classList.remove('visible');
+
+      if (value === 'all') {
+        currentFilter = null;
+        activeLabel.classList.remove('visible');
+        loadStatistics(null);
+      } else if (value.startsWith('exam_')) {
+        var idx = parseInt(value.replace('exam_', ''), 10);
+        var period = examPeriods[idx];
+        if (period) {
+          currentFilter = {
+            startDate: period.startDate,
+            endDate: period.endDate
+          };
+          activeLabel.textContent = '篩選區間：' + period.name;
+          activeLabel.classList.add('visible');
+          loadStatistics(currentFilter);
+        }
+      }
+    }
+
+    function applyCustomDate() {
+      var startVal = document.getElementById('date-start').value;
+      var endVal = document.getElementById('date-end').value;
+
+      if (!startVal || !endVal) {
+        alert('請選擇開始日期與結束日期');
+        return;
+      }
+
+      if (new Date(startVal) > new Date(endVal)) {
+        alert('開始日期不可晚於結束日期');
+        return;
+      }
+
+      currentFilter = {
+        startDate: new Date(startVal).toISOString(),
+        endDate: new Date(endVal).toISOString()
+      };
+
+      var activeLabel = document.getElementById('filter-active-label');
+      activeLabel.textContent = '篩選區間：' + startVal + ' ~ ' + endVal;
+      activeLabel.classList.add('visible');
+
+      loadStatistics(currentFilter);
+    }
+
+    function applyCurrentFilter() {
+      var select = document.getElementById('exam-select');
+      if (select.value === 'custom') {
+        applyCustomDate();
+      } else {
+        onExamSelectChange();
+      }
+    }
+
+    function loadStatistics(filter) {
+      showLoader();
+      google.script.run
+        .withSuccessHandler(function(data) {
+          updateUI(data);
+          hideLoader();
+        })
+        .withFailureHandler(function(err) {
+          alert('載入統計資料失敗：' + err.message);
+          hideLoader();
+        })
+        .getQueryStatistics(filter);
+    }
+
+    function updateUI(data) {
+      var percentageStr = data.queryPercentage || '0.0%';
+      document.getElementById('query-percentage').textContent = percentageStr;
+      
+      var numericPercentage = parseFloat(percentageStr);
+      if (isNaN(numericPercentage)) numericPercentage = 0;
+      document.getElementById('progress-bar').style.width = numericPercentage + '%';
+
+      document.getElementById('unique-count').textContent = data.uniqueStudentsCount;
+      document.getElementById('total-students').textContent = data.totalStudents;
+      
+      document.getElementById('fail-count').textContent = data.failCount;
+      document.getElementById('locked-count').textContent = data.lockedCount;
+
+      var classList = document.getElementById('class-list');
+      classList.innerHTML = '';
+      
+      if (!data.classStats || data.classStats.length === 0) {
+        var emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-state';
+        emptyDiv.textContent = '暫無班級資料';
+        classList.appendChild(emptyDiv);
+        return;
+      }
+
+      data.classStats.forEach(function(item) {
+        var itemDiv = document.createElement('div');
+        itemDiv.className = 'class-item';
+        
+        var infoDiv = document.createElement('div');
+        infoDiv.className = 'class-info';
+        
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'class-name';
+        nameSpan.textContent = item.className;
+        
+        var rightSpan = document.createElement('span');
+        
+        var countSpan = document.createElement('span');
+        countSpan.className = 'class-count';
+        countSpan.textContent = '已查詢 ' + item.queriedCount + ' / ' + item.totalStudents + ' 人';
+        
+        var pctSpan = document.createElement('span');
+        pctSpan.className = 'class-percentage';
+        pctSpan.style.marginLeft = '12px';
+        pctSpan.textContent = item.percentage;
+        
+        rightSpan.appendChild(countSpan);
+        rightSpan.appendChild(pctSpan);
+        
+        infoDiv.appendChild(nameSpan);
+        infoDiv.appendChild(rightSpan);
+        
+        var barBgDiv = document.createElement('div');
+        barBgDiv.className = 'class-bar-bg';
+        
+        var barFillDiv = document.createElement('div');
+        barFillDiv.className = 'class-bar-fill';
+        
+        var numericPct = parseFloat(item.percentage);
+        if (isNaN(numericPct)) numericPct = 0;
+        
+        barBgDiv.appendChild(barFillDiv);
+        itemDiv.appendChild(infoDiv);
+        itemDiv.appendChild(barBgDiv);
+        
+        classList.appendChild(itemDiv);
+        
+        setTimeout(function() {
+          barFillDiv.style.width = numericPct + '%';
+        }, 50);
+      });
+    }
+
+    function showLoader() {
+      document.getElementById('loader').style.opacity = '1';
+      document.getElementById('loader').style.display = 'flex';
+    }
+
+    function hideLoader() {
+      var loader = document.getElementById('loader');
+      loader.style.opacity = '0';
+      setTimeout(function() {
+        loader.style.display = 'none';
+      }, 200);
+    }
+
+    window.onload = function() {
+      loadExamPeriods();
+    };
+  </script>
+</body>
+</html>

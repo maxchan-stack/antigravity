@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班級環境打掃分派與排程系統</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header Bar (Deep Teal) -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-brand">
+        <span class="header-logo-icon">🧼</span>
+        <div class="header-text">
+          <span class="header-title">班級環境打掃分派與排程系統</span>
+          <span class="header-subtitle">班級環境打掃分派管理系統</span>
+        </div>
+      </div>
+      <nav class="header-nav" aria-label="分頁導覽">
+        <button type="button" class="nav-btn active" data-tab="summary">數據總覽</button>
+        <button type="button" class="nav-btn" data-tab="groups">分組名單</button>
+        <button type="button" class="nav-btn" data-tab="calendar">排班行事曆</button>
+        <button type="button" class="nav-btn" data-tab="duty">值日生排班</button>
+      </nav>
+    </div>
+  </header>
+
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <main class="app-main">
+      <!-- Left Panel: Settings -->
+      <section class="control-panel" aria-label="設定面板">
+        <!-- Alert Banner -->
+        <div class="alert-banner warning">
+          <span class="alert-icon">⚠️</span>
+          <div class="alert-content">
+            <strong>請注意：</strong>請使用「真實日期」描述流程即可，不要貼入真實學生個資。可以寫「座號 01」等虛擬姓名。
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">📅</span>
+            <h2>1. 學期時間與排除設定</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-col">
+                <label for="startDate">學期開始日期 <span class="required">*</span></label>
+                <input type="date" id="startDate" value="2026-08-31">
+              </div>
+              <div class="form-col">
+                <label for="endDate">學期結束日期 <span class="required">*</span></label>
+                <input type="date" id="endDate" value="2027-01-15">
+              </div>
+            </div>
+
+            <div class="form-group mt-4">
+              <label>排除特定日期（如放假、段考、大活動）</label>
+              <div class="date-add-box">
+                <input type="date" id="excludeDate">
+                <input type="text" id="excludeReason" placeholder="排除原因（如：段考）">
+                <button type="button" id="btnExcludeDate" class="btn btn-secondary">新增</button>
+              </div>
+              <ul class="excluded-dates-list" id="excludedDatesList">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">👥</span>
+            <h2>2. 班級名單與幹部設定</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="cadreOption">日常打掃免除規則 <span class="required">*</span></label>
+              <select id="cadreOption">
+                <option value="exempt">6 名幹部完全免除日常打掃與值日生（推薦）</option>
+                <option value="clean-only">6 名幹部僅免除值日生，仍參與日常打掃</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <div class="roster-header">
+                <label>學生名單（共 <span id="studentCount">38</span> 人，請勾選 6 名幹部）</label>
+                <button type="button" id="btnResetRoster" class="btn-text">重設預設名單</button>
+              </div>
+              <div class="roster-scroll-container">
+                <div class="student-grid" id="studentGrid">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">⚙️</span>
+            <h2>3. 打掃工作內容設定</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="innerRolesInput">內掃區工作項目 (每行一個，共 8 項) <span class="required">*</span></label>
+              <textarea id="innerRolesInput" rows="8" placeholder="請輸入 8 行工作項目..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="outerRolesInput">外掃區工作項目 (每行一個，共 8 項) <span class="required">*</span></label>
+              <textarea id="outerRolesInput" rows="8" placeholder="請輸入 8 行工作項目..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="btnGenerate" class="btn btn-primary btn-block" style="margin-bottom: 0.5rem;">開始分組與排程計算</button>
+        <div class="generate-feedback" id="generateFeedback" style="display:none; text-align:center; margin-bottom: 2rem; font-size: 0.85rem; font-weight: 700; color: var(--teal-accent);">
+          ✓ 計算成功！已更新各分頁排程
+        </div>
+      </section>
+
+      <!-- Right Panel: Results -->
+      <section class="result-panel" aria-label="排程結果">
+        <div class="card main-result-card">
+          <div class="card-body result-container-body">
+            
+            <!-- Tab Pane: Summary -->
+            <div class="tab-pane active" id="tab-summary">
+              <div class="section-title-box">
+                <span class="title-star">★</span>
+                <h3>打掃排程數據統計與分析</h3>
+                <p class="section-desc">依據實際上課天數進行排程，將學期打掃日程自動均分為 4 個階段。</p>
+              </div>
+
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <span class="stat-icon">📅</span>
+                  <div class="stat-value" id="statTotalDays">0</div>
+                  <div class="stat-label">學期總天數</div>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-icon">🏖️</span>
+                  <div class="stat-value" id="statWeekendDays">0</div>
+                  <div class="stat-label">週末排除</div>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-icon">🚫</span>
+                  <div class="stat-value" id="statExcludedDays">0</div>
+                  <div class="stat-label">活動放假排除</div>
+                </div>
+                <div class="stat-card highlight">
+                  <span class="stat-icon text-teal">🧹</span>
+                  <div class="stat-value text-teal" id="statCleanDays">0</div>
+                  <div class="stat-label">實際打掃天數</div>
+                </div>
+              </div>
+
+              <div class="segment-breakdown">
+                <div class="subheader-bar">
+                  <h4>學期四階段分段計畫 (2 + 2 段)</h4>
+                </div>
+                <div class="segment-cards-container" id="segmentCards">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab Pane: Groups -->
+            <div class="tab-pane" id="tab-groups">
+              <div class="section-title-box">
+                <span class="title-star">★</span>
+                <h3>日常打掃分組與角色指派</h3>
+                <p class="section-desc">依據 16 人精簡打掃配置，自動分配 8 個內掃與 8 個外掃角色。</p>
+              </div>
+
+              <div class="groups-layout">
+                <!-- Group A Card -->
+                <div class="group-card">
+                  <div class="group-card-header group-a">
+                    <span class="group-dot a"></span>
+                    <span class="group-title">打掃 A 組 (16 人)</span>
+                    <span class="group-status badge-a">階段 1 & 3 執勤</span>
+                  </div>
+                  <div class="group-card-body">
+                    <h5>內掃區工作配置 (8 人)</h5>
+                    <ul class="role-list" id="groupAInnerList">
+                      <!-- Dynamically populated -->
+                    </ul>
+                    <h5 class="mt-4">外掃區工作配置 (8 人)</h5>
+                    <ul class="role-list" id="groupAOuterList">
+                      <!-- Dynamically populated -->
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Group B Card -->
+                <div class="group-card">
+                  <div class="group-card-header group-b">
+                    <span class="group-dot b"></span>
+                    <span class="group-title">打掃 B 組 (16 人)</span>
+                    <span class="group-status badge-b">階段 2 & 4 執勤</span>
+                  </div>
+                  <div class="group-card-body">
+                    <h5>內掃區工作配置 (8 人)</h5>
+                    <ul class="role-list" id="groupBInnerList">
+                      <!-- Dynamically populated -->
+                    </ul>
+                    <h5 class="mt-4">外掃區工作配置 (8 人)</h5>
+                    <ul class="role-list" id="groupBOuterList">
+                      <!-- Dynamically populated -->
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cadres-box mt-4">
+                <div class="cadre-box-header">
+                  <span class="cadre-icon">👑</span>
+                  <h4>免輪值日生幹部名單 (6 人)</h4>
+                </div>
+                <div class="cadre-names" id="cadreNamesList">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab Pane: Calendar -->
+            <div class="tab-pane" id="tab-calendar">
+              <div class="section-title-box">
+                <span class="title-star">★</span>
+                <h3>排班行事曆</h3>
+                <p class="section-desc">以視覺化月曆預覽每日打掃組別與值日生安排。<strong style="color:var(--orange-accent);"><br>💡 提示：滑鼠移至上方並點擊日曆上的任何上課日，即可手動排除或恢復該日打掃。</strong></p>
+              </div>
+
+              <div class="calendar-controls">
+                <button type="button" id="btnPrevMonth" class="btn btn-sm btn-secondary">&lt; 上個月</button>
+                <h4 id="currentMonthYear">2026 年 9 月</h4>
+                <button type="button" id="btnNextMonth" class="btn btn-sm btn-secondary">下個月 &gt;</button>
+              </div>
+
+              <div class="calendar-wrapper">
+                <div class="calendar-header-days">
+                  <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+
+              <div class="calendar-legend">
+                <span class="legend-item"><span class="color-box group-a"></span> A 組執勤</span>
+                <span class="legend-item"><span class="color-box group-b"></span> B 組執勤</span>
+                <span class="legend-item"><span class="color-box excluded"></span> 排除/放假</span>
+                <span class="legend-item"><span class="color-box weekend"></span> 週末</span>
+              </div>
+            </div>
+
+            <!-- Tab Pane: Duty -->
+            <div class="tab-pane" id="tab-duty">
+              <div class="section-title-box">
+                <span class="title-star">★</span>
+                <h3>值日生輪替排班表</h3>
+                <p class="section-desc">2 週 (10 天實際打掃) 輪替一次，共 20 週，6 名幹部免輪值。</p>
+              </div>
+
+              <div class="table-responsive">
+                <table class="duty-table">
+                  <thead>
+                    <tr>
+                      <th>回合</th>
+                      <th>負責週數</th>
+                      <th>打掃日期區間</th>
+                      <th>實際打掃天數</th>
+                      <th>值日生人員 (3 人)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dutyTableBody">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="action-bar mt-4">
+          <label for="btnImportJSON" class="btn btn-secondary" style="margin-bottom:0; cursor:pointer;">
+            📁 載入排程檔案
+            <input type="file" id="btnImportJSON" accept=".json" style="display:none;">
+          </label>
+          <button type="button" id="btnPrint" class="btn btn-secondary">🖨️ 列印 / 匯出 PDF</button>
+          <button type="button" id="btnExportJSON" class="btn btn-secondary">💾 匯出排程資料</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="app-footer">
+    <p>© 2026-2027 班級環境打掃管理專案</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

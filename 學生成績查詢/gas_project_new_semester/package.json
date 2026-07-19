@@ -1,0 +1,10 @@
+{
+    "name": "gas-project-personal",
+    "version": "1.0.0",
+    "description": "成績查詢系統專案",
+    "scripts": {
+        "deploy:safe": "./scripts/deploy_safe.sh"
+    },
+    "author": "MaxChan",
+    "license": "ISC"
+}
