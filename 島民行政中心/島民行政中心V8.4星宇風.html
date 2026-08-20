@@ -2745,7 +2745,7 @@
             }, [rows, cols]);
 
             // --- 核心演算法區 ---
-            const fillGridWithList = (sortedList, useSnakeOrder = false) => {
+            const fillGridWithList = (sortedList, useSnakeOrder = false, columnFirst = false, startFromRight = false) => {
                 let currentListIdx = 0;
                 const newSeats = [...seats];
                 let availableIndices = [];
@@ -2762,6 +2762,17 @@
                         const cB = b % cols;
                         if (rA !== rB) return rA - rB;
                         return (rA % 2 === 0) ? (cA - cB) : (cB - cA);
+                    });
+                } else if (columnFirst) {
+                    // 直欄優先排序：依欄號排，欄內由上至下；可選從右欄或左欄開始
+                    availableIndices.sort((a, b) => {
+                        const cA = a % cols;
+                        const rA = Math.floor(a / cols);
+                        const cB = b % cols;
+                        const rB = Math.floor(b / cols);
+                        const colOrder = startFromRight ? (cB - cA) : (cA - cB);
+                        if (colOrder !== 0) return colOrder;
+                        return rA - rB;
                     });
                 }
                 availableIndices.forEach(idx => {
@@ -2784,7 +2795,8 @@
                 fillGridWithList(list, false);
             };
 
-            const handleSequential = () => { fillGridWithList(parseNames(), false); };
+            const handleSequentialColRight = () => { fillGridWithList(parseNames(), false, true, true); };
+            const handleSequentialColLeft  = () => { fillGridWithList(parseNames(), false, true, false); };
             const handleSnake = () => { fillGridWithList(parseNames(), true); };
             const handleInterleave = () => {
                 const list = parseNames();
@@ -3017,7 +3029,8 @@
 
                             <div className="flex gap-1 items-center bg-white p-1 rounded-lg border">
                                 <button onClick={handleRandomize} className="nook-btn bg-[#88C9A1] text-white py-1 px-2" title="隨機洗牌">🎲 隨機</button>
-                                <button onClick={handleSequential} className="nook-btn bg-white border border-[#E0E4CC] text-[#797365] py-1 px-2" title="依輸入順序排列">🔢 依序</button>
+                                <button onClick={handleSequentialColRight} className="nook-btn bg-white border border-[#E0E4CC] text-[#797365] py-1 px-2" title="依序排列：直欄優先，從面對黑板右側欄開始">🔢 由右欄</button>
+                                <button onClick={handleSequentialColLeft}  className="nook-btn bg-white border border-[#E0E4CC] text-[#797365] py-1 px-2" title="依序排列：直欄優先，從面對黑板左側欄開始">🔢 由左欄</button>
                                 <button onClick={handleSnake} className="nook-btn bg-white border border-[#E0E4CC] text-[#797365] py-1 px-2" title="成績 S 型排列 (需先將名單按成績排序)">🐍 S型</button>
                                 <button onClick={handleInterleave} className="nook-btn bg-white border border-[#E0E4CC] text-[#E91E63] py-1 px-2" title="男女梅花座 (請將男生與女生名單分別貼在一起)">🌸 梅花</button>
                             </div>
