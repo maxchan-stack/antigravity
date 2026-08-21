@@ -2633,7 +2633,7 @@
                 if (!text) return { no: "", name: "" };
                 const str = String(text).trim();
                 // 匹配前導數字（座號），可能包含點、頓號、空格等分隔符
-                const match = str.match(/^(\d+)(?:\s*[\.\-\/\,、\s_]\s*|\s*)(.+)$/);
+                const match = str.match(/^(\d+)\s*[.．、\-\/\s_　]*\s*(.+)$/);
                 if (match) {
                     return {
                         no: match[1],
@@ -3042,8 +3042,8 @@
                                                     const { no, name } = parseSeatText(seat.text);
                                                     return (
                                                         <span className="flex flex-col items-center justify-center w-full min-h-0">
-                                                            {no && <span className="seat-no block text-[10px] md:text-xs opacity-60 leading-tight font-black">{no}</span>}
-                                                            {name && <span className="seat-name block text-sm md:text-base leading-tight font-black">{name}</span>}
+                                                            {no && <span className="seat-no block text-[9px] md:text-[10px] opacity-70 leading-none font-black mb-0.5">{no}</span>}
+                                                            {name && <span className={`seat-name block leading-tight font-black tracking-tight text-center ${name.length > 3 ? "text-xs" : "text-sm md:text-base"}`}>{name}</span>}
                                                         </span>
                                                     );
                                                 })()
